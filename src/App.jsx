@@ -201,23 +201,20 @@ const hashPassword = async password => {
 }
 
 const callGemini = async (prompt, systemInstruction = 'Eres un asistente útil.') => {
-  if (!GEMINI_API_KEY) return 'La IA requiere una API Key configurada.'
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${GEMINI_API_KEY}`
+  if (!GEMINI_API_KEY) return 'La IA requiere una API Key configurada.';
+  // Acá está el enlace corregido usando gemini-1.5-flash:
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`;
   const payload = {
     contents: [{ parts: [{ text: prompt }] }],
     systemInstruction: { parts: [{ text: systemInstruction }] },
-  }
+  };
   try {
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
-    })
-    if (!response.ok) throw new Error('Error en API')
-    const result = await response.json()
-    return result.candidates?.[0]?.content?.parts?.[0]?.text || 'Sin respuesta.'
+    const response = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+    if (!response.ok) throw new Error('Error en API');
+    const result = await response.json();
+    return result.candidates?.[0]?.content?.parts?.[0]?.text || 'Sin respuesta.';
   } catch (error) {
-    return 'Tuve un problema conectándome. Intenta nuevamente.'
+    return 'Tuve un problema conectándome. Intenta nuevamente.';
   }
 }
 

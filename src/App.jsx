@@ -1,0 +1,2203 @@
+import React, { useState, useEffect, useRef } from 'react'
+import {
+  Home,
+  ShoppingCart,
+  User,
+  MapPin,
+  Search,
+  Plus,
+  Minus,
+  ChevronLeft,
+  Trash2,
+  Clock,
+  CheckCircle,
+  XCircle,
+  Package,
+  LayoutDashboard,
+  ListOrdered,
+  Settings,
+  Store,
+  MenuSquare,
+  Truck,
+  LogOut,
+  Sparkles,
+  Send,
+  X,
+  ArrowUp,
+  ArrowDown,
+  KeyRound,
+} from 'lucide-react'
+import { initializeApp } from 'firebase/app'
+import { getAuth, signInWithCustomToken, signInAnonymously, onAuthStateChanged } from 'firebase/auth'
+import { getFirestore, doc, setDoc, onSnapshot } from 'firebase/firestore'
+
+// --- CONFIGURACIÓN DEL LOCAL ---
+const SHOP_PHONE = '5492613426085' // Tu WhatsApp
+const SHOP_ADDRESS = 'Centro Comercial Plaza Michelo, Palma y Maza, Maipú, Mendoza'
+const SHOP_LOGO = 'https://i.postimg.cc/TYHsxqMV/Copia_de_Logo_al_buen_raviol_(2).png'
+
+// --- DATOS POR DEFECTO (Para la primera vez) ---
+const INITIAL_CATEGORIES = [
+  { id: 1, name: 'Ravioles', order: 1 },
+  { id: 2, name: 'Sorrentinos', order: 2 },
+  { id: 3, name: 'Tallarines', order: 3 },
+  { id: 4, name: 'Salsas', order: 4 },
+  { id: 5, name: 'Combos', order: 5 },
+]
+
+const INITIAL_PRODUCTS = [
+  {
+    id: 1,
+    name: 'Ravioles de Carne y Verdura',
+    description: 'Clásicos ravioles caseros rellenos de carne premium y espinaca fresca.',
+    price: 4500,
+    categoryId: 1,
+    featured: true,
+    active: true,
+    image: 'https://images.unsplash.com/photo-1551183053-bf91a1d81141?auto=format&fit=crop&q=80&w=400',
+  },
+  {
+    id: 2,
+    name: 'Ravioles de Ricota',
+    description: 'Suaves ravioles de ricota magra y nuez.',
+    price: 4500,
+    categoryId: 1,
+    featured: false,
+    active: true,
+    image: 'https://images.unsplash.com/photo-1551183053-bf91a1d81141?auto=format&fit=crop&q=80&w=400',
+  },
+  {
+    id: 3,
+    name: 'Sorrentinos de Jamón y Queso',
+    description: 'Abundante relleno de jamón cocido y muzzarella.',
+    price: 5200,
+    categoryId: 2,
+    featured: true,
+    active: true,
+    image: 'https://images.unsplash.com/photo-1621996311239-53cbdf018245?auto=format&fit=crop&q=80&w=400',
+  },
+  {
+    id: 4,
+    name: 'Tallarines al Huevo',
+    description: 'Fideos frescos cortados a cuchillo.',
+    price: 3000,
+    categoryId: 3,
+    featured: false,
+    active: true,
+    image: 'https://images.unsplash.com/photo-1612874742237-6526221588e3?auto=format&fit=crop&q=80&w=400',
+  },
+  {
+    id: 5,
+    name: 'Salsa Fileto',
+    description: 'Salsa de tomate casera con ajo y albahaca.',
+    price: 1800,
+    categoryId: 4,
+    featured: false,
+    active: true,
+    image: 'https://images.unsplash.com/photo-1604908176997-125f25cc6f3d?auto=format&fit=crop&q=80&w=400',
+  },
+]
+
+const INITIAL_SHIPPING_CONFIG = {
+  tier1: 1000,
+  tier2: 1500,
+  tier3: 2000,
+  extra: 500,
+  shopLocation: { lat: -32.9850886, lng: -68.7986076 },
+}
+
+const INITIAL_SCHEDULE = {
+  0: [], // Domingo
+  1: [
+    { open: '09:30', close: '13:30' },
+    { open: '17:30', close: '20:30' },
+  ], // Lunes
+  2: [
+    { open: '09:30', close: '13:30' },
+    { open: '17:30', close: '20:30' },
+  ], // Martes
+  3: [
+    { open: '09:30', close: '13:30' },
+    { open: '17:30', close: '20:30' },
+  ], // Miércoles
+  4: [
+    { open: '09:30', close: '13:30' },
+    { open: '17:30', close: '20:30' },
+  ], // Jueves
+  5: [
+    { open: '09:30', close: '13:30' },
+    { open: '17:30', close: '20:30' },
+  ], // Viernes
+  6: [{ open: '09:30', close: '14:00' }], // Sábado
+}
+
+const INITIAL_ADMIN_AUTH = { email: 'albuenraviolmaipu@gmail.com', passHash: '', recoveryHash: '', isConfigured: false }
+
+// --- CLAVES API ---
+const GOOGLE_MAPS_API_KEY = 'AIzaSyByRfYN7dVvBHGZgikBZcrmOY6lDgLgO6Y' // Reemplazar con clave real si es necesario
+const GEMINI_API_KEY = ''
+
+// --- FIREBASE CONFIGURACIÓN ---
+let firebaseApp, auth, firestoreDb, appId
+let finalConfig = null
+
+try {
+  const envObj = typeof import.meta !== 'undefined' && import.meta.env ? import.meta.env : {}
+  finalConfig =
+    typeof __firebase_config !== 'undefined' && __firebase_config ? __firebase_config : envObj.VITE_FIREBASE_CONFIG
+
+  if (finalConfig) {
+    const parsedConfig = typeof finalConfig === 'string' ? JSON.parse(finalConfig) : finalConfig
+    firebaseApp = initializeApp(parsedConfig)
+    auth = getAuth(firebaseApp)
+    firestoreDb = getFirestore(firebaseApp)
+    appId = typeof __app_id !== 'undefined' ? __app_id : 'al-buen-raviol-maipu'
+  }
+} catch (e) {
+  console.error('Error inicializando Firebase:', e)
+}
+
+// --- UTILIDADES ---
+let isGoogleMapsLoading = false
+const loadGoogleMaps = callback => {
+  if (window.google && window.google.maps) {
+    callback()
+    return
+  }
+  if (isGoogleMapsLoading) {
+    setTimeout(() => loadGoogleMaps(callback), 100)
+    return
+  }
+  isGoogleMapsLoading = true
+  const script = document.createElement('script')
+  script.src = `https://maps.googleapis.com/maps/api/js?key=${GOOGLE_MAPS_API_KEY}&libraries=places`
+  script.async = true
+  script.defer = true
+  script.onload = () => {
+    isGoogleMapsLoading = false
+    callback()
+  }
+  document.head.appendChild(script)
+}
+
+const formatCurrency = amount =>
+  new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS', maximumFractionDigits: 0 }).format(amount)
+
+const getDistanceFromLatLonInKm = (lat1, lon1, lat2, lon2) => {
+  const R = 6371 // Radio de la tierra en km
+  const dLat = (lat2 - lat1) * (Math.PI / 180)
+  const dLon = (lon2 - lon1) * (Math.PI / 180)
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(lat1 * (Math.PI / 180)) * Math.cos(lat2 * (Math.PI / 180)) * Math.sin(dLon / 2) * Math.sin(dLon / 2)
+  return R * (2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)))
+}
+
+const hashPassword = async password => {
+  const msgBuffer = new TextEncoder().encode(password)
+  const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer)
+  const hashArray = Array.from(new Uint8Array(hashBuffer))
+  return hashArray.map(b => b.toString(16).padStart(2, '0')).join('')
+}
+
+const callGemini = async (prompt, systemInstruction = 'Eres un asistente útil.') => {
+  if (!GEMINI_API_KEY) return 'La IA requiere una API Key configurada.'
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${GEMINI_API_KEY}`
+  const payload = {
+    contents: [{ parts: [{ text: prompt }] }],
+    systemInstruction: { parts: [{ text: systemInstruction }] },
+  }
+  try {
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    })
+    if (!response.ok) throw new Error('Error en API')
+    const result = await response.json()
+    return result.candidates?.[0]?.content?.parts?.[0]?.text || 'Sin respuesta.'
+  } catch (error) {
+    return 'Tuve un problema conectándome. Intenta nuevamente.'
+  }
+}
+
+// ==========================================
+// COMPONENTE PRINCIPAL
+// ==========================================
+export default function App() {
+  const [appMode, setAppMode] = useState('client')
+  const [user, setUser] = useState(null)
+  const [dbState, setDbState] = useState(null)
+
+  // Inicializar Autenticación
+  useEffect(() => {
+    if (!auth) {
+      loadFallback()
+      return
+    }
+    const initAuth = async () => {
+      try {
+        if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+          await signInWithCustomToken(auth, __initial_auth_token)
+        } else {
+          await signInAnonymously(auth)
+        }
+      } catch (e) {
+        console.error('Auth error', e)
+        loadFallback()
+      }
+    }
+    initAuth()
+    const unsubscribe = onAuthStateChanged(auth, setUser)
+    return () => unsubscribe()
+  }, [])
+
+  // Sincronizar Base de Datos
+  useEffect(() => {
+    if (firestoreDb && user) {
+      const docRef = doc(firestoreDb, 'artifacts', appId, 'public', 'data', 'store_data', 'main')
+      const unsubscribe = onSnapshot(
+        docRef,
+        docSnap => {
+          if (docSnap.exists()) {
+            setDbState(docSnap.data())
+          } else {
+            const initialData = {
+              categories: INITIAL_CATEGORIES,
+              products: INITIAL_PRODUCTS,
+              shippingConfig: INITIAL_SHIPPING_CONFIG,
+              schedule: INITIAL_SCHEDULE,
+              orders: [],
+              adminAuth: INITIAL_ADMIN_AUTH,
+            }
+            setDoc(docRef, initialData).catch(console.error)
+            setDbState(initialData)
+          }
+        },
+        error => {
+          console.error('Error Firestore', error)
+          loadFallback()
+        }
+      )
+      return () => unsubscribe()
+    } else if (!firestoreDb) {
+      loadFallback()
+    }
+  }, [user])
+
+  const loadFallback = () => {
+    if (!dbState) {
+      setDbState({
+        categories: INITIAL_CATEGORIES,
+        products: INITIAL_PRODUCTS,
+        shippingConfig: INITIAL_SHIPPING_CONFIG,
+        schedule: INITIAL_SCHEDULE,
+        orders: [],
+        adminAuth: INITIAL_ADMIN_AUTH,
+      })
+    }
+  }
+
+  const setDb = updater => {
+    setDbState(prev => {
+      const newState = typeof updater === 'function' ? updater(prev) : updater
+      if (firestoreDb && user) {
+        const docRef = doc(firestoreDb, 'artifacts', appId, 'public', 'data', 'store_data', 'main')
+        setDoc(docRef, newState).catch(console.error)
+      }
+      return newState
+    })
+  }
+
+  if (!dbState) {
+    return (
+      <div className="min-h-screen bg-gray-100 flex flex-col items-center justify-center">
+        <div className="w-12 h-12 border-4 border-[#cc292b] border-t-transparent rounded-full animate-spin mb-4"></div>
+        <p className="font-bold text-gray-600 animate-pulse">Conectando a la Nube...</p>
+      </div>
+    )
+  }
+
+  return (
+    <div className="min-h-[100dvh] bg-gray-100 flex justify-center font-sans text-gray-800">
+      <div className="w-full max-w-md bg-white shadow-2xl relative overflow-hidden flex flex-col h-[100dvh]">
+        {appMode === 'client' ? (
+          <ClientApp db={dbState} setDb={setDb} switchMode={() => setAppMode('admin')} />
+        ) : (
+          <AdminApp db={dbState} setDb={setDb} switchMode={() => setAppMode('client')} />
+        )}
+      </div>
+    </div>
+  )
+}
+
+// ==========================================
+// APLICACIÓN DEL CLIENTE
+// ==========================================
+function ClientApp({ db, setDb, switchMode }) {
+  const [route, setRoute] = useState('home')
+  const [cart, setCart] = useState([])
+  const [showAssistant, setShowAssistant] = useState(false)
+
+  const addToCart = product => {
+    setCart(prev => {
+      const existing = prev.find(item => item.product.id === product.id)
+      if (existing)
+        return prev.map(item => (item.product.id === product.id ? { ...item, quantity: item.quantity + 1 } : item))
+      return [...prev, { product, quantity: 1 }]
+    })
+  }
+
+  const updateQuantity = (productId, delta) => {
+    setCart(prev =>
+      prev
+        .map(item => {
+          if (item.product.id === productId) {
+            const newQ = item.quantity + delta
+            return newQ > 0 ? { ...item, quantity: newQ } : null
+          }
+          return item
+        })
+        .filter(Boolean)
+    )
+  }
+
+  const cartTotal = cart.reduce((sum, item) => sum + item.product.price * item.quantity, 0)
+  const cartItemsCount = cart.reduce((sum, item) => sum + item.quantity, 0)
+
+  return (
+    <div className="flex flex-col h-full bg-gray-50 relative overflow-hidden">
+      <div className="flex-1 overflow-hidden relative">
+        {route === 'home' && (
+          <ClientHome
+            db={db}
+            addToCart={addToCart}
+            switchMode={switchMode}
+            cartItemsCount={cartItemsCount}
+            cartTotal={cartTotal}
+            setRoute={setRoute}
+          />
+        )}
+        {route === 'cart' && (
+          <ClientCart cart={cart} updateQuantity={updateQuantity} setRoute={setRoute} cartTotal={cartTotal} />
+        )}
+        {route === 'checkout' && (
+          <ClientCheckout
+            cart={cart}
+            cartTotal={cartTotal}
+            db={db}
+            setDb={setDb}
+            setRoute={setRoute}
+            clearCart={() => setCart([])}
+          />
+        )}
+      </div>
+
+      {/* Menú inferior */}
+      <div className="bg-white border-t border-gray-200 flex justify-around p-2 pb-4 shrink-0 text-xs z-50 shadow-[0_-4px_10px_rgba(0,0,0,0.05)]">
+        <ClientNavBtn icon={<Store />} label="Menú" active={route === 'home'} onClick={() => setRoute('home')} />
+        <ClientNavBtn
+          icon={<ShoppingCart />}
+          label="Carrito"
+          active={route === 'cart' || route === 'checkout'}
+          onClick={() => setRoute('cart')}
+          badge={cartItemsCount}
+        />
+        <ClientNavBtn
+          icon={<Sparkles />}
+          label="Chef IA"
+          active={showAssistant}
+          onClick={() => setShowAssistant(true)}
+        />
+      </div>
+
+      {showAssistant && <ChefAssistant db={db} onClose={() => setShowAssistant(false)} />}
+    </div>
+  )
+}
+
+function ClientNavBtn({ icon, label, active, onClick, badge }) {
+  return (
+    <button
+      onClick={onClick}
+      className={`relative flex flex-col items-center gap-1 p-2 w-16 transition-colors ${
+        active ? 'text-[#c82a2a]' : 'text-gray-500 hover:text-gray-800'
+      }`}
+    >
+      {React.cloneElement(icon, { size: 22 })}
+      <span className="font-medium" style={{ fontSize: '0.65rem' }}>
+        {label}
+      </span>
+      {badge > 0 && (
+        <span className="absolute top-1 right-2 bg-[#c82a2a] text-white text-[10px] font-bold w-4 h-4 flex items-center justify-center rounded-full border border-white">
+          {badge}
+        </span>
+      )}
+    </button>
+  )
+}
+
+function ClientHome({ db, addToCart, switchMode, cartItemsCount, cartTotal, setRoute }) {
+  const [activeCategory, setActiveCategory] = useState(null)
+  const [storeStatus, setStoreStatus] = useState({ isOpen: false, nextOpen: '' })
+  const [showScrollTop, setShowScrollTop] = useState(false)
+  const scrollRef = useRef(null)
+
+  useEffect(() => {
+    const checkStatus = () => {
+      const now = new Date()
+      const day = now.getDay()
+      const hours = now.getHours().toString().padStart(2, '0')
+      const minutes = now.getMinutes().toString().padStart(2, '0')
+      const currentTime = `${hours}:${minutes}`
+
+      const todayShifts = db.schedule[day] || []
+      let isOpen = false
+
+      for (let shift of todayShifts) {
+        if (currentTime >= shift.open && currentTime <= shift.close) {
+          isOpen = true
+          break
+        }
+      }
+
+      let nextOpen = ''
+      if (!isOpen && todayShifts.length > 0) {
+        const nextShift = todayShifts.find(s => s.open > currentTime)
+        if (nextShift) nextOpen = `Abre hoy a las ${nextShift.open}`
+      }
+
+      setStoreStatus({ isOpen, nextOpen: nextOpen || 'Cerrado por hoy' })
+    }
+    checkStatus()
+    const interval = setInterval(checkStatus, 60000)
+    return () => clearInterval(interval)
+  }, [db.schedule])
+
+  const handleScroll = e => {
+    if (e.target.scrollTop > 300) setShowScrollTop(true)
+    else setShowScrollTop(false)
+  }
+
+  const scrollToTop = () => {
+    scrollRef.current?.scrollTo({ top: 0, behavior: 'smooth' })
+  }
+
+  const featuredProducts = db.products.filter(p => p.featured && p.active)
+  const filteredProducts = activeCategory
+    ? db.products.filter(p => p.categoryId === activeCategory && p.active)
+    : db.products.filter(p => p.active)
+
+  return (
+    <div ref={scrollRef} onScroll={handleScroll} className="h-full overflow-y-auto pb-32 relative hide-scrollbar">
+      {/* Banner */}
+      <div className="relative bg-[#cc292b] pt-8 pb-8 flex flex-col items-center justify-center shrink-0 shadow-inner min-h-[12rem]">
+        {SHOP_LOGO ? (
+          <img
+            src={SHOP_LOGO}
+            alt="Al Buen Raviol Logo"
+            className="w-full h-full object-contain max-h-40 px-4 drop-shadow-md"
+          />
+        ) : (
+          <h1 className="text-4xl font-serif font-black text-white text-center">Al Buen Raviol</h1>
+        )}
+        <button
+          onClick={switchMode}
+          className="absolute top-4 right-4 p-2 text-white/80 hover:text-white transition-all z-20"
+        >
+          <Settings size={20} />
+        </button>
+      </div>
+
+      {/* Status Bar */}
+      <div className="bg-white px-4 py-3 shadow-sm border-b border-gray-100 flex items-center justify-between shrink-0">
+        <div className="flex items-center gap-2">
+          <div className={`w-3 h-3 rounded-full ${storeStatus.isOpen ? 'bg-green-500 animate-pulse' : 'bg-red-500'}`} />
+          <span className="font-bold text-gray-800">{storeStatus.isOpen ? 'ABIERTO AHORA' : 'CERRADO'}</span>
+        </div>
+        {!storeStatus.isOpen && <span className="text-xs text-gray-500 font-medium">{storeStatus.nextOpen}</span>}
+      </div>
+
+      {/* Categorías Sticky */}
+      <div className="bg-white py-4 sticky top-0 z-10 shadow-sm shrink-0">
+        <div className="flex overflow-x-auto px-4 gap-2 hide-scrollbar pb-1">
+          <button
+            onClick={() => setActiveCategory(null)}
+            className={`whitespace-nowrap px-4 py-2 rounded-full text-sm font-semibold transition-colors ${
+              activeCategory === null ? 'bg-[#c82a2a] text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+            }`}
+          >
+            Todo
+          </button>
+          {db.categories
+            .sort((a, b) => a.order - b.order)
+            .map(cat => (
+              <button
+                key={cat.id}
+                onClick={() => setActiveCategory(cat.id)}
+                className={`whitespace-nowrap px-4 py-2 rounded-full text-sm font-semibold transition-colors ${
+                  activeCategory === cat.id ? 'bg-[#c82a2a] text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                }`}
+              >
+                {cat.name}
+              </button>
+            ))}
+        </div>
+      </div>
+
+      {/* Lista de Productos */}
+      <div className="px-4 py-4 space-y-6">
+        {!activeCategory && featuredProducts.length > 0 && (
+          <div>
+            <h2 className="text-lg font-bold text-gray-800 mb-3 flex items-center gap-2">
+              <Store size={20} className="text-[#c82a2a]" /> Recomendados del chef
+            </h2>
+            <div className="grid grid-cols-1 gap-4">
+              {featuredProducts.map(product => (
+                <ProductCard key={product.id} product={product} onAdd={addToCart} storeOpen={storeStatus.isOpen} />
+              ))}
+            </div>
+          </div>
+        )}
+
+        <div>
+          <h2 className="text-lg font-bold text-gray-800 mb-3 border-b pb-2">
+            {activeCategory ? db.categories.find(c => c.id === activeCategory)?.name : 'Nuestro Menú'}
+          </h2>
+          <div className="grid grid-cols-1 gap-4">
+            {filteredProducts.map(product => (
+              <ProductCard key={product.id} product={product} onAdd={addToCart} storeOpen={storeStatus.isOpen} />
+            ))}
+            {filteredProducts.length === 0 && (
+              <p className="text-center text-gray-500 py-8">No hay productos en esta categoría.</p>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {showScrollTop && (
+        <button
+          onClick={scrollToTop}
+          className="fixed bottom-24 right-4 bg-gray-900 text-white p-3 rounded-full shadow-xl z-40 animate-fadeIn"
+        >
+          <ArrowUp size={24} />
+        </button>
+      )}
+
+      {cartItemsCount > 0 && (
+        <div className="fixed bottom-20 left-4 right-4 z-30 animate-fadeIn">
+          <button
+            onClick={() => setRoute('cart')}
+            className="w-full bg-[#c82a2a] text-white p-4 rounded-xl shadow-lg flex items-center justify-between font-bold hover:bg-red-800 transition-all"
+          >
+            <div className="flex items-center gap-2">
+              <ShoppingCart size={20} />
+              <span>Ver carrito</span>
+            </div>
+            <span>{formatCurrency(cartTotal)}</span>
+          </button>
+        </div>
+      )}
+    </div>
+  )
+}
+
+function ProductCard({ product, onAdd, storeOpen }) {
+  return (
+    <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden flex h-32">
+      <div className="w-1/3 h-full">
+        <img src={product.image} alt={product.name} className="w-full h-full object-cover" />
+      </div>
+      <div className="w-2/3 p-3 flex flex-col justify-between">
+        <div>
+          <h3 className="font-bold text-sm text-gray-800 leading-tight">{product.name}</h3>
+          <p className="text-xs text-gray-500 mt-1 line-clamp-2">{product.description}</p>
+        </div>
+        <div className="flex items-center justify-between mt-2">
+          <span className="font-black text-[#c82a2a]">{formatCurrency(product.price)}</span>
+          <button
+            disabled={!storeOpen}
+            onClick={() => onAdd(product)}
+            className={`w-8 h-8 rounded-full flex items-center justify-center transition-transform active:scale-90 ${
+              storeOpen ? 'bg-red-50 text-[#c82a2a] hover:bg-red-100' : 'bg-gray-100 text-gray-400'
+            }`}
+          >
+            <Plus size={18} />
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function ChefAssistant({ db, onClose }) {
+  const [query, setQuery] = useState('')
+  const [chat, setChat] = useState([
+    { role: 'assistant', text: '¡Hola! Soy el Chef virtual de Al Buen Raviol ✨. ¿Qué tienes ganas de comer hoy?' },
+  ])
+  const [isLoading, setIsLoading] = useState(false)
+  const messagesEndRef = useRef(null)
+
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+  }, [chat])
+
+  const handleSend = async () => {
+    if (!query.trim()) return
+    const userMsg = query
+    setQuery('')
+    setChat(prev => [...prev, { role: 'user', text: userMsg }])
+    setIsLoading(true)
+
+    const menuContext = db.products
+      .filter(p => p.active)
+      .map(p => `${p.name} ($${p.price}): ${p.description}`)
+      .join(' | ')
+    const sysPrompt = `Eres el Chef Experto de 'Al Buen Raviol', pastas en Mendoza. Menú: ${menuContext}. Habla amigable y argentino (usa 'vos'). Recomienda SOLO productos del menú. Calcula cantidades. Respuestas cortas.`
+
+    const response = await callGemini(userMsg, sysPrompt)
+    setChat(prev => [...prev, { role: 'assistant', text: response }])
+    setIsLoading(false)
+  }
+
+  return (
+    <div className="fixed inset-0 bg-black/60 z-50 flex items-end sm:items-center justify-center animate-fadeIn p-4 sm:p-0">
+      <div className="bg-white w-full max-w-md rounded-2xl shadow-2xl flex flex-col h-[80vh] sm:h-[600px] overflow-hidden">
+        <div className="bg-[#cc292b] p-4 flex justify-between items-center text-white shrink-0">
+          <div className="flex items-center gap-2">
+            <Sparkles size={20} className="text-[#fbb03b]" />
+            <h3 className="font-bold text-lg">Chef IA</h3>
+          </div>
+          <button onClick={onClose} className="p-1.5 hover:bg-red-800 rounded-full">
+            <X size={20} />
+          </button>
+        </div>
+        <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-red-50/30">
+          {chat.map((msg, i) => (
+            <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+              <div
+                className={`max-w-[85%] rounded-2xl px-4 py-3 text-sm shadow-sm ${
+                  msg.role === 'user'
+                    ? 'bg-[#cc292b] text-white rounded-br-sm'
+                    : 'bg-white border border-gray-100 text-gray-800 rounded-bl-sm'
+                }`}
+              >
+                {msg.text}
+              </div>
+            </div>
+          ))}
+          {isLoading && <div className="text-gray-500 text-sm pl-2">Chef pensando...</div>}
+          <div ref={messagesEndRef} />
+        </div>
+        <div className="p-3 bg-white border-t border-gray-100 flex gap-2 shrink-0">
+          <input
+            type="text"
+            placeholder="Ej: ¿Qué me recomiendas?"
+            value={query}
+            onChange={e => setQuery(e.target.value)}
+            onKeyDown={e => e.key === 'Enter' && handleSend()}
+            disabled={isLoading}
+            className="flex-1 bg-gray-100 focus:bg-white focus:ring-2 focus:ring-red-200 rounded-xl px-4 py-3 text-sm outline-none"
+          />
+          <button
+            onClick={handleSend}
+            disabled={isLoading || !query.trim()}
+            className="bg-[#cc292b] text-white p-3 rounded-xl disabled:bg-red-300 hover:bg-red-800"
+          >
+            <Send size={18} />
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function ClientCart({ cart, updateQuantity, setRoute, cartTotal }) {
+  return (
+    <div className="flex flex-col h-full bg-white relative">
+      <div className="flex items-center p-4 border-b border-gray-100 bg-white shrink-0 z-10 sticky top-0">
+        <button onClick={() => setRoute('home')} className="p-2 -ml-2 text-gray-500 hover:text-gray-800">
+          <ChevronLeft size={24} />
+        </button>
+        <h2 className="text-lg font-bold text-gray-800 ml-2">Tu Pedido</h2>
+      </div>
+
+      <div className="flex-1 overflow-y-auto p-4 pb-32">
+        {cart.length === 0 ? (
+          <div className="h-full flex flex-col items-center justify-center text-gray-400 gap-4 mt-20">
+            <ShoppingCart size={48} className="opacity-50" />
+            <p className="font-medium">Tu carrito está vacío</p>
+            <button
+              onClick={() => setRoute('home')}
+              className="mt-4 px-6 py-2 bg-red-50 text-[#c82a2a] rounded-full font-bold"
+            >
+              Ver menú
+            </button>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {cart.map(item => (
+              <div key={item.product.id} className="flex gap-3 bg-gray-50 p-3 rounded-xl border border-gray-100">
+                <img src={item.product.image} alt="" className="w-16 h-16 object-cover rounded-lg" />
+                <div className="flex-1 flex flex-col justify-between">
+                  <h4 className="font-bold text-sm text-gray-800">{item.product.name}</h4>
+                  <div className="flex items-center justify-between w-full">
+                    <span className="font-bold text-gray-600 text-sm">{formatCurrency(item.product.price)}</span>
+                    <div className="flex items-center gap-3 bg-white border border-gray-200 rounded-lg px-2 py-1">
+                      <button onClick={() => updateQuantity(item.product.id, -1)} className="text-red-500 p-1">
+                        {item.quantity === 1 ? <Trash2 size={14} /> : <Minus size={14} />}
+                      </button>
+                      <span className="font-bold text-sm w-4 text-center">{item.quantity}</span>
+                      <button onClick={() => updateQuantity(item.product.id, 1)} className="text-red-500 p-1">
+                        <Plus size={14} />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {cart.length > 0 && (
+        <div className="absolute bottom-0 left-0 right-0 bg-white p-4 border-t border-gray-200 shadow-[0_-10px_15px_rgba(0,0,0,0.05)] z-20">
+          <div className="flex justify-between items-center mb-4">
+            <span className="text-gray-500 font-medium">Subtotal</span>
+            <span className="text-xl font-black text-gray-800">{formatCurrency(cartTotal)}</span>
+          </div>
+          <button
+            onClick={() => setRoute('checkout')}
+            className="w-full bg-[#c82a2a] text-white p-4 rounded-xl font-bold shadow-md hover:bg-red-800"
+          >
+            Continuar pago
+          </button>
+        </div>
+      )}
+    </div>
+  )
+}
+
+function ClientCheckout({ cart, cartTotal, db, setDb, setRoute, clearCart }) {
+  const [formData, setFormData] = useState({ name: '', phone: '', address: '' })
+  const [orderType, setOrderType] = useState('retiro')
+  const [paymentMethod, setPaymentMethod] = useState('efectivo')
+  const [cashAmount, setCashAmount] = useState('')
+  const [deliveryCoords, setDeliveryCoords] = useState(null)
+  const [shippingDistance, setShippingDistance] = useState(0)
+  const [whatsappLink, setWhatsappLink] = useState(null)
+  const [formError, setFormError] = useState('')
+  const [invalidFields, setInvalidFields] = useState([])
+
+  const calculateShippingCost = distance => {
+    if (distance <= 0) return 0
+    const { tier1, tier2, tier3, extra } = db.shippingConfig
+    if (distance <= 3) return tier1
+    if (distance <= 4) return tier2
+    if (distance <= 5) return tier3
+    return tier3 + Math.ceil(distance - 5) * extra
+  }
+
+  const shippingCost = orderType === 'delivery' ? calculateShippingCost(shippingDistance) : 0
+  const finalTotal = cartTotal + shippingCost
+
+  const handleConfirm = () => {
+    setFormError('')
+    setInvalidFields([])
+    const errors = []
+    if (!formData.name.trim()) errors.push('name')
+    if (!formData.phone.trim()) errors.push('phone')
+    if (orderType === 'delivery' && !formData.address.trim()) errors.push('address')
+    if (paymentMethod === 'efectivo') {
+      const amount = parseFloat(cashAmount)
+      if (isNaN(amount) || amount < finalTotal) errors.push('cashAmount')
+    }
+
+    if (errors.length > 0) {
+      setInvalidFields(errors)
+      setFormError('Por favor completa los campos marcados en rojo.')
+      return
+    }
+
+    const newOrder = {
+      id: Math.random().toString(36).substr(2, 9),
+      date: new Date().toISOString(),
+      customer: formData,
+      type: orderType,
+      items: cart,
+      subtotal: cartTotal,
+      shippingCost,
+      total: finalTotal,
+      distance: shippingDistance,
+      status: 'Recibido',
+    }
+
+    setDb(prev => ({ ...prev, orders: [newOrder, ...prev.orders] }))
+
+    let text = `*Hola Al Buen Raviol Maipú! Quiero hacer un pedido*\n\n*Cliente:* ${formData.name}\n*Tel:* ${
+      formData.phone
+    }\n*Tipo:* ${orderType === 'retiro' ? '🏪 Retiro por local' : '🛵 Delivery'}\n`
+    if (orderType === 'delivery') {
+      text += `*Dirección:* ${formData.address}\n`
+      if (deliveryCoords) text += `*Mapa:* https://maps.google.com/?q=${deliveryCoords.lat},${deliveryCoords.lng}\n`
+    }
+    text += `\n*Detalle:*\n`
+    cart.forEach(
+      item =>
+        (text += `- ${item.quantity}x ${item.product.name} (${formatCurrency(item.product.price * item.quantity)})\n`)
+    )
+    text += `\n*Subtotal:* ${formatCurrency(cartTotal)}\n`
+    if (orderType === 'delivery') text += `*Envío:* ${formatCurrency(shippingCost)}\n`
+    text += `*TOTAL A PAGAR: ${formatCurrency(finalTotal)}*\n\n*Método de Pago:* ${
+      paymentMethod === 'efectivo' ? '💵 Efectivo' : '🏦 Transferencia'
+    }\n`
+
+    if (paymentMethod === 'efectivo') {
+      text += `*Abona con:* ${formatCurrency(Number(cashAmount))}\n`
+      const vuelto = Number(cashAmount) - finalTotal
+      if (vuelto > 0) text += `*Vuelto a entregar:* ${formatCurrency(vuelto)}\n`
+    } else {
+      text += `*(El cliente enviará comprobante de transferencia)*\n`
+    }
+
+    setWhatsappLink(`https://wa.me/${SHOP_PHONE}?text=${encodeURIComponent(text)}`)
+    clearCart()
+  }
+
+  if (whatsappLink) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-full bg-white p-6 text-center animate-fadeIn">
+        <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mb-6">
+          <CheckCircle size={40} className="text-green-500" />
+        </div>
+        <h2 className="text-2xl font-black text-gray-800 mb-2">¡Pedido Guardado!</h2>
+        <p className="text-gray-500 mb-8 max-w-xs mx-auto">
+          Toca el botón para <span className="font-bold text-gray-800">abrir WhatsApp</span> y enviarnos el detalle.
+        </p>
+        <a
+          href={whatsappLink}
+          target="_blank"
+          rel="noopener noreferrer"
+          onClick={() => setTimeout(() => setRoute('home'), 1000)}
+          className="bg-[#25D366] text-white font-bold text-lg py-4 px-8 rounded-xl shadow-lg flex items-center gap-2 hover:bg-green-600 transition-all w-full justify-center max-w-sm mb-4"
+        >
+          <Send size={24} /> Enviar WhatsApp ahora
+        </a>
+      </div>
+    )
+  }
+
+  return (
+    <div className="flex flex-col h-full bg-gray-50 relative">
+      <div className="flex items-center p-4 border-b border-gray-200 bg-white shrink-0 z-10 sticky top-0">
+        <button onClick={() => setRoute('cart')} className="p-2 -ml-2 text-gray-500 hover:text-gray-800">
+          <ChevronLeft size={24} />
+        </button>
+        <h2 className="text-lg font-bold text-gray-800 ml-2">Finalizar Pedido</h2>
+      </div>
+
+      <div className="flex-1 overflow-y-auto p-4 space-y-6 pb-32">
+        {/* Mis Datos */}
+        <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
+          <h3 className="font-bold text-gray-800 mb-3 flex items-center gap-2">
+            <User size={18} className="text-red-500" /> Mis Datos
+          </h3>
+          <div className="space-y-3">
+            <input
+              type="text"
+              placeholder="Tu Nombre *"
+              value={formData.name}
+              onChange={e => {
+                setFormData({ ...formData, name: e.target.value })
+                setInvalidFields(p => p.filter(f => f !== 'name'))
+              }}
+              className={`w-full rounded-lg px-4 py-3 text-sm outline-none transition-all ${
+                invalidFields.includes('name')
+                  ? 'bg-red-50 border border-red-500 ring-1 ring-red-500'
+                  : 'bg-gray-50 border border-gray-200 focus:ring-2 focus:ring-red-500'
+              }`}
+            />
+            <input
+              type="tel"
+              placeholder="Tu Teléfono (ej: 261...) *"
+              value={formData.phone}
+              onChange={e => {
+                setFormData({ ...formData, phone: e.target.value })
+                setInvalidFields(p => p.filter(f => f !== 'phone'))
+              }}
+              className={`w-full rounded-lg px-4 py-3 text-sm outline-none transition-all ${
+                invalidFields.includes('phone')
+                  ? 'bg-red-50 border border-red-500 ring-1 ring-red-500'
+                  : 'bg-gray-50 border border-gray-200 focus:ring-2 focus:ring-red-500'
+              }`}
+            />
+          </div>
+        </div>
+
+        {/* Retiro / Delivery */}
+        <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
+          <h3 className="font-bold text-gray-800 mb-3 flex items-center gap-2">
+            <Package size={18} className="text-red-500" /> Retiro o Delivery
+          </h3>
+          <div className="flex bg-gray-100 p-1 rounded-lg">
+            <button
+              onClick={() => setOrderType('retiro')}
+              className={`flex-1 py-2 text-sm font-bold rounded-md ${
+                orderType === 'retiro' ? 'bg-white shadow-sm text-gray-800' : 'text-gray-500'
+              }`}
+            >
+              Retiro en Local
+            </button>
+            <button
+              onClick={() => setOrderType('delivery')}
+              className={`flex-1 py-2 text-sm font-bold rounded-md ${
+                orderType === 'delivery' ? 'bg-white shadow-sm text-gray-800' : 'text-gray-500'
+              }`}
+            >
+              Delivery
+            </button>
+          </div>
+          {orderType === 'retiro' && (
+            <div className="mt-4 p-3 bg-blue-50 border border-blue-100 rounded-lg text-sm text-blue-800 animate-fadeIn">
+              <p className="font-bold flex items-center gap-1">
+                <MapPin size={16} /> Dirección de retiro:
+              </p>
+              <p className="mt-1">{SHOP_ADDRESS}</p>
+            </div>
+          )}
+          {orderType === 'delivery' && (
+            <div className="mt-4 animate-fadeIn">
+              <MapPicker
+                address={formData.address}
+                shopLocation={db.shippingConfig.shopLocation}
+                onAddressChange={val => {
+                  setFormData({ ...formData, address: val })
+                  setInvalidFields(p => p.filter(f => f !== 'address'))
+                }}
+                onLocationSelect={(coords, dist) => {
+                  setDeliveryCoords(coords)
+                  setShippingDistance(dist)
+                }}
+                isInvalid={invalidFields.includes('address')}
+              />
+              {shippingDistance > 0 && (
+                <div className="mt-2 text-xs text-gray-500 bg-blue-50 p-2 rounded text-center">
+                  Distancia de manejo: <span className="font-bold">{shippingDistance.toFixed(1)} km</span>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* Método de Pago */}
+        <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
+          <h3 className="font-bold text-gray-800 mb-3">💳 Método de Pago</h3>
+          <div className="flex bg-gray-100 p-1 rounded-lg mb-4">
+            <button
+              onClick={() => setPaymentMethod('efectivo')}
+              className={`flex-1 py-2 text-sm font-bold rounded-md ${
+                paymentMethod === 'efectivo' ? 'bg-white shadow-sm text-gray-800' : 'text-gray-500'
+              }`}
+            >
+              Efectivo
+            </button>
+            <button
+              onClick={() => setPaymentMethod('transferencia')}
+              className={`flex-1 py-2 text-sm font-bold rounded-md ${
+                paymentMethod === 'transferencia' ? 'bg-white shadow-sm text-gray-800' : 'text-gray-500'
+              }`}
+            >
+              Transferencia
+            </button>
+          </div>
+          {paymentMethod === 'transferencia' ? (
+            <div className="bg-blue-50 p-3 rounded-lg text-sm text-blue-800 border border-blue-100 animate-fadeIn">
+              <p>
+                Alias: <span className="font-black text-lg">ABRMAIPU</span>
+              </p>
+              <p>Titular: Franco Vanneschi</p>
+              <p className="mt-2 text-xs font-bold text-blue-600">⚠️ Adjuntá el comprobante de pago por WhatsApp.</p>
+            </div>
+          ) : (
+            <div className="animate-fadeIn">
+              <label className="text-sm font-bold text-gray-700 block mb-2">¿Con cuánto vas a abonar?</label>
+              <div className="flex items-center gap-2">
+                <span className="text-gray-500 font-bold">$</span>
+                <input
+                  type="number"
+                  placeholder={`Ej: ${finalTotal + 1000}`}
+                  value={cashAmount}
+                  onChange={e => {
+                    setCashAmount(e.target.value)
+                    setInvalidFields(p => p.filter(f => f !== 'cashAmount'))
+                  }}
+                  className={`flex-1 rounded-lg px-4 py-2 text-sm outline-none transition-all ${
+                    invalidFields.includes('cashAmount')
+                      ? 'bg-red-50 border border-red-500 ring-1 ring-red-500'
+                      : 'bg-gray-50 border border-gray-200 focus:ring-2 focus:ring-red-500'
+                  }`}
+                />
+              </div>
+              {Number(cashAmount) >= finalTotal && (
+                <div className="mt-3 bg-green-50 text-green-700 p-2 rounded text-sm text-center border border-green-100">
+                  <span className="font-bold">Tu vuelto será de:</span>{' '}
+                  {formatCurrency(Number(cashAmount) - finalTotal)}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* Resumen */}
+        <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
+          <h3 className="font-bold text-gray-800 mb-3 flex items-center gap-2">
+            <ListOrdered size={18} className="text-red-500" /> Resumen del Pedido
+          </h3>
+          <div className="space-y-2 mb-4 border-b border-gray-100 pb-4">
+            {cart.map(item => (
+              <div key={item.product.id} className="flex justify-between text-sm">
+                <span className="text-gray-600">
+                  {item.quantity}x {item.product.name}
+                </span>
+                <span className="font-medium text-gray-800">{formatCurrency(item.product.price * item.quantity)}</span>
+              </div>
+            ))}
+          </div>
+          <div className="space-y-2 text-sm">
+            <div className="flex justify-between text-gray-600">
+              <span>Subtotal productos</span>
+              <span>{formatCurrency(cartTotal)}</span>
+            </div>
+            {orderType === 'delivery' && (
+              <div className="flex justify-between text-gray-600">
+                <span>Costo de envío</span>
+                <span>{formatCurrency(shippingCost)}</span>
+              </div>
+            )}
+            <div className="flex justify-between text-lg font-black text-gray-900 pt-2 border-t border-gray-200 mt-2">
+              <span>Total a pagar</span>
+              <span className="text-[#c82a2a]">{formatCurrency(finalTotal)}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {formError && (
+        <div className="absolute bottom-[90px] left-4 right-4 bg-red-600 text-white text-xs font-bold py-3 px-4 rounded-xl text-center shadow-2xl animate-bounce flex items-center justify-center gap-2 z-50">
+          <XCircle size={18} /> {formError}
+        </div>
+      )}
+
+      <div className="absolute bottom-0 left-0 right-0 bg-white p-4 border-t border-gray-200 shadow-[0_-10px_15px_rgba(0,0,0,0.05)] z-40 bg-white">
+        <button
+          onClick={handleConfirm}
+          className="w-full bg-[#25D366] text-white p-4 rounded-xl font-bold shadow-lg hover:bg-green-600 active:scale-95 flex items-center justify-center gap-2"
+        >
+          Confirmar Pedido <CheckCircle size={20} />
+        </button>
+      </div>
+    </div>
+  )
+}
+
+function MapPicker({ address, shopLocation, onAddressChange, onLocationSelect, isInvalid }) {
+  const mapRef = useRef(null)
+  const inputRef = useRef(null)
+  const mapInstance = useRef(null)
+  const markerInstance = useRef(null)
+  const [mapLoaded, setMapLoaded] = useState(false)
+  const [isLocating, setIsLocating] = useState(false)
+  const [locError, setLocError] = useState('')
+
+  useEffect(() => {
+    loadGoogleMaps(() => setMapLoaded(true))
+  }, [])
+
+  const calculateDrivingDistance = (lat, lng) => {
+    if (!window.google) return
+    const service = new window.google.maps.DirectionsService()
+    service.route({ origin: shopLocation, destination: { lat, lng }, travelMode: 'DRIVING' }, (response, status) => {
+      if (status === 'OK' && response.routes[0] && response.routes[0].legs[0]) {
+        onLocationSelect({ lat, lng }, response.routes[0].legs[0].distance.value / 1000)
+        setLocError('')
+      } else {
+        setLocError(`Google Maps: No se pudo calcular la ruta exacta. Calculando distancia en línea recta...`)
+        onLocationSelect({ lat, lng }, getDistanceFromLatLonInKm(shopLocation.lat, shopLocation.lng, lat, lng))
+      }
+    })
+  }
+
+  useEffect(() => {
+    if (!mapLoaded || !mapRef.current || !inputRef.current) return
+    if (mapInstance.current) return
+
+    const google = window.google
+    const map = new google.maps.Map(mapRef.current, {
+      center: shopLocation,
+      zoom: 13,
+      disableDefaultUI: true,
+      zoomControl: true,
+    })
+    const marker = new google.maps.Marker({ position: shopLocation, map: map, draggable: true })
+
+    marker.addListener('dragend', () => {
+      const pos = marker.getPosition()
+      calculateDrivingDistance(pos.lat(), pos.lng())
+      new google.maps.Geocoder().geocode({ location: { lat: pos.lat(), lng: pos.lng() } }, (results, status) => {
+        if (status === 'OK' && results[0]) onAddressChange(results[0].formatted_address)
+      })
+    })
+
+    const autocomplete = new google.maps.places.Autocomplete(inputRef.current, {
+      componentRestrictions: { country: 'ar' },
+    })
+    autocomplete.addListener('place_changed', () => {
+      const place = autocomplete.getPlace()
+      if (!place.geometry || !place.geometry.location) return
+      map.setCenter(place.geometry.location)
+      map.setZoom(15)
+      marker.setPosition(place.geometry.location)
+      calculateDrivingDistance(place.geometry.location.lat(), place.geometry.location.lng())
+      onAddressChange(place.formatted_address || place.name)
+    })
+
+    mapInstance.current = map
+    markerInstance.current = marker
+  }, [mapLoaded, shopLocation])
+
+  const handleUseMyLocation = () => {
+    setLocError('')
+    if (!navigator.geolocation) return setLocError('Tu navegador no soporta geolocalización.')
+    setIsLocating(true)
+    navigator.geolocation.getCurrentPosition(
+      pos => {
+        const { latitude: lat, longitude: lng } = pos.coords
+        if (mapInstance.current && markerInstance.current) {
+          const newLatLng = new window.google.maps.LatLng(lat, lng)
+          markerInstance.current.setPosition(newLatLng)
+          mapInstance.current.setCenter(newLatLng)
+          mapInstance.current.setZoom(15)
+          calculateDrivingDistance(lat, lng)
+          new window.google.maps.Geocoder().geocode({ location: { lat, lng } }, (results, status) => {
+            if (status === 'OK' && results[0]) onAddressChange(results[0].formatted_address)
+            else onAddressChange('Ubicación actual en el mapa')
+          })
+        }
+        setIsLocating(false)
+      },
+      () => {
+        setLocError('Permiso de ubicación denegado o bloqueado.')
+        setIsLocating(false)
+      },
+      { enableHighAccuracy: true }
+    )
+  }
+
+  return (
+    <div className="mt-4 flex flex-col gap-2 relative">
+      {locError && (
+        <div className="text-xs text-red-600 bg-red-50 border border-red-200 p-2 rounded-lg">{locError}</div>
+      )}
+      <div className="flex gap-2">
+        <div className="relative flex-1">
+          <input
+            ref={inputRef}
+            type="text"
+            placeholder="Ingresá tu dirección..."
+            value={address || ''}
+            onChange={e => onAddressChange(e.target.value)}
+            className={`w-full bg-white rounded-lg pl-10 pr-4 py-3 text-sm z-20 relative transition-all ${
+              isInvalid
+                ? 'border border-red-500 bg-red-50 ring-1 ring-red-500 placeholder-red-400'
+                : 'border border-gray-300 focus:ring-2 focus:ring-red-500'
+            }`}
+          />
+          <Search
+            size={18}
+            className={`absolute left-3 top-3.5 z-30 transition-colors ${isInvalid ? 'text-red-400' : 'text-gray-400'}`}
+          />
+        </div>
+        <button
+          onClick={handleUseMyLocation}
+          disabled={isLocating}
+          className="bg-blue-50 text-blue-600 p-3 rounded-lg border border-blue-100 hover:bg-blue-100 flex-shrink-0"
+          title="Usar mi ubicación actual"
+        >
+          <MapPin size={22} className={isLocating ? 'animate-pulse' : ''} />
+        </button>
+      </div>
+      <p className="text-xs text-gray-500 mb-1">Puedes arrastrar el pin rojo para más exactitud.</p>
+      <div ref={mapRef} className="w-full h-48 rounded-lg border border-gray-200 bg-gray-100 relative z-0">
+        {!mapLoaded && (
+          <div className="absolute inset-0 flex items-center justify-center text-gray-400 text-sm">
+            Cargando Google Maps...
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
+// ==========================================
+// ÁREA ADMINISTRADOR
+// ==========================================
+function AdminApp({ db, setDb, switchMode }) {
+  const [isAuthenticated, setIsAuthenticated] = useState(false)
+  const [adminRoute, setAdminRoute] = useState('dashboard')
+
+  if (!isAuthenticated)
+    return <AdminLogin db={db} setDb={setDb} onLogin={() => setIsAuthenticated(true)} switchMode={switchMode} />
+
+  const renderView = () => {
+    switch (adminRoute) {
+      case 'dashboard':
+        return <AdminDashboard db={db} setRoute={setAdminRoute} />
+      case 'pedidos':
+        return <AdminPedidos db={db} setDb={setDb} />
+      case 'catalogo':
+        return <AdminCatalogo db={db} setDb={setDb} />
+      case 'categorias':
+        return <AdminCategorias db={db} setDb={setDb} />
+      case 'horarios':
+        return <AdminHorarios db={db} setDb={setDb} />
+      case 'envios':
+        return <AdminEnvios db={db} setDb={setDb} />
+      case 'seguridad':
+        return <AdminSeguridad db={db} setDb={setDb} />
+      default:
+        return <AdminDashboard db={db} setRoute={setAdminRoute} />
+    }
+  }
+
+  return (
+    <div className="flex flex-col h-full bg-gray-50">
+      {/* Header Admin */}
+      <div className="bg-gray-900 text-white p-4 flex justify-between items-center shadow-md shrink-0">
+        <h1 className="font-bold tracking-wide text-sm flex items-center gap-2">
+          <Settings size={16} className="text-[#fbb03b]" /> ADMINISTRACIÓN
+        </h1>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => setAdminRoute('seguridad')}
+            className="text-gray-400 hover:text-white"
+            title="Seguridad"
+          >
+            <User size={16} />
+          </button>
+          <button
+            onClick={() => {
+              setIsAuthenticated(false)
+              switchMode()
+            }}
+            className="text-gray-400 hover:text-white flex items-center gap-1 text-xs"
+          >
+            <LogOut size={14} /> Salir
+          </button>
+        </div>
+      </div>
+
+      <div className="flex-1 overflow-y-auto p-4 hide-scrollbar">{renderView()}</div>
+
+      {/* Nav Admin */}
+      <div className="bg-white border-t border-gray-200 flex justify-around p-2 pb-6 shrink-0 text-xs shadow-[0_-4px_10px_rgba(0,0,0,0.05)]">
+        <NavBtn
+          icon={<LayoutDashboard />}
+          label="Panel"
+          active={adminRoute === 'dashboard'}
+          onClick={() => setAdminRoute('dashboard')}
+        />
+        <NavBtn
+          icon={<ListOrdered />}
+          label="Pedidos"
+          active={adminRoute === 'pedidos'}
+          onClick={() => setAdminRoute('pedidos')}
+        />
+        <NavBtn
+          icon={<MenuSquare />}
+          label="Catálogo"
+          active={adminRoute === 'catalogo'}
+          onClick={() => setAdminRoute('catalogo')}
+        />
+        <NavBtn
+          icon={<Truck />}
+          label="Envíos"
+          active={adminRoute === 'envios'}
+          onClick={() => setAdminRoute('envios')}
+        />
+      </div>
+    </div>
+  )
+}
+
+function NavBtn({ icon, label, active, onClick }) {
+  return (
+    <button
+      onClick={onClick}
+      className={`flex flex-col items-center gap-1 p-2 w-16 transition-colors ${
+        active ? 'text-[#c82a2a]' : 'text-gray-500 hover:text-gray-800'
+      }`}
+    >
+      {React.cloneElement(icon, { size: 20 })}
+      <span className="font-medium" style={{ fontSize: '0.65rem' }}>
+        {label}
+      </span>
+    </button>
+  )
+}
+
+function AdminLogin({ db, setDb, onLogin, switchMode }) {
+  const [email, setEmail] = useState(db.adminAuth?.email || '')
+  const [pass, setPass] = useState('')
+  const [recoveryWord, setRecoveryWord] = useState('')
+  const [errorMsg, setErrorMsg] = useState('')
+  const [successMsg, setSuccessMsg] = useState('')
+  const [isRecovering, setIsRecovering] = useState(false)
+
+  const isConfigured = db.adminAuth?.isConfigured
+
+  const handleSetup = async e => {
+    e.preventDefault()
+    setErrorMsg('')
+    if (pass.length < 6) return setErrorMsg('La contraseña debe tener al menos 6 caracteres.')
+    if (recoveryWord.trim().length < 3) return setErrorMsg('Elige una palabra secreta de al menos 3 letras.')
+
+    const hashedPass = await hashPassword(pass)
+    const hashedRecovery = await hashPassword(recoveryWord.toLowerCase().trim())
+
+    setDb(prev => ({
+      ...prev,
+      adminAuth: { email: email, passHash: hashedPass, recoveryHash: hashedRecovery, isConfigured: true },
+    }))
+    onLogin()
+  }
+
+  const handleLogin = async e => {
+    e.preventDefault()
+    setErrorMsg('')
+    const hashed = await hashPassword(pass)
+    if (email.trim() === db.adminAuth.email && hashed === db.adminAuth.passHash) onLogin()
+    else setErrorMsg('Credenciales incorrectas.')
+  }
+
+  const handleRecover = async e => {
+    e.preventDefault()
+    setErrorMsg('')
+    setSuccessMsg('')
+    if (pass.length < 6) return setErrorMsg('La nueva contraseña debe tener al menos 6 caracteres.')
+
+    const hashedInputRecovery = await hashPassword(recoveryWord.toLowerCase().trim())
+    if (email.trim() === db.adminAuth.email && hashedInputRecovery === db.adminAuth.recoveryHash) {
+      const newHashedPass = await hashPassword(pass)
+      setDb(prev => ({ ...prev, adminAuth: { ...prev.adminAuth, passHash: newHashedPass } }))
+      setSuccessMsg('¡Contraseña restablecida con éxito!')
+      setIsRecovering(false)
+      setPass('')
+      setRecoveryWord('')
+    } else {
+      setErrorMsg('El email o la palabra secreta son incorrectos.')
+    }
+  }
+
+  if (isRecovering) {
+    return (
+      <div className="flex flex-col h-full bg-gray-900 items-center justify-center p-6 text-white relative">
+        <button
+          onClick={() => {
+            setIsRecovering(false)
+            setErrorMsg('')
+          }}
+          className="absolute top-6 left-6 text-gray-400 flex items-center gap-2 text-sm"
+        >
+          <ChevronLeft size={16} /> Volver
+        </button>
+        <div className="w-full max-w-sm">
+          <div className="text-center mb-8">
+            <div className="bg-[#fbb03b] w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg">
+              <KeyRound size={32} className="text-gray-900" />
+            </div>
+            <h1 className="text-2xl font-bold">Recuperar Acceso</h1>
+          </div>
+          {errorMsg && (
+            <div className="mb-4 p-3 bg-red-500/20 border border-red-500/50 rounded-lg text-red-200 text-sm text-center font-medium animate-fadeIn">
+              {errorMsg}
+            </div>
+          )}
+          <form onSubmit={handleRecover} className="space-y-4">
+            <input
+              type="email"
+              placeholder="Email del local"
+              value={email}
+              onChange={e => setEmail(e.target.value)}
+              required
+              className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-3 text-white outline-none focus:border-[#fbb03b]"
+            />
+            <input
+              type="text"
+              placeholder="Palabra secreta"
+              value={recoveryWord}
+              onChange={e => setRecoveryWord(e.target.value)}
+              required
+              className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-3 text-white outline-none focus:border-[#fbb03b]"
+            />
+            <input
+              type="password"
+              placeholder="Nueva contraseña"
+              value={pass}
+              onChange={e => setPass(e.target.value)}
+              required
+              className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-3 text-white outline-none focus:border-[#fbb03b]"
+            />
+            <button
+              type="submit"
+              className="w-full bg-[#fbb03b] text-gray-900 font-bold py-3 rounded-lg hover:bg-yellow-500 shadow-lg"
+            >
+              Restablecer Contraseña
+            </button>
+          </form>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="flex flex-col h-full bg-gray-900 items-center justify-center p-6 text-white relative">
+      <button onClick={switchMode} className="absolute top-6 left-6 text-gray-400 flex items-center gap-2 text-sm">
+        <ChevronLeft size={16} /> Volver al local
+      </button>
+      <div className="w-full max-w-sm">
+        <div className="text-center mb-8">
+          <div className="bg-[#cc292b] w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg shadow-red-900/50">
+            <Settings size={32} className="text-white" />
+          </div>
+          <h1 className="text-2xl font-bold">{isConfigured ? 'Acceso Restringido' : 'Configuración Inicial'}</h1>
+          {!isConfigured && (
+            <p className="text-sm text-gray-400 mt-2">
+              Crea tu contraseña y palabra secreta de recuperación (todo será encriptado).
+            </p>
+          )}
+        </div>
+        {errorMsg && (
+          <div className="mb-4 p-3 bg-red-500/20 border border-red-500/50 rounded-lg text-red-200 text-sm text-center font-medium animate-fadeIn">
+            {errorMsg}
+          </div>
+        )}
+        {successMsg && (
+          <div className="mb-4 p-3 bg-green-500/20 border border-green-500/50 rounded-lg text-green-200 text-sm text-center font-medium animate-fadeIn">
+            {successMsg}
+          </div>
+        )}
+        <form onSubmit={isConfigured ? handleLogin : handleSetup} className="space-y-4">
+          <input
+            type="email"
+            placeholder="Email del local"
+            value={email}
+            onChange={e => setEmail(e.target.value)}
+            required
+            className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-3 text-white outline-none focus:border-[#fbb03b]"
+          />
+          <input
+            type="password"
+            placeholder={isConfigured ? 'Contraseña' : 'Crea una contraseña (mín 6 letras)'}
+            value={pass}
+            onChange={e => setPass(e.target.value)}
+            required
+            className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-3 text-white outline-none focus:border-[#fbb03b]"
+          />
+          {!isConfigured && (
+            <div className="pt-2 border-t border-gray-700">
+              <label className="text-xs text-gray-400 font-bold mb-1 block">
+                Palabra secreta (Ej: nombre de tu primera mascota)
+              </label>
+              <input
+                type="text"
+                placeholder="Palabra de recuperación"
+                value={recoveryWord}
+                onChange={e => setRecoveryWord(e.target.value)}
+                required
+                className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-3 text-white outline-none focus:border-[#fbb03b]"
+              />
+            </div>
+          )}
+          <button
+            type="submit"
+            className="w-full bg-[#cc292b] text-white font-bold py-3 rounded-lg hover:bg-red-800 shadow-lg mt-2"
+          >
+            {isConfigured ? 'Ingresar' : 'Guardar y Entrar'}
+          </button>
+        </form>
+        {isConfigured && (
+          <div className="mt-6 text-center">
+            <button
+              onClick={() => {
+                setIsRecovering(true)
+                setErrorMsg('')
+                setSuccessMsg('')
+                setPass('')
+              }}
+              className="text-gray-400 hover:text-white text-sm font-medium transition-colors"
+            >
+              ¿Olvidaste tu contraseña?
+            </button>
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
+function AdminSeguridad({ db, setDb }) {
+  const [email, setEmail] = useState(db.adminAuth.email)
+  const [newPass, setNewPass] = useState('')
+  const [newRecovery, setNewRecovery] = useState('')
+  const [saved, setSaved] = useState(false)
+  const [errorMsg, setErrorMsg] = useState('')
+
+  const handleSave = async () => {
+    setErrorMsg('')
+    let authUpdate = { ...db.adminAuth, email }
+    if (newPass.trim()) {
+      if (newPass.length < 6) return setErrorMsg('La nueva contraseña debe tener al menos 6 caracteres.')
+      authUpdate.passHash = await hashPassword(newPass)
+    }
+    if (newRecovery.trim()) {
+      if (newRecovery.trim().length < 3) return setErrorMsg('La nueva palabra secreta debe tener al menos 3 letras.')
+      authUpdate.recoveryHash = await hashPassword(newRecovery.toLowerCase().trim())
+    }
+    setDb(prev => ({ ...prev, adminAuth: authUpdate }))
+    setSaved(true)
+    setTimeout(() => setSaved(false), 3000)
+    setNewPass('')
+    setNewRecovery('')
+  }
+
+  return (
+    <div className="space-y-4 animate-fadeIn pb-10">
+      <h2 className="text-xl font-bold text-gray-800 flex items-center gap-2">
+        <User size={24} /> Seguridad
+      </h2>
+      <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-200 space-y-4">
+        <p className="text-sm text-gray-500 mb-4">
+          Tus datos están encriptados. Deja en blanco los campos que no desees cambiar.
+        </p>
+        {errorMsg && <div className="p-2 bg-red-50 text-red-600 text-xs font-bold rounded">{errorMsg}</div>}
+        <div>
+          <label className="text-sm font-bold text-gray-700 block mb-1">Email de acceso</label>
+          <input
+            type="email"
+            value={email}
+            onChange={e => setEmail(e.target.value)}
+            className="w-full border rounded p-2 text-sm outline-none focus:border-blue-500"
+          />
+        </div>
+        <div className="pt-2 border-t">
+          <label className="text-sm font-bold text-gray-700 block mb-1">Nueva Contraseña (opcional)</label>
+          <input
+            type="password"
+            placeholder="Escribe para cambiarla..."
+            value={newPass}
+            onChange={e => setNewPass(e.target.value)}
+            className="w-full border rounded p-2 text-sm outline-none focus:border-blue-500"
+          />
+        </div>
+        <div className="pt-2 border-t">
+          <label className="text-sm font-bold text-gray-700 block mb-1">Nueva Palabra Secreta (opcional)</label>
+          <input
+            type="text"
+            placeholder="Escribe para cambiarla..."
+            value={newRecovery}
+            onChange={e => setNewRecovery(e.target.value)}
+            className="w-full border rounded p-2 text-sm outline-none focus:border-blue-500"
+          />
+        </div>
+        <button
+          onClick={handleSave}
+          className="w-full bg-blue-600 text-white font-bold py-3 rounded-lg hover:bg-blue-700 flex justify-center gap-2 mt-4"
+        >
+          {saved ? (
+            <>
+              <CheckCircle size={18} /> Guardado
+            </>
+          ) : (
+            'Guardar Cambios'
+          )}
+        </button>
+      </div>
+    </div>
+  )
+}
+
+function AdminDashboard({ db, setRoute }) {
+  const today = new Date().toISOString().split('T')[0]
+  const todaysOrders = db.orders.filter(o => o.date.startsWith(today))
+  const totalSales = todaysOrders.reduce((acc, o) => acc + (o.status !== 'Cancelado' ? o.total : 0), 0)
+
+  return (
+    <div className="space-y-4 animate-fadeIn">
+      <h2 className="text-xl font-bold text-gray-800">Resumen de Hoy</h2>
+      <div className="grid grid-cols-2 gap-4">
+        <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
+          <p className="text-xs text-gray-500 font-bold uppercase">Ventas Hoy</p>
+          <p className="text-2xl font-black text-gray-900 mt-1">{formatCurrency(totalSales)}</p>
+        </div>
+        <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
+          <p className="text-xs text-gray-500 font-bold uppercase">Pedidos Hoy</p>
+          <p className="text-2xl font-black text-blue-600 mt-1">{todaysOrders.length}</p>
+        </div>
+      </div>
+      <div className="mt-6">
+        <h3 className="font-bold text-gray-700 mb-3">Accesos Rápidos</h3>
+        <div className="grid grid-cols-2 gap-3">
+          <button
+            onClick={() => setRoute('horarios')}
+            className="bg-orange-50 text-orange-700 p-3 rounded-lg text-sm font-bold border border-orange-100 flex flex-col gap-2"
+          >
+            <Clock size={20} /> Editar Horarios
+          </button>
+          <button
+            onClick={() => setRoute('categorias')}
+            className="bg-purple-50 text-purple-700 p-3 rounded-lg text-sm font-bold border border-purple-100 flex flex-col gap-2"
+          >
+            <MenuSquare size={20} /> Categorías
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function AdminPedidos({ db, setDb }) {
+  const updateStatus = (id, newStatus) =>
+    setDb(prev => ({ ...prev, orders: prev.orders.map(o => (o.id === id ? { ...o, status: newStatus } : o)) }))
+  const statusColors = {
+    Recibido: 'bg-yellow-100 text-yellow-800',
+    Entregado: 'bg-green-100 text-green-800',
+    Cancelado: 'bg-red-100 text-red-800',
+  }
+
+  return (
+    <div className="space-y-4 animate-fadeIn">
+      <h2 className="text-xl font-bold text-gray-800">Gestión de Pedidos</h2>
+      {db.orders.length === 0 ? (
+        <p className="text-gray-500 text-center py-10">No hay pedidos registrados.</p>
+      ) : (
+        <div className="space-y-4">
+          {db.orders.map(order => (
+            <div key={order.id} className="bg-white p-4 rounded-xl shadow-sm border border-gray-200">
+              <div className="flex justify-between items-start mb-2">
+                <div>
+                  <span className="text-xs font-mono bg-gray-100 text-gray-600 px-2 py-1 rounded">#{order.id}</span>
+                  <p className="font-bold text-gray-800 mt-1">{order.customer.name}</p>
+                  <p className="text-xs text-gray-500">{new Date(order.date).toLocaleString('es-AR')}</p>
+                </div>
+                <select
+                  value={order.status}
+                  onChange={e => updateStatus(order.id, e.target.value)}
+                  className={`text-xs font-bold px-2 py-1 rounded-full outline-none cursor-pointer ${
+                    statusColors[order.status]
+                  }`}
+                >
+                  <option value="Recibido">Recibido</option>
+                  <option value="Entregado">Entregado</option>
+                  <option value="Cancelado">Cancelado</option>
+                </select>
+              </div>
+              <div className="text-sm bg-gray-50 p-2 rounded mb-2">
+                <p>
+                  <strong>Tel:</strong> {order.customer.phone}
+                </p>
+                <p>
+                  <strong>Tipo:</strong> {order.type.toUpperCase()}
+                </p>
+                {order.type === 'delivery' && (
+                  <p>
+                    <strong>Dir:</strong> {order.customer.address}{' '}
+                    <span className="text-xs text-gray-500">({order.distance.toFixed(1)} km)</span>
+                  </p>
+                )}
+              </div>
+              <div className="text-xs space-y-1 mb-2">
+                {order.items.map((i, idx) => (
+                  <div key={idx} className="flex justify-between text-gray-600">
+                    <span>
+                      {i.quantity}x {i.product.name}
+                    </span>
+                    <span>{formatCurrency(i.product.price * i.quantity)}</span>
+                  </div>
+                ))}
+              </div>
+              <div className="flex justify-between items-center pt-2 border-t border-gray-100">
+                <span className="text-sm font-bold text-gray-500">Total:</span>
+                <span className="font-black text-gray-900">{formatCurrency(order.total)}</span>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
+function AdminCatalogo({ db, setDb }) {
+  const [editingId, setEditingId] = useState(null)
+  const [formData, setFormData] = useState(null)
+  const [isGeneratingDesc, setIsGeneratingDesc] = useState(false)
+
+  const startEdit = prod => {
+    setFormData(
+      prod
+        ? { ...prod }
+        : {
+            id: Date.now(),
+            name: '',
+            description: '',
+            price: 0,
+            categoryId: db.categories[0]?.id || 1,
+            image: '',
+            featured: false,
+            active: true,
+          }
+    )
+    setEditingId(prod ? prod.id : 'new')
+  }
+
+  const saveProduct = () => {
+    setDb(prev => ({
+      ...prev,
+      products:
+        editingId === 'new'
+          ? [...prev.products, formData]
+          : prev.products.map(p => (p.id === formData.id ? formData : p)),
+    }))
+    setEditingId(null)
+  }
+
+  const deleteProduct = id => {
+    if (window.confirm('¿Eliminar producto?'))
+      setDb(prev => ({ ...prev, products: prev.products.filter(p => p.id !== id) }))
+  }
+
+  const toggleActive = id =>
+    setDb(prev => ({ ...prev, products: prev.products.map(p => (p.id === id ? { ...p, active: !p.active } : p)) }))
+
+  const generateAIAssistantDescription = async () => {
+    if (!formData.name) return alert('Por favor, ingresa el nombre del producto primero.')
+    setIsGeneratingDesc(true)
+    const response = await callGemini(
+      `Escribe una descripción comercial y apetitosa (max 2 líneas) para un plato llamado: "${formData.name}". Destaca su calidad casera.`,
+      'Eres un copywriter gastronómico.'
+    )
+    setFormData(prev => ({ ...prev, description: response.replace(/"/g, '') }))
+    setIsGeneratingDesc(false)
+  }
+
+  if (editingId) {
+    return (
+      <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-200 animate-fadeIn">
+        <h3 className="font-bold text-lg mb-4">{editingId === 'new' ? 'Nuevo Producto' : 'Editar Producto'}</h3>
+        <div className="space-y-3">
+          <input
+            className="w-full border rounded p-2 text-sm outline-none focus:ring-2 focus:ring-purple-500"
+            placeholder="Nombre"
+            value={formData.name}
+            onChange={e => setFormData({ ...formData, name: e.target.value })}
+          />
+          <div className="border rounded p-2 focus-within:ring-2 focus-within:ring-purple-500 bg-white transition-all">
+            <div className="flex justify-between items-center mb-1 pb-1 border-b border-gray-100">
+              <span className="text-[10px] font-black text-gray-400 uppercase">Descripción</span>
+              <button
+                onClick={e => {
+                  e.preventDefault()
+                  generateAIAssistantDescription()
+                }}
+                disabled={isGeneratingDesc}
+                className="text-xs bg-purple-50 text-purple-700 px-2 py-1 rounded-md font-bold flex items-center gap-1"
+              >
+                <Sparkles size={12} /> {isGeneratingDesc ? 'Generando...' : 'IA'}
+              </button>
+            </div>
+            <textarea
+              className="w-full text-sm outline-none resize-none h-16 pt-1 text-gray-700"
+              placeholder="Escribe o genera descripción..."
+              value={formData.description}
+              onChange={e => setFormData({ ...formData, description: e.target.value })}
+            />
+          </div>
+          <div className="flex gap-2">
+            <input
+              type="number"
+              className="w-1/2 border rounded p-2 text-sm outline-none"
+              placeholder="Precio"
+              value={formData.price}
+              onChange={e => setFormData({ ...formData, price: Number(e.target.value) })}
+            />
+            <select
+              className="w-1/2 border rounded p-2 text-sm outline-none"
+              value={formData.categoryId}
+              onChange={e => setFormData({ ...formData, categoryId: Number(e.target.value) })}
+            >
+              {db.categories.map(c => (
+                <option key={c.id} value={c.id}>
+                  {c.name}
+                </option>
+              ))}
+            </select>
+          </div>
+          <input
+            className="w-full border rounded p-2 text-sm outline-none"
+            placeholder="URL Imagen"
+            value={formData.image}
+            onChange={e => setFormData({ ...formData, image: e.target.value })}
+          />
+          <div className="flex gap-4 py-2">
+            <label className="flex items-center gap-1 text-sm">
+              <input
+                type="checkbox"
+                checked={formData.featured}
+                onChange={e => setFormData({ ...formData, featured: e.target.checked })}
+              />{' '}
+              Destacado
+            </label>
+            <label className="flex items-center gap-1 text-sm">
+              <input
+                type="checkbox"
+                checked={formData.active}
+                onChange={e => setFormData({ ...formData, active: e.target.checked })}
+              />{' '}
+              Activo
+            </label>
+          </div>
+          <div className="flex gap-2 pt-2">
+            <button onClick={saveProduct} className="flex-1 bg-green-500 text-white py-2 rounded font-bold">
+              Guardar
+            </button>
+            <button onClick={() => setEditingId(null)} className="flex-1 bg-gray-200 py-2 rounded font-bold">
+              Cancelar
+            </button>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="space-y-4 animate-fadeIn">
+      <div className="flex justify-between items-center">
+        <h2 className="text-xl font-bold text-gray-800">Catálogo</h2>
+        <button
+          onClick={() => startEdit()}
+          className="bg-red-600 text-white px-3 py-1 rounded-lg text-sm font-bold flex gap-1"
+        >
+          <Plus size={16} /> Crear
+        </button>
+      </div>
+      <div className="space-y-3">
+        {db.products.map(p => (
+          <div
+            key={p.id}
+            className={`flex gap-3 bg-white p-3 rounded-xl border border-gray-100 shadow-sm ${
+              !p.active ? 'opacity-50 grayscale' : ''
+            }`}
+          >
+            <img src={p.image} className="w-16 h-16 object-cover rounded" alt="" />
+            <div className="flex-1">
+              <h4 className="font-bold text-sm leading-tight">{p.name}</h4>
+              <p className="text-xs text-gray-500">{db.categories.find(c => c.id === p.categoryId)?.name}</p>
+              <p className="font-bold text-red-600 text-sm mt-1">{formatCurrency(p.price)}</p>
+            </div>
+            <div className="flex flex-col gap-2 justify-center items-end">
+              <div className="flex gap-2">
+                <button
+                  onClick={() => toggleActive(p.id)}
+                  className={`p-1.5 rounded flex items-center gap-1 text-xs font-bold ${
+                    p.active ? 'text-green-700 bg-green-100' : 'text-gray-500 bg-gray-100'
+                  }`}
+                >
+                  {p.active ? <CheckCircle size={14} /> : <Minus size={14} />} {p.active ? 'ON' : 'OFF'}
+                </button>
+                <button onClick={() => startEdit(p)} className="text-blue-500 bg-blue-50 p-1.5 rounded">
+                  <Settings size={16} />
+                </button>
+                <button onClick={() => deleteProduct(p.id)} className="text-red-500 bg-red-50 p-1.5 rounded">
+                  <Trash2 size={16} />
+                </button>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+function AdminCategorias({ db, setDb }) {
+  const [newCatName, setNewCatName] = useState('')
+
+  const handleAdd = () => {
+    if (!newCatName.trim()) return
+    const newOrder = db.categories.length > 0 ? Math.max(...db.categories.map(c => c.order)) + 1 : 1
+    setDb(prev => ({
+      ...prev,
+      categories: [...prev.categories, { id: Date.now(), name: newCatName.trim(), order: newOrder }],
+    }))
+    setNewCatName('')
+  }
+
+  const handleEditName = (id, newName) =>
+    setDb(prev => ({ ...prev, categories: prev.categories.map(c => (c.id === id ? { ...c, name: newName } : c)) }))
+
+  const handleDelete = id => {
+    if (db.products.some(p => p.categoryId === id)) return alert('Hay productos en esta categoría.')
+    if (window.confirm('¿Eliminar categoría?'))
+      setDb(prev => ({ ...prev, categories: prev.categories.filter(c => c.id !== id) }))
+  }
+
+  const moveCat = (index, direction) => {
+    setDb(prev => {
+      const sorted = [...prev.categories].sort((a, b) => a.order - b.order)
+      if (direction === -1 && index > 0)
+        [sorted[index].order, sorted[index - 1].order] = [sorted[index - 1].order, sorted[index].order]
+      else if (direction === 1 && index < sorted.length - 1)
+        [sorted[index].order, sorted[index + 1].order] = [sorted[index + 1].order, sorted[index].order]
+      return { ...prev, categories: sorted }
+    })
+  }
+
+  return (
+    <div className="space-y-4 animate-fadeIn pb-6">
+      <h2 className="text-xl font-bold text-gray-800">Categorías</h2>
+      <div className="flex gap-2 bg-white p-3 rounded-xl border border-gray-200">
+        <input
+          type="text"
+          placeholder="Nueva categoría..."
+          value={newCatName}
+          onChange={e => setNewCatName(e.target.value)}
+          className="flex-1 border rounded px-3 py-2 text-sm outline-none"
+        />
+        <button onClick={handleAdd} className="bg-purple-600 text-white px-4 py-2 rounded font-bold">
+          <Plus size={16} />
+        </button>
+      </div>
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 flex flex-col">
+        {db.categories
+          .sort((a, b) => a.order - b.order)
+          .map((cat, index) => (
+            <div key={cat.id} className="p-3 border-b flex justify-between items-center">
+              <div className="flex items-center gap-3 flex-1">
+                <div className="flex flex-col">
+                  <button onClick={() => moveCat(index, -1)} disabled={index === 0}>
+                    <ArrowUp size={16} />
+                  </button>
+                  <button onClick={() => moveCat(index, 1)} disabled={index === db.categories.length - 1}>
+                    <ArrowDown size={16} />
+                  </button>
+                </div>
+                <input
+                  type="text"
+                  value={cat.name}
+                  onChange={e => handleEditName(cat.id, e.target.value)}
+                  className="font-bold text-gray-700 bg-transparent w-full outline-none"
+                />
+              </div>
+              <div className="flex items-center gap-3 shrink-0">
+                <span className="text-[10px] bg-gray-100 text-gray-500 px-2 py-1 rounded-full">
+                  {db.products.filter(p => p.categoryId === cat.id).length} prods
+                </span>
+                <button
+                  onClick={() => handleDelete(cat.id)}
+                  className="text-red-400 hover:text-red-600 p-1 bg-red-50 rounded"
+                >
+                  <Trash2 size={16} />
+                </button>
+              </div>
+            </div>
+          ))}
+      </div>
+    </div>
+  )
+}
+
+function AdminHorarios({ db, setDb }) {
+  const days = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado']
+  const [schedule, setSchedule] = useState(db.schedule)
+  const [saved, setSaved] = useState(false)
+
+  const handleSave = () => {
+    setDb(prev => ({ ...prev, schedule }))
+    setSaved(true)
+    setTimeout(() => setSaved(false), 3000)
+  }
+
+  const addShift = dayIdx =>
+    setSchedule(prev => ({ ...prev, [dayIdx]: [...(prev[dayIdx] || []), { open: '09:00', close: '13:00' }] }))
+  const removeShift = (dayIdx, shiftIdx) =>
+    setSchedule(prev => ({ ...prev, [dayIdx]: prev[dayIdx].filter((_, i) => i !== shiftIdx) }))
+  const updateShift = (dayIdx, shiftIdx, field, value) =>
+    setSchedule(prev => {
+      const newShifts = [...prev[dayIdx]]
+      newShifts[shiftIdx] = { ...newShifts[shiftIdx], [field]: value }
+      return { ...prev, [dayIdx]: newShifts }
+    })
+
+  return (
+    <div className="space-y-4 animate-fadeIn">
+      <h2 className="text-xl font-bold text-gray-800">Horarios</h2>
+      <div className="space-y-3 pb-4">
+        {days.map((day, idx) => {
+          const shifts = schedule[idx] || []
+          return (
+            <div key={idx} className="bg-white p-3 rounded-xl border border-gray-100 flex flex-col gap-2">
+              <div className="flex justify-between items-center border-b pb-2">
+                <span className="font-bold text-sm text-gray-700">{day}</span>
+                <button
+                  onClick={() => addShift(idx)}
+                  className="text-xs text-blue-600 bg-blue-50 px-2 py-1 rounded font-bold flex gap-1"
+                >
+                  <Plus size={12} /> Turno
+                </button>
+              </div>
+              <div className="flex flex-col gap-2">
+                {shifts.length === 0 ? (
+                  <span className="text-xs text-red-500 font-bold bg-red-50 px-2 py-1 rounded self-start">CERRADO</span>
+                ) : (
+                  shifts.map((s, i) => (
+                    <div key={i} className="flex items-center gap-2 bg-gray-50 p-2 rounded">
+                      <input
+                        type="time"
+                        value={s.open}
+                        onChange={e => updateShift(idx, i, 'open', e.target.value)}
+                        className="border rounded p-1 text-sm bg-white"
+                      />
+                      <span className="text-gray-400">a</span>
+                      <input
+                        type="time"
+                        value={s.close}
+                        onChange={e => updateShift(idx, i, 'close', e.target.value)}
+                        className="border rounded p-1 text-sm bg-white"
+                      />
+                      <button onClick={() => removeShift(idx, i)} className="ml-auto text-red-500">
+                        <Trash2 size={16} />
+                      </button>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+          )
+        })}
+      </div>
+      <button
+        onClick={handleSave}
+        className="w-full bg-blue-600 text-white font-bold py-3 rounded-lg flex justify-center gap-2 mb-8"
+      >
+        {saved ? 'Guardado' : 'Guardar Horarios'}
+      </button>
+    </div>
+  )
+}
+
+function AdminEnvios({ db, setDb }) {
+  const [config, setConfig] = useState(db.shippingConfig)
+  const [saved, setSaved] = useState(false)
+
+  const handleSave = () => {
+    setDb(prev => ({ ...prev, shippingConfig: config }))
+    setSaved(true)
+    setTimeout(() => setSaved(false), 3000)
+  }
+
+  return (
+    <div className="space-y-4 animate-fadeIn">
+      <h2 className="text-xl font-bold text-gray-800 flex gap-2">
+        <Truck size={24} /> Envíos
+      </h2>
+      <div className="bg-white p-4 rounded-xl border border-gray-200 space-y-2">
+        <h3 className="font-bold text-gray-700 flex gap-2">
+          <MapPin size={18} className="text-red-500" /> Punto Cero (Local)
+        </h3>
+        <p className="text-xs text-gray-500">Arrastra el pin para establecer desde dónde se calcula el envío.</p>
+        <AdminLocationPicker
+          location={config.shopLocation}
+          onChange={newCoords => setConfig({ ...config, shopLocation: newCoords })}
+        />
+      </div>
+      <div className="bg-white p-4 rounded-xl border border-gray-200 space-y-4">
+        {[
+          { label: '0 a 3 km', key: 'tier1' },
+          { label: '3 a 4 km', key: 'tier2' },
+          { label: '4 a 5 km', key: 'tier3' },
+          { label: 'Extra por Km (> 5km)', key: 'extra' },
+        ].map(tier => (
+          <div key={tier.key} className="flex justify-between items-center border-b pb-2">
+            <label className="text-sm font-bold text-gray-700 w-1/2">{tier.label}</label>
+            <div className="flex items-center gap-1">
+              <span className="text-gray-500">$</span>
+              <input
+                type="number"
+                value={config[tier.key]}
+                onChange={e => setConfig({ ...config, [tier.key]: Number(e.target.value) })}
+                className="border rounded p-1 w-20 text-right font-bold outline-none"
+              />
+            </div>
+          </div>
+        ))}
+        <button
+          onClick={handleSave}
+          className="w-full bg-blue-600 text-white font-bold py-3 rounded-lg flex justify-center gap-2"
+        >
+          {saved ? 'Guardado' : 'Guardar'}
+        </button>
+      </div>
+    </div>
+  )
+}
+
+function AdminLocationPicker({ location, onChange }) {
+  const mapRef = useRef(null)
+  const mapInstance = useRef(null)
+  const markerInstance = useRef(null)
+  const [mapLoaded, setMapLoaded] = useState(false)
+
+  useEffect(() => {
+    loadGoogleMaps(() => setMapLoaded(true))
+  }, [])
+
+  useEffect(() => {
+    if (!mapLoaded || !mapRef.current) return
+    if (mapInstance.current) return
+
+    const google = window.google
+    const map = new google.maps.Map(mapRef.current, {
+      center: location,
+      zoom: 15,
+      disableDefaultUI: true,
+      zoomControl: true,
+    })
+
+    const marker = new google.maps.Marker({
+      position: location,
+      map: map,
+      draggable: true,
+    })
+
+    marker.addListener('dragend', () => {
+      const pos = marker.getPosition()
+      onChange({ lat: pos.lat(), lng: pos.lng() })
+    })
+
+    mapInstance.current = map
+    markerInstance.current = marker
+    setTimeout(() => map.invalidateSize(), 200)
+  }, [mapLoaded, location])
+
+  return (
+    <div className="mt-2">
+      <div ref={mapRef} className="w-full h-48 rounded-lg border bg-gray-100 relative z-0">
+        {!mapLoaded && (
+          <div className="absolute inset-0 flex items-center justify-center text-gray-400 text-sm">
+            Cargando Maps...
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}

@@ -135,7 +135,7 @@ const INITIAL_ADMIN_AUTH = { email: 'albuenraviolmaipu@gmail.com', passHash: '',
 
 // --- CLAVES API ---
 const GOOGLE_MAPS_API_KEY = 'AIzaSyByRfYN7dVvBHGZgikBZcrmOY6lDgLgO6Y' // Reemplazar con clave real si es necesario
-const GEMINI_API_KEY = ''
+const GEMINI_API_KEY = 'AIzaSyC5lZdk8Z6l-7KB5cJDeqildP6nPjI899Y'
 
 // --- FIREBASE CONFIGURACIÓN ---
 let firebaseApp, auth, firestoreDb, appId

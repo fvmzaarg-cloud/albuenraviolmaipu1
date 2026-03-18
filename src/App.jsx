@@ -754,7 +754,8 @@ function ClientCart({ cart, updateQuantity, setRoute, cartTotal }) {
 }
 
 function ClientCheckout({ cart, cartTotal, db, setDb, setRoute, clearCart }) {
-  const [formData, setFormData] = useState({ name: '', phone: '', address: '' })
+  // 1. Agregamos 'notes' para guardar las aclaraciones
+  const [formData, setFormData] = useState({ name: '', phone: '', address: '', notes: '' })
   const [orderType, setOrderType] = useState('retiro')
   const [paymentMethod, setPaymentMethod] = useState('efectivo')
   const [cashAmount, setCashAmount] = useState('')
@@ -803,7 +804,6 @@ function ClientCheckout({ cart, cartTotal, db, setDb, setRoute, clearCart }) {
       subtotal: cartTotal,
       shippingCost,
       total: finalTotal,
-      distance: shippingDistance,
       status: 'Recibido',
     }
 
@@ -814,8 +814,14 @@ function ClientCheckout({ cart, cartTotal, db, setDb, setRoute, clearCart }) {
     }\n*Tipo:* ${orderType === 'retiro' ? '🏪 Retiro por local' : '🛵 Delivery'}\n`
     if (orderType === 'delivery') {
       text += `*Dirección:* ${formData.address}\n`
-      if (deliveryCoords) text += `*Mapa:* https://maps.google.com/?q=${deliveryCoords.lat},${deliveryCoords.lng}\n`
+      if (deliveryCoords) text += `*Mapa:* http://googleusercontent.com/maps.google.com/?q=${deliveryCoords.lat},${deliveryCoords.lng}\n`
     }
+    
+    // 2. Si el cliente escribió aclaraciones, las sumamos al WhatsApp
+    if (formData.notes.trim()) {
+      text += `*Aclaraciones:* ${formData.notes.trim()}\n`
+    }
+
     text += `\n*Detalle:*\n`
     cart.forEach(
       item =>
@@ -904,6 +910,14 @@ function ClientCheckout({ cart, cartTotal, db, setDb, setRoute, clearCart }) {
                   ? 'bg-red-50 border border-red-500 ring-1 ring-red-500'
                   : 'bg-gray-50 border border-gray-200 focus:ring-2 focus:ring-red-500'
               }`}
+            />
+            
+            {/* 3. ¡Acá está el cajón de aclaraciones! */}
+            <textarea
+              placeholder="Aclaraciones (Ej: Timbre 2, sin queso, etc.) - Opcional"
+              value={formData.notes}
+              onChange={e => setFormData({ ...formData, notes: e.target.value })}
+              className="w-full bg-gray-50 border border-gray-200 rounded-lg px-4 py-3 text-sm outline-none transition-all focus:ring-2 focus:ring-red-500 resize-none h-20"
             />
           </div>
         </div>

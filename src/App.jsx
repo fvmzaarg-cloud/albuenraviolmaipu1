@@ -71,7 +71,7 @@ const INITIAL_MANUAL_STATUS = { isClosed: false, message: '¡Estamos tomando ped
 
 // --- CLAVES API ---
 const GOOGLE_MAPS_API_KEY = 'AIzaSyByRfYN7dVvBHGZgikBZcrmOY6lDgLgO6Y' 
-const GEMINI_API_KEY = 'AIzaSyAdaDgZM2FYbA2bHBDhPYX_DTsGsMPC2Ew' // TU NUEVA CLAVE LISTA PARA USAR
+const GEMINI_API_KEY = '' // CORRECCIÓN: En este entorno interactivo se debe dejar vacío.
 
 // ==================================================
 // 🔥 CONFIGURACIÓN DE FIREBASE
@@ -137,8 +137,9 @@ const hashPassword = async password => {
 }
 
 const callGemini = async (prompt, systemInstruction = 'Eres un asistente útil.') => {
-  if (!GEMINI_API_KEY) return 'La IA requiere una API Key configurada.';
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`;
+  // CORRECCIÓN: Actualizado el modelo al soportado en este entorno interactivo
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${GEMINI_API_KEY}`;
+  
   const payload = {
     contents: [{ parts: [{ text: prompt }] }],
     systemInstruction: { parts: [{ text: systemInstruction }] },
@@ -1943,7 +1944,7 @@ function AdminCatalogo({ db, setDb }) {
 }
 
 function AdminCategorias({ db, setDb }) {
-  const [newCatName, setNewCatName] = useState('')
+  const [newCatName, useState] = React.useState('')
 
   const handleAdd = () => {
     if (!newCatName.trim()) return

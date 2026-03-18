@@ -138,7 +138,7 @@ const hashPassword = async password => {
 
 const callGemini = async (prompt, systemInstruction = 'Eres un asistente útil.') => {
   // CORRECCIÓN: Actualizado el modelo al soportado en este entorno interactivo
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`;
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`;
   const payload = {
     contents: [{ parts: [{ text: prompt }] }],
     systemInstruction: { parts: [{ text: systemInstruction }] },

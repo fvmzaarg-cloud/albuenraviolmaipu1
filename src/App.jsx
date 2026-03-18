@@ -71,7 +71,7 @@ const INITIAL_MANUAL_STATUS = { isClosed: false, message: '¡Estamos tomando ped
 
 // --- CLAVES API ---
 const GOOGLE_MAPS_API_KEY = 'AIzaSyByRfYN7dVvBHGZgikBZcrmOY6lDgLgO6Y' 
-const GEMINI_API_KEY = 'AIzaSyDSCpcoaGbMwKzbnFW1wvc5PJUUt2T3TQc'
+const GEMINI_API_KEY = 'AIzaSyDSCpcoaGbMwKzbnFW1wvc5PJUUt2T3TQc' // TU NUEVA CLAVE LISTA PARA USAR
 
 // ==================================================
 // 🔥 CONFIGURACIÓN DE FIREBASE
@@ -230,8 +230,8 @@ export default function App() {
     }
   }
 
-  // LA FUNCIÓN setDb HA SIDO RESTAURADA AQUÍ
-  const setDb = updater => {
+  // LA FUNCIÓN setDb BLINDADA PARA EVITAR ERRORES DE VITE
+  function updateDbState(updater) {
     setDbState(prev => {
       const newState = typeof updater === 'function' ? updater(prev) : updater
       if (firestoreDb && user) {
@@ -255,9 +255,9 @@ export default function App() {
     <div className="min-h-[100dvh] bg-gray-100 flex justify-center font-sans text-gray-800">
       <div className="w-full max-w-md bg-white shadow-2xl relative overflow-hidden flex flex-col h-[100dvh]">
         {appMode === 'client' ? (
-          <ClientApp db={dbState} setDb={setDb} switchMode={() => setAppMode('admin')} />
+          <ClientApp db={dbState} setDb={updateDbState} switchMode={() => setAppMode('admin')} />
         ) : (
-          <AdminApp db={dbState} setDb={setDb} switchMode={() => setAppMode('client')} />
+          <AdminApp db={dbState} setDb={updateDbState} switchMode={() => setAppMode('client')} />
         )}
       </div>
     </div>
@@ -324,16 +324,16 @@ function ClientApp({ db, setDb, switchMode }) {
       </div>
 
       <div className="bg-white border-t border-gray-200 flex justify-around p-2 pb-4 shrink-0 text-xs z-50 shadow-[0_-4px_10px_rgba(0,0,0,0.05)]">
-        <ClientNavBtn icon={<Store />} label="Menú" active={route === 'home'} onClick={() => setRoute('home')} />
+        <ClientNavBtn Icon={Store} label="Menú" active={route === 'home'} onClick={() => setRoute('home')} />
         <ClientNavBtn
-          icon={<ShoppingCart />}
+          Icon={ShoppingCart}
           label="Carrito"
           active={route === 'cart' || route === 'checkout'}
           onClick={() => setRoute('cart')}
           badge={cartItemsCount}
         />
         <ClientNavBtn
-          icon={<Sparkles />}
+          Icon={Sparkles}
           label="Chef IA"
           active={showAssistant}
           onClick={() => setShowAssistant(true)}
@@ -345,7 +345,7 @@ function ClientApp({ db, setDb, switchMode }) {
   )
 }
 
-function ClientNavBtn({ icon, label, active, onClick, badge }) {
+function ClientNavBtn({ Icon, label, active, onClick, badge }) {
   return (
     <button
       onClick={onClick}
@@ -353,7 +353,7 @@ function ClientNavBtn({ icon, label, active, onClick, badge }) {
         active ? 'text-[#c82a2a]' : 'text-gray-500 hover:text-gray-800'
       }`}
     >
-      {React.cloneElement(icon, { size: 22 })}
+      <Icon size={22} />
       <span className="font-medium" style={{ fontSize: '0.65rem' }}>
         {label}
       </span>
@@ -1249,25 +1249,25 @@ function AdminApp({ db, setDb, switchMode }) {
 
       <div className="bg-white border-t border-gray-200 flex justify-around p-2 pb-6 shrink-0 text-xs shadow-[0_-4px_10px_rgba(0,0,0,0.05)]">
         <NavBtn
-          icon={<LayoutDashboard />}
+          Icon={LayoutDashboard}
           label="Panel"
           active={adminRoute === 'dashboard'}
           onClick={() => setAdminRoute('dashboard')}
         />
         <NavBtn
-          icon={<ListOrdered />}
+          Icon={ListOrdered}
           label="Pedidos"
           active={adminRoute === 'pedidos'}
           onClick={() => setAdminRoute('pedidos')}
         />
         <NavBtn
-          icon={<MenuSquare />}
+          Icon={MenuSquare}
           label="Catálogo"
           active={adminRoute === 'catalogo'}
           onClick={() => setAdminRoute('catalogo')}
         />
         <NavBtn
-          icon={<Truck />}
+          Icon={Truck}
           label="Envíos"
           active={adminRoute === 'envios'}
           onClick={() => setAdminRoute('envios')}
@@ -1277,7 +1277,7 @@ function AdminApp({ db, setDb, switchMode }) {
   )
 }
 
-function NavBtn({ icon, label, active, onClick }) {
+function NavBtn({ Icon, label, active, onClick }) {
   return (
     <button
       onClick={onClick}
@@ -1285,7 +1285,7 @@ function NavBtn({ icon, label, active, onClick }) {
         active ? 'text-[#c82a2a]' : 'text-gray-500 hover:text-gray-800'
       }`}
     >
-      {React.cloneElement(icon, { size: 20 })}
+      <Icon size={20} />
       <span className="font-medium" style={{ fontSize: '0.65rem' }}>
         {label}
       </span>

@@ -32,11 +32,11 @@ import { getAuth, signInWithCustomToken, signInAnonymously, onAuthStateChanged }
 import { getFirestore, doc, setDoc, onSnapshot } from 'firebase/firestore'
 
 // --- CONFIGURACIÓN DEL LOCAL ---
-const SHOP_PHONE = '5492613426085' // Tu WhatsApp
+const SHOP_PHONE = '5492613426085'
 const SHOP_ADDRESS = 'Centro Comercial Plaza Michelo, Palma y Maza, Maipú, Mendoza'
 const SHOP_LOGO = 'https://i.postimg.cc/TYHsxqMV/Copia_de_Logo_al_buen_raviol_(2).png'
 
-// --- DATOS POR DEFECTO (Para la primera vez) ---
+// --- DATOS POR DEFECTO ---
 const INITIAL_CATEGORIES = [
   { id: 1, name: 'Ravioles', order: 1 },
   { id: 2, name: 'Sorrentinos', order: 2 },
@@ -86,16 +86,6 @@ const INITIAL_PRODUCTS = [
     active: true,
     image: 'https://images.unsplash.com/photo-1612874742237-6526221588e3?auto=format&fit=crop&q=80&w=400',
   },
-  {
-    id: 5,
-    name: 'Salsa Fileto',
-    description: 'Salsa de tomate casera con ajo y albahaca.',
-    price: 1800,
-    categoryId: 4,
-    featured: false,
-    active: true,
-    image: 'https://images.unsplash.com/photo-1604908176997-125f25cc6f3d?auto=format&fit=crop&q=80&w=400',
-  },
 ]
 
 const INITIAL_SHIPPING_CONFIG = {
@@ -107,35 +97,21 @@ const INITIAL_SHIPPING_CONFIG = {
 }
 
 const INITIAL_SCHEDULE = {
-  0: [], // Domingo
-  1: [
-    { open: '09:30', close: '13:30' },
-    { open: '17:30', close: '20:30' },
-  ], // Lunes
-  2: [
-    { open: '09:30', close: '13:30' },
-    { open: '17:30', close: '20:30' },
-  ], // Martes
-  3: [
-    { open: '09:30', close: '13:30' },
-    { open: '17:30', close: '20:30' },
-  ], // Miércoles
-  4: [
-    { open: '09:30', close: '13:30' },
-    { open: '17:30', close: '20:30' },
-  ], // Jueves
-  5: [
-    { open: '09:30', close: '13:30' },
-    { open: '17:30', close: '20:30' },
-  ], // Viernes
-  6: [{ open: '09:30', close: '14:00' }], // Sábado
+  0: [], 
+  1: [{ open: '09:30', close: '23:30' }], 
+  2: [{ open: '09:30', close: '23:30' }], 
+  3: [{ open: '09:30', close: '23:30' }], 
+  4: [{ open: '09:30', close: '23:30' }], 
+  5: [{ open: '09:30', close: '23:30' }], 
+  6: [{ open: '09:30', close: '23:30' }], 
 }
 
 const INITIAL_ADMIN_AUTH = { email: 'albuenraviolmaipu@gmail.com', passHash: '', recoveryHash: '', isConfigured: false }
+const INITIAL_MANUAL_STATUS = { isClosed: false, message: '¡Estamos tomando pedidos! 🔥' } 
 
 // --- CLAVES API ---
-const GOOGLE_MAPS_API_KEY = 'AIzaSyByRfYN7dVvBHGZgikBZcrmOY6lDgLgO6Y' // Reemplazar con clave real si es necesario
-const GEMINI_API_KEY = 'AIzaSyC5lZdk8Z6l-7KB5cJDeqildP6nPjI899Y'
+const GOOGLE_MAPS_API_KEY = 'AIzaSyByRfYN7dVvBHGZgikBZcrmOY6lDgLgO6Y' 
+const GEMINI_API_KEY = '' // VACÍO PARA QUE FUNCIONE EN LA VISTA PREVIA
 
 // --- FIREBASE CONFIGURACIÓN ---
 let firebaseApp, auth, firestoreDb, appId
@@ -143,8 +119,7 @@ let finalConfig = null
 
 try {
   const envObj = typeof import.meta !== 'undefined' && import.meta.env ? import.meta.env : {}
-  finalConfig =
-    typeof __firebase_config !== 'undefined' && __firebase_config ? __firebase_config : envObj.VITE_FIREBASE_CONFIG
+  finalConfig = typeof __firebase_config !== 'undefined' && __firebase_config ? __firebase_config : envObj.VITE_FIREBASE_CONFIG
 
   if (finalConfig) {
     const parsedConfig = typeof finalConfig === 'string' ? JSON.parse(finalConfig) : finalConfig
@@ -184,7 +159,7 @@ const formatCurrency = amount =>
   new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS', maximumFractionDigits: 0 }).format(amount)
 
 const getDistanceFromLatLonInKm = (lat1, lon1, lat2, lon2) => {
-  const R = 6371 // Radio de la tierra en km
+  const R = 6371 
   const dLat = (lat2 - lat1) * (Math.PI / 180)
   const dLon = (lon2 - lon1) * (Math.PI / 180)
   const a =
@@ -201,9 +176,8 @@ const hashPassword = async password => {
 }
 
 const callGemini = async (prompt, systemInstruction = 'Eres un asistente útil.') => {
-  if (!GEMINI_API_KEY) return 'La IA requiere una API Key configurada.';
-  // Acá está el enlace corregido usando gemini-1.5-flash:
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`;
+  // Ajustado al modelo de vista previa para que no de error acá
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${GEMINI_API_KEY}`;
   const payload = {
     contents: [{ parts: [{ text: prompt }] }],
     systemInstruction: { parts: [{ text: systemInstruction }] },
@@ -214,7 +188,7 @@ const callGemini = async (prompt, systemInstruction = 'Eres un asistente útil.'
     const result = await response.json();
     return result.candidates?.[0]?.content?.parts?.[0]?.text || 'Sin respuesta.';
   } catch (error) {
-    return 'Tuve un problema conectándome. Intenta nuevamente.';
+    return 'Tuve un problema conectándome con el Chef Virtual.';
   }
 }
 
@@ -226,7 +200,6 @@ export default function App() {
   const [user, setUser] = useState(null)
   const [dbState, setDbState] = useState(null)
 
-  // Inicializar Autenticación
   useEffect(() => {
     if (!auth) {
       loadFallback()
@@ -249,7 +222,6 @@ export default function App() {
     return () => unsubscribe()
   }, [])
 
-  // Sincronizar Base de Datos
   useEffect(() => {
     if (firestoreDb && user) {
       const docRef = doc(firestoreDb, 'artifacts', appId, 'public', 'data', 'store_data', 'main')
@@ -266,6 +238,7 @@ export default function App() {
               schedule: INITIAL_SCHEDULE,
               orders: [],
               adminAuth: INITIAL_ADMIN_AUTH,
+              manualStatus: INITIAL_MANUAL_STATUS, 
             }
             setDoc(docRef, initialData).catch(console.error)
             setDbState(initialData)
@@ -291,6 +264,7 @@ export default function App() {
         schedule: INITIAL_SCHEDULE,
         orders: [],
         adminAuth: INITIAL_ADMIN_AUTH,
+        manualStatus: INITIAL_MANUAL_STATUS,
       })
     }
   }
@@ -328,9 +302,6 @@ export default function App() {
   )
 }
 
-// ==========================================
-// APLICACIÓN DEL CLIENTE
-// ==========================================
 function ClientApp({ db, setDb, switchMode }) {
   const [route, setRoute] = useState('home')
   const [cart, setCart] = useState([])
@@ -390,7 +361,6 @@ function ClientApp({ db, setDb, switchMode }) {
         )}
       </div>
 
-      {/* Menú inferior */}
       <div className="bg-white border-t border-gray-200 flex justify-around p-2 pb-4 shrink-0 text-xs z-50 shadow-[0_-4px_10px_rgba(0,0,0,0.05)]">
         <ClientNavBtn icon={<Store />} label="Menú" active={route === 'home'} onClick={() => setRoute('home')} />
         <ClientNavBtn
@@ -436,7 +406,7 @@ function ClientNavBtn({ icon, label, active, onClick, badge }) {
 
 function ClientHome({ db, addToCart, switchMode, cartItemsCount, cartTotal, setRoute }) {
   const [activeCategory, setActiveCategory] = useState(null)
-  const [storeStatus, setStoreStatus] = useState({ isOpen: false, nextOpen: '' })
+  const [storeStatus, setStoreStatus] = useState({ isOpen: false, isForcedClosed: false, isTimeClosed: false, nextOpen: '', customMessage: '' })
   const [showScrollTop, setShowScrollTop] = useState(false)
   const scrollRef = useRef(null)
 
@@ -449,27 +419,36 @@ function ClientHome({ db, addToCart, switchMode, cartItemsCount, cartTotal, setR
       const currentTime = `${hours}:${minutes}`
 
       const todayShifts = db.schedule[day] || []
-      let isOpen = false
+      let isTimeOpen = false
 
       for (let shift of todayShifts) {
         if (currentTime >= shift.open && currentTime <= shift.close) {
-          isOpen = true
+          isTimeOpen = true
           break
         }
       }
 
       let nextOpen = ''
-      if (!isOpen && todayShifts.length > 0) {
+      if (!isTimeOpen && todayShifts.length > 0) {
         const nextShift = todayShifts.find(s => s.open > currentTime)
         if (nextShift) nextOpen = `Abre hoy a las ${nextShift.open}`
       }
 
-      setStoreStatus({ isOpen, nextOpen: nextOpen || 'Cerrado por hoy' })
+      const isForcedClosed = db.manualStatus?.isClosed || false;
+      const customMessage = db.manualStatus?.message || '';
+
+      setStoreStatus({ 
+        isOpen: !isForcedClosed && isTimeOpen, 
+        isForcedClosed,
+        isTimeClosed: !isTimeOpen,
+        nextOpen: nextOpen || 'Cerrado por hoy',
+        customMessage
+      })
     }
     checkStatus()
     const interval = setInterval(checkStatus, 60000)
     return () => clearInterval(interval)
-  }, [db.schedule])
+  }, [db.schedule, db.manualStatus])
 
   const handleScroll = e => {
     if (e.target.scrollTop > 300) setShowScrollTop(true)
@@ -487,7 +466,6 @@ function ClientHome({ db, addToCart, switchMode, cartItemsCount, cartTotal, setR
 
   return (
     <div ref={scrollRef} onScroll={handleScroll} className="h-full overflow-y-auto pb-32 relative hide-scrollbar">
-      {/* Banner */}
       <div className="relative bg-[#cc292b] pt-8 pb-8 flex flex-col items-center justify-center shrink-0 shadow-inner min-h-[12rem]">
         {SHOP_LOGO ? (
           <img
@@ -506,16 +484,30 @@ function ClientHome({ db, addToCart, switchMode, cartItemsCount, cartTotal, setR
         </button>
       </div>
 
-      {/* Status Bar */}
-      <div className="bg-white px-4 py-3 shadow-sm border-b border-gray-100 flex items-center justify-between shrink-0">
-        <div className="flex items-center gap-2">
-          <div className={`w-3 h-3 rounded-full ${storeStatus.isOpen ? 'bg-green-500 animate-pulse' : 'bg-red-500'}`} />
-          <span className="font-bold text-gray-800">{storeStatus.isOpen ? 'ABIERTO AHORA' : 'CERRADO'}</span>
+      {/* CARTELES INTELIGENTES */}
+      {storeStatus.isForcedClosed ? (
+        <div className="bg-red-50 border-b border-red-200 px-4 py-3 shadow-sm flex items-center justify-center shrink-0">
+          <span className="font-bold text-red-600 tracking-wide text-sm flex items-center gap-2">
+            <span className="w-2 h-2 rounded-full bg-red-600 animate-pulse"></span> Cerrado momentáneamente
+          </span>
         </div>
-        {!storeStatus.isOpen && <span className="text-xs text-gray-500 font-medium">{storeStatus.nextOpen}</span>}
-      </div>
+      ) : storeStatus.isTimeClosed ? (
+        <div className="bg-red-50 border-b border-red-200 px-4 py-3 shadow-sm flex items-center justify-between shrink-0">
+          <div className="flex items-center gap-2">
+            <span className="w-2 h-2 rounded-full bg-red-600"></span>
+            <span className="font-bold text-red-600 text-sm">CERRADO</span>
+          </div>
+          <span className="text-xs text-red-500 font-medium">{storeStatus.nextOpen}</span>
+        </div>
+      ) : (
+        <div className="bg-[#e8f5e9] border-b border-[#c8e6c9] px-4 py-3 shadow-sm flex items-center justify-center shrink-0">
+          <span className="font-bold text-[#2e7d32] text-sm flex items-center gap-2">
+            <span className="w-2 h-2 rounded-full bg-green-600 animate-pulse"></span>
+            {storeStatus.customMessage || 'ABIERTO AHORA'}
+          </span>
+        </div>
+      )}
 
-      {/* Categorías Sticky */}
       <div className="bg-white py-4 sticky top-0 z-10 shadow-sm shrink-0">
         <div className="flex overflow-x-auto px-4 gap-2 hide-scrollbar pb-1">
           <button
@@ -542,7 +534,6 @@ function ClientHome({ db, addToCart, switchMode, cartItemsCount, cartTotal, setR
         </div>
       </div>
 
-      {/* Lista de Productos */}
       <div className="px-4 py-4 space-y-6">
         {!activeCategory && featuredProducts.length > 0 && (
           <div>
@@ -894,7 +885,6 @@ function ClientCheckout({ cart, cartTotal, db, setDb, setRoute, clearCart }) {
       </div>
 
       <div className="flex-1 overflow-y-auto p-4 space-y-6 pb-32">
-        {/* Mis Datos */}
         <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
           <h3 className="font-bold text-gray-800 mb-3 flex items-center gap-2">
             <User size={18} className="text-red-500" /> Mis Datos
@@ -931,7 +921,6 @@ function ClientCheckout({ cart, cartTotal, db, setDb, setRoute, clearCart }) {
           </div>
         </div>
 
-        {/* Retiro / Delivery */}
         <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
           <h3 className="font-bold text-gray-800 mb-3 flex items-center gap-2">
             <Package size={18} className="text-red-500" /> Retiro o Delivery
@@ -986,7 +975,6 @@ function ClientCheckout({ cart, cartTotal, db, setDb, setRoute, clearCart }) {
           )}
         </div>
 
-        {/* Método de Pago */}
         <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
           <h3 className="font-bold text-gray-800 mb-3">💳 Método de Pago</h3>
           <div className="flex bg-gray-100 p-1 rounded-lg mb-4">
@@ -1045,7 +1033,6 @@ function ClientCheckout({ cart, cartTotal, db, setDb, setRoute, clearCart }) {
           )}
         </div>
 
-        {/* Resumen */}
         <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
           <h3 className="font-bold text-gray-800 mb-3 flex items-center gap-2">
             <ListOrdered size={18} className="text-red-500" /> Resumen del Pedido
@@ -1166,6 +1153,8 @@ function MapPicker({ address, shopLocation, onAddressChange, onLocationSelect, i
     setLocError('')
     if (!navigator.geolocation) return setLocError('Tu navegador no soporta geolocalización.')
     setIsLocating(true)
+    
+    // GPS CON TIMEOUT REFORZADO 10 SEGUNDOS
     navigator.geolocation.getCurrentPosition(
       pos => {
         const { latitude: lat, longitude: lng } = pos.coords
@@ -1183,10 +1172,10 @@ function MapPicker({ address, shopLocation, onAddressChange, onLocationSelect, i
         setIsLocating(false)
       },
       () => {
-        setLocError('Permiso de ubicación denegado o bloqueado.')
+        setLocError('Permiso de ubicación denegado o bloqueado. Habilitalo en el navegador.')
         setIsLocating(false)
       },
-      { enableHighAccuracy: true }
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
     )
   }
 
@@ -1248,7 +1237,7 @@ function AdminApp({ db, setDb, switchMode }) {
   const renderView = () => {
     switch (adminRoute) {
       case 'dashboard':
-        return <AdminDashboard db={db} setRoute={setAdminRoute} />
+        return <AdminDashboard db={db} setDb={setDb} setRoute={setAdminRoute} />
       case 'pedidos':
         return <AdminPedidos db={db} setDb={setDb} />
       case 'catalogo':
@@ -1262,13 +1251,12 @@ function AdminApp({ db, setDb, switchMode }) {
       case 'seguridad':
         return <AdminSeguridad db={db} setDb={setDb} />
       default:
-        return <AdminDashboard db={db} setRoute={setAdminRoute} />
+        return <AdminDashboard db={db} setDb={setDb} setRoute={setAdminRoute} />
     }
   }
 
   return (
     <div className="flex flex-col h-full bg-gray-50">
-      {/* Header Admin */}
       <div className="bg-gray-900 text-white p-4 flex justify-between items-center shadow-md shrink-0">
         <h1 className="font-bold tracking-wide text-sm flex items-center gap-2">
           <Settings size={16} className="text-[#fbb03b]" /> ADMINISTRACIÓN
@@ -1295,7 +1283,6 @@ function AdminApp({ db, setDb, switchMode }) {
 
       <div className="flex-1 overflow-y-auto p-4 hide-scrollbar">{renderView()}</div>
 
-      {/* Nav Admin */}
       <div className="bg-white border-t border-gray-200 flex justify-around p-2 pb-6 shrink-0 text-xs shadow-[0_-4px_10px_rgba(0,0,0,0.05)]">
         <NavBtn
           icon={<LayoutDashboard />}
@@ -1623,10 +1610,25 @@ function AdminSeguridad({ db, setDb }) {
   )
 }
 
-function AdminDashboard({ db, setRoute }) {
+function AdminDashboard({ db, setDb, setRoute }) {
   const today = new Date().toISOString().split('T')[0]
   const todaysOrders = db.orders.filter(o => o.date.startsWith(today))
   const totalSales = todaysOrders.reduce((acc, o) => acc + (o.status !== 'Cancelado' ? o.total : 0), 0)
+
+  // LOGICA DEL SWITCH DE ESTADO
+  const manualStatus = db.manualStatus || INITIAL_MANUAL_STATUS
+  const handleToggleClose = () => {
+    setDb(prev => ({
+      ...prev,
+      manualStatus: { ...prev.manualStatus, isClosed: !prev.manualStatus?.isClosed }
+    }))
+  }
+  const handleMessageChange = (e) => {
+    setDb(prev => ({
+      ...prev,
+      manualStatus: { ...prev.manualStatus, message: e.target.value }
+    }))
+  }
 
   return (
     <div className="space-y-4 animate-fadeIn">
@@ -1641,6 +1643,36 @@ function AdminDashboard({ db, setRoute }) {
           <p className="text-2xl font-black text-blue-600 mt-1">{todaysOrders.length}</p>
         </div>
       </div>
+
+      {/* NUEVO PANEL DE ESTADO OPERATIVO EN DASHBOARD */}
+      <div className="mt-6">
+        <h3 className="font-bold text-gray-700 mb-3 flex items-center gap-2"><Store size={20} /> Estado Operativo</h3>
+        <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 border-l-4 border-l-[#c82a2a] space-y-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="font-bold text-gray-800 text-sm">Cerrado momentáneamente</p>
+              <p className="text-xs text-gray-500">Bloquea pedidos al instante.</p>
+            </div>
+            <button 
+              onClick={handleToggleClose}
+              className={`relative inline-flex h-7 w-12 items-center rounded-full transition-colors focus:outline-none shadow-inner ${manualStatus.isClosed ? 'bg-red-500' : 'bg-green-500'}`}
+            >
+              <span className={`inline-block h-5 w-5 transform rounded-full bg-white shadow transition-transform ${manualStatus.isClosed ? 'translate-x-6' : 'translate-x-1'}`} />
+            </button>
+          </div>
+          <div className="border-t border-gray-100 pt-3">
+            <label className="block text-xs font-bold text-gray-600 mb-1">Mensaje para clientes (cuando está ABIERTO):</label>
+            <input 
+              type="text" 
+              placeholder="Ej: ¡Hoy promo en sorrentinos! 🔥"
+              value={manualStatus.message || ''} 
+              onChange={handleMessageChange}
+              className="block w-full border border-gray-200 rounded-lg p-2 text-sm bg-gray-50 focus:ring-1 focus:ring-[#c82a2a] outline-none"
+            />
+          </div>
+        </div>
+      </div>
+
       <div className="mt-6">
         <h3 className="font-bold text-gray-700 mb-3">Accesos Rápidos</h3>
         <div className="grid grid-cols-2 gap-3">
@@ -2183,7 +2215,14 @@ function AdminLocationPicker({ location, onChange }) {
 
     mapInstance.current = map
     markerInstance.current = marker
-    setTimeout(() => map.invalidateSize(), 200)
+    
+    // CORRECCIÓN: Se utiliza google.maps.event.trigger en lugar de invalidateSize()
+    setTimeout(() => {
+      if (mapInstance.current) {
+        window.google.maps.event.trigger(mapInstance.current, 'resize')
+      }
+    }, 200)
+
   }, [mapLoaded, location])
 
   return (

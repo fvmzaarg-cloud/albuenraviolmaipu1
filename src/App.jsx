@@ -107,11 +107,17 @@ const INITIAL_SCHEDULE = {
 }
 
 const INITIAL_ADMIN_AUTH = { email: 'albuenraviolmaipu@gmail.com', passHash: '', recoveryHash: '', isConfigured: false }
-const INITIAL_MANUAL_STATUS = { isClosed: false, message: '¡Estamos tomando pedidos! 🔥' } 
+
+// NUEVO: Agregamos el chefPrompt inicial con tu regla de las planchas
+const INITIAL_MANUAL_STATUS = { 
+  isClosed: false, 
+  message: '¡Estamos tomando pedidos! 🔥',
+  chefPrompt: 'Reglas del local: 2 planchas de ravioles rinden para 3 personas. Sugerir siempre llevar una salsa para acompañar.'
+} 
 
 // --- CLAVES API ---
 const GOOGLE_MAPS_API_KEY = 'AIzaSyByRfYN7dVvBHGZgikBZcrmOY6lDgLgO6Y' 
-const GEMINI_API_KEY = '' // VACÍO PARA QUE FUNCIONE EN LA VISTA PREVIA
+const GEMINI_API_KEY = '' // IMPORTANTE: Al volver a StackBlitz, podés pegar tu clave de nuevo aquí.
 
 // --- FIREBASE CONFIGURACIÓN ---
 let firebaseApp, auth, firestoreDb, appId
@@ -176,7 +182,6 @@ const hashPassword = async password => {
 }
 
 const callGemini = async (prompt, systemInstruction = 'Eres un asistente útil.') => {
-  // Ajustado al modelo de vista previa para que no de error acá
   const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${GEMINI_API_KEY}`;
   const payload = {
     contents: [{ parts: [{ text: prompt }] }],
@@ -188,7 +193,7 @@ const callGemini = async (prompt, systemInstruction = 'Eres un asistente útil.'
     const result = await response.json();
     return result.candidates?.[0]?.content?.parts?.[0]?.text || 'Sin respuesta.';
   } catch (error) {
-    return 'Tuve un problema conectándome con el Chef Virtual.';
+    return 'Tuve un problema conectándome con el Chef Virtual. (Revisá la API KEY)';
   }
 }
 
@@ -621,7 +626,7 @@ function ProductCard({ product, onAdd, storeOpen }) {
 function ChefAssistant({ db, onClose }) {
   const [query, setQuery] = useState('')
   const [chat, setChat] = useState([
-    { role: 'assistant', text: '¡Hola! Soy el Chef virtual de Al Buen Raviol ✨. ¿Qué tienes ganas de comer hoy?' },
+    { role: 'assistant', text: '¡Hola! Soy el Chef virtual de Al Buen Raviol ✨. ¿Qué tenés ganas de comer hoy?' },
   ])
   const [isLoading, setIsLoading] = useState(false)
   const messagesEndRef = useRef(null)
@@ -641,7 +646,11 @@ function ChefAssistant({ db, onClose }) {
       .filter(p => p.active)
       .map(p => `${p.name} ($${p.price}): ${p.description}`)
       .join(' | ')
-    const sysPrompt = `Eres el Chef Experto de 'Al Buen Raviol', pastas en Mendoza. Menú: ${menuContext}. Habla amigable y argentino (usa 'vos'). Recomienda SOLO productos del menú. Calcula cantidades. Respuestas cortas.`
+      
+    // AQUI EL CHEF LEE TUS REGLAS DESDE LA BASE DE DATOS
+    const customRules = db.manualStatus?.chefPrompt || 'Regla de porciones: 2 planchas rinden para 3 personas.';
+    
+    const sysPrompt = `Eres el Chef Experto de 'Al Buen Raviol', fábrica de pastas en Mendoza. Menú: ${menuContext}. Habla amigable y argentino (usa 'vos'). Recomienda SOLO productos del menú. \nREGLAS ESTRICTAS DEL LOCAL: ${customRules}. Mantén tus respuestas breves y concisas.`
 
     const response = await callGemini(userMsg, sysPrompt)
     setChat(prev => [...prev, { role: 'assistant', text: response }])
@@ -674,13 +683,13 @@ function ChefAssistant({ db, onClose }) {
               </div>
             </div>
           ))}
-          {isLoading && <div className="text-gray-500 text-sm pl-2">Chef pensando...</div>}
+          {isLoading && <div className="text-gray-500 text-sm pl-2">El Chef está pensando...</div>}
           <div ref={messagesEndRef} />
         </div>
         <div className="p-3 bg-white border-t border-gray-100 flex gap-2 shrink-0">
           <input
             type="text"
-            placeholder="Ej: ¿Qué me recomiendas?"
+            placeholder="Ej: Somos 4 personas, ¿qué llevo?"
             value={query}
             onChange={e => setQuery(e.target.value)}
             onKeyDown={e => e.key === 'Enter' && handleSend()}
@@ -1615,7 +1624,7 @@ function AdminDashboard({ db, setDb, setRoute }) {
   const todaysOrders = db.orders.filter(o => o.date.startsWith(today))
   const totalSales = todaysOrders.reduce((acc, o) => acc + (o.status !== 'Cancelado' ? o.total : 0), 0)
 
-  // LOGICA DEL SWITCH DE ESTADO
+  // LOGICA DEL SWITCH DE ESTADO Y MENSAJE
   const manualStatus = db.manualStatus || INITIAL_MANUAL_STATUS
   const handleToggleClose = () => {
     setDb(prev => ({
@@ -1629,9 +1638,17 @@ function AdminDashboard({ db, setDb, setRoute }) {
       manualStatus: { ...prev.manualStatus, message: e.target.value }
     }))
   }
+  
+  // LOGICA PARA ENTRENAR AL CHEF IA
+  const handlePromptChange = (e) => {
+    setDb(prev => ({
+      ...prev,
+      manualStatus: { ...prev.manualStatus, chefPrompt: e.target.value }
+    }))
+  }
 
   return (
-    <div className="space-y-4 animate-fadeIn">
+    <div className="space-y-4 animate-fadeIn pb-10">
       <h2 className="text-xl font-bold text-gray-800">Resumen de Hoy</h2>
       <div className="grid grid-cols-2 gap-4">
         <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
@@ -1644,7 +1661,6 @@ function AdminDashboard({ db, setDb, setRoute }) {
         </div>
       </div>
 
-      {/* NUEVO PANEL DE ESTADO OPERATIVO EN DASHBOARD */}
       <div className="mt-6">
         <h3 className="font-bold text-gray-700 mb-3 flex items-center gap-2"><Store size={20} /> Estado Operativo</h3>
         <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 border-l-4 border-l-[#c82a2a] space-y-4">
@@ -1670,6 +1686,21 @@ function AdminDashboard({ db, setDb, setRoute }) {
               className="block w-full border border-gray-200 rounded-lg p-2 text-sm bg-gray-50 focus:ring-1 focus:ring-[#c82a2a] outline-none"
             />
           </div>
+        </div>
+      </div>
+
+      {/* NUEVA CAJA: ENTRENAMIENTO DEL CHEF IA */}
+      <div className="mt-6">
+        <h3 className="font-bold text-gray-700 mb-3 flex items-center gap-2"><Sparkles size={20} className="text-[#fbb03b]"/> Entrenar al Chef IA</h3>
+        <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 border-l-4 border-l-[#fbb03b]">
+          <label className="block text-xs font-bold text-gray-600 mb-2">Instrucciones y Reglas (Ej: Porciones, Trato, Promos):</label>
+          <textarea 
+            value={manualStatus.chefPrompt || ''} 
+            onChange={handlePromptChange}
+            placeholder="Ej: 2 planchas rinden para 3 personas. Ofrecer siempre queso rallado."
+            className="block w-full border border-gray-200 rounded-lg p-3 text-sm bg-gray-50 focus:ring-1 focus:ring-[#fbb03b] outline-none resize-none h-28"
+          />
+          <p className="text-xs text-gray-400 mt-2">El Chef leerá esto antes de responder a cualquier cliente.</p>
         </div>
       </div>
 
@@ -2216,9 +2247,9 @@ function AdminLocationPicker({ location, onChange }) {
     mapInstance.current = map
     markerInstance.current = marker
     
-    // CORRECCIÓN: Se utiliza google.maps.event.trigger en lugar de invalidateSize()
+    // Corrige el error en el renderizado del mapa
     setTimeout(() => {
-      if (mapInstance.current) {
+      if (mapInstance.current && window.google) {
         window.google.maps.event.trigger(mapInstance.current, 'resize')
       }
     }, 200)

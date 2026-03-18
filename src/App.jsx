@@ -116,8 +116,8 @@ const INITIAL_MANUAL_STATUS = {
 } 
 
 // --- CLAVES API ---
-const GOOGLE_MAPS_API_KEY = 'AIzaSyDSCpcoaGbMwKzbnFW1wvc5PJUUt2T3TQc' 
-const GEMINI_API_KEY = '' // IMPORTANTE: Al volver a StackBlitz, podés pegar tu clave de nuevo aquí.
+const GOOGLE_MAPS_API_KEY = 'AIzaSyByRfYN7dVvBHGZgikBZcrmOY6lDgLgO6Y' 
+const GEMINI_API_KEY = 'AIzaSyDSCpcoaGbMwKzbnFW1wvc5PJUUt2T3TQc' // IMPORTANTE: Al volver a StackBlitz, podés pegar tu clave de nuevo aquí.
 
 // --- FIREBASE CONFIGURACIÓN ---
 let firebaseApp, auth, firestoreDb, appId

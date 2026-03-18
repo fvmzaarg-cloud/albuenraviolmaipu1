@@ -137,19 +137,41 @@ const hashPassword = async password => {
 }
 
 const callGemini = async (prompt, systemInstruction = 'Eres un asistente útil.') => {
-  // CORRECCIÓN: Actualizado el modelo al soportado en este entorno interactivo
   const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`;
+  
+  // Armamos el paquete con la estructura EXACTA que exige Google
   const payload = {
-    contents: [{ parts: [{ text: prompt }] }],
-    systemInstruction: { parts: [{ text: systemInstruction }] },
+    contents: [
+      {
+        role: "user",
+        parts: [{ text: prompt }]
+      }
+    ],
+    systemInstruction: {
+      role: "system",
+      parts: [{ text: systemInstruction }]
+    }
   };
+
   try {
-    const response = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
-    if (!response.ok) throw new Error('Error en API');
-    const result = await response.json();
-    return result.candidates?.[0]?.content?.parts?.[0]?.text || 'Sin respuesta.';
+    const response = await fetch(url, { 
+      method: 'POST', 
+      headers: { 'Content-Type': 'application/json' }, 
+      body: JSON.stringify(payload) 
+    });
+    
+    const data = await response.json();
+    
+    if (!response.ok) {
+      // ESTO ES CLAVE: Imprime el texto exacto del por qué falló
+      console.error("🚨 MOTIVO DEL ERROR 400:", JSON.stringify(data, null, 2));
+      throw new Error(data.error?.message || 'Error en API');
+    }
+    
+    return data.candidates?.[0]?.content?.parts?.[0]?.text || 'Sin respuesta.';
   } catch (error) {
-    return 'Tuve un problema conectándome con el Chef Virtual. (Revisá la API KEY)';
+    console.error("❌ Falló la conexión:", error);
+    return 'Tuve un problema conectándome con el Chef Virtual.';
   }
 }
 

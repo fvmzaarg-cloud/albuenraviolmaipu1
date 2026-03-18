@@ -71,7 +71,7 @@ const INITIAL_MANUAL_STATUS = { isClosed: false, message: '¡Estamos tomando ped
 
 // --- CLAVES API ---
 const GOOGLE_MAPS_API_KEY = 'AIzaSyByRfYN7dVvBHGZgikBZcrmOY6lDgLgO6Y' 
-const GEMINI_API_KEY = 'AIzaSyDSCpcoaGbMwKzbnFW1wvc5PJUUt2T3TQc' // TU NUEVA CLAVE LISTA PARA USAR
+const GEMINI_API_KEY = 'AIzaSyDwtKfBTN6R1hTxlXLOcaQid8c7fWC4-9M' // TU NUEVA CLAVE LISTA PARA USAR
 
 // ==================================================
 // 🔥 CONFIGURACIÓN DE FIREBASE

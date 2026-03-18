@@ -46,54 +46,14 @@ const INITIAL_CATEGORIES = [
 ]
 
 const INITIAL_PRODUCTS = [
-  {
-    id: 1,
-    name: 'Ravioles de Carne y Verdura',
-    description: 'Clásicos ravioles caseros rellenos de carne premium y espinaca fresca.',
-    price: 4500,
-    categoryId: 1,
-    featured: true,
-    active: true,
-    image: 'https://images.unsplash.com/photo-1551183053-bf91a1d81141?auto=format&fit=crop&q=80&w=400',
-  },
-  {
-    id: 2,
-    name: 'Ravioles de Ricota',
-    description: 'Suaves ravioles de ricota magra y nuez.',
-    price: 4500,
-    categoryId: 1,
-    featured: false,
-    active: true,
-    image: 'https://images.unsplash.com/photo-1551183053-bf91a1d81141?auto=format&fit=crop&q=80&w=400',
-  },
-  {
-    id: 3,
-    name: 'Sorrentinos de Jamón y Queso',
-    description: 'Abundante relleno de jamón cocido y muzzarella.',
-    price: 5200,
-    categoryId: 2,
-    featured: true,
-    active: true,
-    image: 'https://images.unsplash.com/photo-1621996311239-53cbdf018245?auto=format&fit=crop&q=80&w=400',
-  },
-  {
-    id: 4,
-    name: 'Tallarines al Huevo',
-    description: 'Fideos frescos cortados a cuchillo.',
-    price: 3000,
-    categoryId: 3,
-    featured: false,
-    active: true,
-    image: 'https://images.unsplash.com/photo-1612874742237-6526221588e3?auto=format&fit=crop&q=80&w=400',
-  },
+  { id: 1, name: 'Ravioles de Carne y Verdura', description: 'Clásicos ravioles caseros rellenos de carne premium y espinaca fresca.', price: 4500, categoryId: 1, featured: true, active: true, image: 'https://images.unsplash.com/photo-1551183053-bf91a1d81141?auto=format&fit=crop&q=80&w=400' },
+  { id: 2, name: 'Ravioles de Ricota', description: 'Suaves ravioles de ricota magra y nuez.', price: 4500, categoryId: 1, featured: false, active: true, image: 'https://images.unsplash.com/photo-1551183053-bf91a1d81141?auto=format&fit=crop&q=80&w=400' },
+  { id: 3, name: 'Sorrentinos de Jamón y Queso', description: 'Abundante relleno de jamón cocido y muzzarella.', price: 5200, categoryId: 2, featured: true, active: true, image: 'https://images.unsplash.com/photo-1621996311239-53cbdf018245?auto=format&fit=crop&q=80&w=400' },
+  { id: 4, name: 'Tallarines al Huevo', description: 'Fideos frescos cortados a cuchillo.', price: 3000, categoryId: 3, featured: false, active: true, image: 'https://images.unsplash.com/photo-1612874742237-6526221588e3?auto=format&fit=crop&q=80&w=400' },
 ]
 
 const INITIAL_SHIPPING_CONFIG = {
-  tier1: 1000,
-  tier2: 1500,
-  tier3: 2000,
-  extra: 500,
-  shopLocation: { lat: -32.9850886, lng: -68.7986076 },
+  tier1: 1000, tier2: 1500, tier3: 2000, extra: 500, shopLocation: { lat: -32.9850886, lng: -68.7986076 },
 }
 
 const INITIAL_SCHEDULE = {
@@ -107,29 +67,24 @@ const INITIAL_SCHEDULE = {
 }
 
 const INITIAL_ADMIN_AUTH = { email: 'albuenraviolmaipu@gmail.com', passHash: '', recoveryHash: '', isConfigured: false }
-
-// NUEVO: Agregamos el chefPrompt inicial con tu regla de las planchas
-const INITIAL_MANUAL_STATUS = { 
-  isClosed: false, 
-  message: '¡Estamos tomando pedidos! 🔥',
-  chefPrompt: 'Reglas del local: 2 planchas de ravioles rinden para 3 personas. Sugerir siempre llevar una salsa para acompañar.'
-} 
+const INITIAL_MANUAL_STATUS = { isClosed: false, message: '¡Estamos tomando pedidos! 🔥', chefPrompt: 'Reglas del local: 2 planchas de ravioles rinden para 3 personas. Sugerir siempre llevar una salsa para acompañar.' } 
 
 // --- CLAVES API ---
 const GOOGLE_MAPS_API_KEY = 'AIzaSyByRfYN7dVvBHGZgikBZcrmOY6lDgLgO6Y' 
-const GEMINI_API_KEY = 'AIzaSyDSCpcoaGbMwKzbnFW1wvc5PJUUt2T3TQc' // IMPORTANTE: Al volver a StackBlitz, podés pegar tu clave de nuevo aquí.
+const GEMINI_API_KEY = 'AIzaSyDSCpcoaGbMwKzbnFW1wvc5PJUUt2T3TQc'
 
-// --- FIREBASE CONFIGURACIÓN ---
+// ==================================================
+// 🔥 CONFIGURACIÓN DE FIREBASE
+// ==================================================
+const LOCAL_FIREBASE_CONFIG = {};
+
 let firebaseApp, auth, firestoreDb, appId
-let finalConfig = null
-
 try {
-  const envObj = typeof import.meta !== 'undefined' && import.meta.env ? import.meta.env : {}
-  finalConfig = typeof __firebase_config !== 'undefined' && __firebase_config ? __firebase_config : envObj.VITE_FIREBASE_CONFIG
+  const canvasConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : null;
+  const finalConfig = Object.keys(LOCAL_FIREBASE_CONFIG).length > 0 ? LOCAL_FIREBASE_CONFIG : canvasConfig;
 
   if (finalConfig) {
-    const parsedConfig = typeof finalConfig === 'string' ? JSON.parse(finalConfig) : finalConfig
-    firebaseApp = initializeApp(parsedConfig)
+    firebaseApp = initializeApp(finalConfig)
     auth = getAuth(firebaseApp)
     firestoreDb = getFirestore(firebaseApp)
     appId = typeof __app_id !== 'undefined' ? __app_id : 'al-buen-raviol-maipu'
@@ -182,7 +137,8 @@ const hashPassword = async password => {
 }
 
 const callGemini = async (prompt, systemInstruction = 'Eres un asistente útil.') => {
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${GEMINI_API_KEY}`;
+  if (!GEMINI_API_KEY) return 'La IA requiere una API Key configurada.';
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`;
   const payload = {
     contents: [{ parts: [{ text: prompt }] }],
     systemInstruction: { parts: [{ text: systemInstruction }] },
@@ -274,6 +230,7 @@ export default function App() {
     }
   }
 
+  // LA FUNCIÓN setDb HA SIDO RESTAURADA AQUÍ
   const setDb = updater => {
     setDbState(prev => {
       const newState = typeof updater === 'function' ? updater(prev) : updater
@@ -489,7 +446,6 @@ function ClientHome({ db, addToCart, switchMode, cartItemsCount, cartTotal, setR
         </button>
       </div>
 
-      {/* CARTELES INTELIGENTES */}
       {storeStatus.isForcedClosed ? (
         <div className="bg-red-50 border-b border-red-200 px-4 py-3 shadow-sm flex items-center justify-center shrink-0">
           <span className="font-bold text-red-600 tracking-wide text-sm flex items-center gap-2">
@@ -1163,7 +1119,6 @@ function MapPicker({ address, shopLocation, onAddressChange, onLocationSelect, i
     if (!navigator.geolocation) return setLocError('Tu navegador no soporta geolocalización.')
     setIsLocating(true)
     
-    // GPS CON TIMEOUT REFORZADO 10 SEGUNDOS
     navigator.geolocation.getCurrentPosition(
       pos => {
         const { latitude: lat, longitude: lng } = pos.coords
@@ -1624,8 +1579,8 @@ function AdminDashboard({ db, setDb, setRoute }) {
   const todaysOrders = db.orders.filter(o => o.date.startsWith(today))
   const totalSales = todaysOrders.reduce((acc, o) => acc + (o.status !== 'Cancelado' ? o.total : 0), 0)
 
-  // LOGICA DEL SWITCH DE ESTADO Y MENSAJE
   const manualStatus = db.manualStatus || INITIAL_MANUAL_STATUS
+
   const handleToggleClose = () => {
     setDb(prev => ({
       ...prev,
@@ -1639,7 +1594,6 @@ function AdminDashboard({ db, setDb, setRoute }) {
     }))
   }
   
-  // LOGICA PARA ENTRENAR AL CHEF IA
   const handlePromptChange = (e) => {
     setDb(prev => ({
       ...prev,
@@ -1689,7 +1643,6 @@ function AdminDashboard({ db, setDb, setRoute }) {
         </div>
       </div>
 
-      {/* NUEVA CAJA: ENTRENAMIENTO DEL CHEF IA */}
       <div className="mt-6">
         <h3 className="font-bold text-gray-700 mb-3 flex items-center gap-2"><Sparkles size={20} className="text-[#fbb03b]"/> Entrenar al Chef IA</h3>
         <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 border-l-4 border-l-[#fbb03b]">
@@ -2247,7 +2200,6 @@ function AdminLocationPicker({ location, onChange }) {
     mapInstance.current = map
     markerInstance.current = marker
     
-    // Corrige el error en el renderizado del mapa
     setTimeout(() => {
       if (mapInstance.current && window.google) {
         window.google.maps.event.trigger(mapInstance.current, 'resize')

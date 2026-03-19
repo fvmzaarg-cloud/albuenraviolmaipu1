@@ -30,7 +30,7 @@ import {
 } from 'lucide-react'
 import { initializeApp } from 'firebase/app'
 import { getAuth, signInWithCustomToken, signInAnonymously, onAuthStateChanged } from 'firebase/auth'
-import { getFirestore, doc, setDoc, onSnapshot } from 'firebase/firestore'
+import { getFirestore, doc, setDoc, onSnapshot } from 'firebase/firestore' 
 
 // --- CONFIGURACIÓN DEL LOCAL ---
 const SHOP_PHONE = '5492613426085'

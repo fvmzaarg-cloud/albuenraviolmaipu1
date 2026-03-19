@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react'
 import {
+import { GEMINI_API_KEY, GOOGLE_MAPS_API_KEY } from './claves.js';
   Home,
   ShoppingCart,
   User,
@@ -70,7 +71,7 @@ const INITIAL_ADMIN_AUTH = { email: 'albuenraviolmaipu@gmail.com', passHash: '',
 const INITIAL_MANUAL_STATUS = { isClosed: false, message: '¡Estamos tomando pedidos! 🔥', chefPrompt: 'Reglas del local: 2 planchas de ravioles rinden para 3 personas. Sugerir siempre llevar una salsa para acompañar.' } 
 
 // --- CLAVES API ---
-import { GEMINI_API_KEY, GOOGLE_MAPS_API_KEY } from './claves.js';
+
 
 // ==================================================
 // 🔥 CONFIGURACIÓN DE FIREBASE

@@ -75,7 +75,15 @@ const INITIAL_MANUAL_STATUS = { isClosed: false, message: '¡Estamos tomando ped
 // ==================================================
 // 🔥 CONFIGURACIÓN DE FIREBASE
 // ==================================================
-const LOCAL_FIREBASE_CONFIG = {};
+const LOCAL_FIREBASE_CONFIG = {
+  apiKey: "AIzaSyDXYG1LHNLWiCT7__ty4VOPjIbmtMNjoYA",
+  authDomain: "al-buen-raviol-maipu.firebaseapp.com",
+  projectId: "al-buen-raviol-maipu",
+  storageBucket: "al-buen-raviol-maipu.firebasestorage.app",
+  messagingSenderId: "948036246969",
+  appId: "1:948036246969:web:4f42f7e5e46cdb60552a68",
+  measurementId: "G-TT5WNYMV5W"
+};
 
 let firebaseApp, auth, firestoreDb, appId
 try {

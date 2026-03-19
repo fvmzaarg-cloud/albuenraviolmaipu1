@@ -1,5 +1,3 @@
-const GEMINI_API_KEY = window.GEMINI_API_KEY;
-const GOOGLE_MAPS_API_KEY = window.GOOGLE_MAPS_API_KEY;
 import React, { useState, useEffect, useRef } from 'react'
 import {
   Home,
@@ -31,7 +29,11 @@ import {
 } from 'lucide-react'
 import { initializeApp } from 'firebase/app'
 import { getAuth, signInWithCustomToken, signInAnonymously, onAuthStateChanged } from 'firebase/auth'
-import { getFirestore, doc, setDoc, onSnapshot } from 'firebase/firestore' 
+import { getFirestore, doc, setDoc, onSnapshot } from 'firebase/firestore'
+
+// --- AHORA SÍ, LAS CLAVES DEBAJO DE LOS IMPORTS ---
+const GEMINI_API_KEY = window.GEMINI_API_KEY;
+const GOOGLE_MAPS_API_KEY = window.GOOGLE_MAPS_API_KEY;
 
 // --- CONFIGURACIÓN DEL LOCAL ---
 const SHOP_PHONE = '5492613426085'

@@ -32,8 +32,8 @@ import { getAuth, signInWithCustomToken, signInAnonymously, onAuthStateChanged }
 import { getFirestore, doc, setDoc, onSnapshot } from 'firebase/firestore'
 
 // --- AHORA SÍ, LAS CLAVES DEBAJO DE LOS IMPORTS ---
-const GEMINI_API_KEY = window.GEMINI_API_KEY;
-const GOOGLE_MAPS_API_KEY = window.GOOGLE_MAPS_API_KEY;
+const GEMINI_API_KEY = window.GEMINI_API_KEY || "AIzaSyDcF1yT4vwfvGtyPpPwQOE-MIZH5IidZC8";
+const GOOGLE_MAPS_API_KEY = window.GOOGLE_MAPS_API_KEY || "AIzaSyByRfYN7dVvBHGZgikBZcrmOY6lDgLgO6Y";
 
 // --- CONFIGURACIÓN DEL LOCAL ---
 const SHOP_PHONE = '5492613426085'

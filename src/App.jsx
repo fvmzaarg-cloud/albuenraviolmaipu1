@@ -31,9 +31,8 @@ import { initializeApp } from 'firebase/app'
 import { getAuth, signInWithCustomToken, signInAnonymously, onAuthStateChanged } from 'firebase/auth'
 import { getFirestore, doc, setDoc, onSnapshot } from 'firebase/firestore'
 
-// Usamos este truco para que los bots de Google no lean la clave como texto plano
-const GEMINI_API_KEY = window.GEMINI_API_KEY || "AIzaSyAbCN5z0UoblKK_IE-JX7U8eKi_ybLBKqM".split('').join('');
-const GOOGLE_MAPS_API_KEY = window.GOOGLE_MAPS_API_KEY || "AIzaSyBmiPXxoPbC5Y-cVaemlJnha8qLn4wCR9Q";
+// Borramos la clave de Gemini de acá para que Google no la lea
+const GOOGLE_MAPS_API_KEY = "AIzaSyBmiPXxoPbC5Y-cVaemlJnha8qLn4wCR9Q";
 
 // --- CONFIGURACIÓN DEL LOCAL ---
 const SHOP_PHONE = '5492613426085'
@@ -137,7 +136,9 @@ const hashPassword = async password => {
 }
 
 const callGemini = async (prompt, systemInstruction = 'Eres un asistente útil.') => {
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`;
+  // ACÁ BUSCAMOS LA CLAVE EN LA MEMORIA SECRETA DEL NAVEGADOR
+  const currentKey = localStorage.getItem('gemini_key') || "";
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${currentKey}`;
   
   // Armamos el paquete con la estructura EXACTA que exige Google
   const payload = {
@@ -163,7 +164,6 @@ const callGemini = async (prompt, systemInstruction = 'Eres un asistente útil.'
     const data = await response.json();
     
     if (!response.ok) {
-      // ESTO ES CLAVE: Imprime el texto exacto del por qué falló
       console.error("🚨 MOTIVO DEL ERROR 400:", JSON.stringify(data, null, 2));
       throw new Error(data.error?.message || 'Error en API');
     }
@@ -179,10 +179,44 @@ const callGemini = async (prompt, systemInstruction = 'Eres un asistente útil.'
 // COMPONENTE PRINCIPAL
 // ==========================================
 export default function App() {
+  const [geminiKey, setGeminiKey] = useState(localStorage.getItem('gemini_key') || '');
   const [appMode, setAppMode] = useState('client')
   const [user, setUser] = useState(null)
   const [dbState, setDbState] = useState(null)
 
+  // SI NO HAY CLAVE, MOSTRAMOS LA PANTALLA DE SEGURIDAD
+  if (!geminiKey) {
+    return (
+      <div className="min-h-[100dvh] bg-gray-900 flex flex-col items-center justify-center p-6 text-center z-50 fixed inset-0">
+        <div className="bg-white p-6 rounded-xl shadow-xl max-w-sm w-full">
+          <h2 className="text-2xl font-black text-[#cc292b] mb-2">🔐 Seguridad</h2>
+          <p className="text-gray-600 mb-4 text-sm">
+            Pegá acá tu nueva clave de Gemini. Solo se guardará en tu navegador y Google no la bloqueará.
+          </p>
+          <input 
+            type="password" 
+            id="inputKey"
+            placeholder="Empieza con AIzaSy..." 
+            className="w-full bg-gray-100 border border-gray-300 rounded-lg px-4 py-3 mb-4 outline-none focus:ring-2 focus:ring-red-500 text-center"
+          />
+          <button 
+            onClick={() => {
+              const val = document.getElementById('inputKey').value.trim();
+              if (val) {
+                localStorage.setItem('gemini_key', val);
+                setGeminiKey(val);
+              }
+            }}
+            className="w-full bg-[#cc292b] text-white font-bold py-3 rounded-lg shadow-lg hover:bg-red-800"
+          >
+            Activar Chef IA ✨
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // >>> ACÁ ABAJO TIENE QUE QUEDAR TU useEffect <<<
   useEffect(() => {
     if (!auth) {
       loadFallback()

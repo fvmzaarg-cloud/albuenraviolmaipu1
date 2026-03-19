@@ -184,38 +184,6 @@ export default function App() {
   const [user, setUser] = useState(null)
   const [dbState, setDbState] = useState(null)
 
-  // SI NO HAY CLAVE, MOSTRAMOS LA PANTALLA DE SEGURIDAD
-  if (!geminiKey) {
-    return (
-      <div className="min-h-[100dvh] bg-gray-900 flex flex-col items-center justify-center p-6 text-center z-50 fixed inset-0">
-        <div className="bg-white p-6 rounded-xl shadow-xl max-w-sm w-full">
-          <h2 className="text-2xl font-black text-[#cc292b] mb-2">🔐 Seguridad</h2>
-          <p className="text-gray-600 mb-4 text-sm">
-            Pegá acá tu nueva clave de Gemini. Solo se guardará en tu navegador y Google no la bloqueará.
-          </p>
-          <input 
-            type="password" 
-            id="inputKey"
-            placeholder="Empieza con AIzaSy..." 
-            className="w-full bg-gray-100 border border-gray-300 rounded-lg px-4 py-3 mb-4 outline-none focus:ring-2 focus:ring-red-500 text-center"
-          />
-          <button 
-            onClick={() => {
-              const val = document.getElementById('inputKey').value.trim();
-              if (val) {
-                localStorage.setItem('gemini_key', val);
-                setGeminiKey(val);
-              }
-            }}
-            className="w-full bg-[#cc292b] text-white font-bold py-3 rounded-lg shadow-lg hover:bg-red-800"
-          >
-            Activar Chef IA ✨
-          </button>
-        </div>
-      </div>
-    );
-  }
-
   // >>> ACÁ ABAJO TIENE QUE QUEDAR TU useEffect <<<
   useEffect(() => {
     if (!auth) {
@@ -297,7 +265,68 @@ export default function App() {
       return newState
     })
   }
-
+// --- CAJONCITO DE SEGURIDAD (AHORA SÍ, EN EL LUGAR CORRECTO) ---
+  if (!geminiKey) {
+    return (
+      <div className="min-h-[100dvh] bg-gray-900 flex flex-col items-center justify-center p-6 text-center z-50 fixed inset-0">
+        <div className="bg-white p-6 rounded-xl shadow-xl max-w-sm w-full">
+          <h2 className="text-2xl font-black text-[#cc292b] mb-2">🔐 Seguridad</h2>
+          <p className="text-gray-600 mb-4 text-sm">
+            Pegá acá tu nueva clave de Gemini. Solo se guardará en tu navegador y Google no la bloqueará.
+          </p>
+          <input 
+            type="password" 
+            id="inputKey"
+            placeholder="Empieza con AIzaSy..." 
+            className="w-full bg-gray-100 border border-gray-300 rounded-lg px-4 py-3 mb-4 outline-none focus:ring-2 focus:ring-red-500 text-center"
+          />
+          <button 
+            onClick={() => {
+              const val = document.getElementById('inputKey').value.trim();
+              if (val) {
+                localStorage.setItem('gemini_key', val);
+                setGeminiKey(val);
+              }
+            }}
+            className="w-full bg-[#cc292b] text-white font-bold py-3 rounded-lg shadow-lg hover:bg-red-800"
+          >
+            Activar Chef IA ✨
+          </button>
+        </div>
+      </div>
+    );
+  }
+  // --- CAJONCITO DE SEGURIDAD ---
+  if (!geminiKey) {
+    return (
+      <div className="min-h-[100dvh] bg-gray-900 flex flex-col items-center justify-center p-6 text-center z-50 fixed inset-0">
+        <div className="bg-white p-6 rounded-xl shadow-xl max-w-sm w-full">
+          <h2 className="text-2xl font-black text-[#cc292b] mb-2">🔐 Seguridad</h2>
+          <p className="text-gray-600 mb-4 text-sm">
+            Pegá acá tu nueva clave de Gemini. Solo se guardará en tu navegador y Google no la bloqueará.
+          </p>
+          <input 
+            type="password" 
+            id="inputKey"
+            placeholder="Empieza con AIzaSy..." 
+            className="w-full bg-gray-100 border border-gray-300 rounded-lg px-4 py-3 mb-4 outline-none focus:ring-2 focus:ring-red-500 text-center"
+          />
+          <button 
+            onClick={() => {
+              const val = document.getElementById('inputKey').value.trim();
+              if (val) {
+                localStorage.setItem('gemini_key', val);
+                setGeminiKey(val);
+              }
+            }}
+            className="w-full bg-[#cc292b] text-white font-bold py-3 rounded-lg shadow-lg hover:bg-red-800"
+          >
+            Activar Chef IA ✨
+          </button>
+        </div>
+      </div>
+    );
+  }
   if (!dbState) {
     return (
       <div className="min-h-screen bg-gray-100 flex flex-col items-center justify-center">

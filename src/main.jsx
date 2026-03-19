@@ -1,3 +1,5 @@
+window.GEMINI_API_KEY = "AIzaSyByRfYN7dVvBHGZgikBZcrmOY6lDgLgO6Y";
+window.GOOGLE_MAPS_API_KEY = "AIzaSyByRfYN7dVvBHGZgikBZcrmOY6lDgLgO6Y";
 import React from 'react'
 import ReactDOM from 'react-dom/client'
 import App from './App'

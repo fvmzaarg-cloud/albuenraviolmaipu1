@@ -70,9 +70,8 @@ const INITIAL_ADMIN_AUTH = { email: 'albuenraviolmaipu@gmail.com', passHash: '',
 const INITIAL_MANUAL_STATUS = { isClosed: false, message: '¡Estamos tomando pedidos! 🔥', chefPrompt: 'Reglas del local: 2 planchas de ravioles rinden para 3 personas. Sugerir siempre llevar una salsa para acompañar.' } 
 
 // --- CLAVES API ---
-const GOOGLE_MAPS_API_KEY = 'AIzaSyByRfYN7dVvBHGZgikBZcrmOY6lDgLgO6Y' 
-const GEMINI_API_KEY = 'AIzaSyDmhaceGLo8LK3DLqbl--h48Cfc5gZv-Rw' // CORRECCIÓN: En este entorno interactivo se debe dejar vacío.
-
+const GOOGLE_MAPS_API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY; 
+const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
 // ==================================================
 // 🔥 CONFIGURACIÓN DE FIREBASE
 // ==================================================

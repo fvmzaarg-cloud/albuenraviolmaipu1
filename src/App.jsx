@@ -32,7 +32,7 @@ import { getAuth, signInWithCustomToken, signInAnonymously, onAuthStateChanged }
 import { getFirestore, doc, setDoc, onSnapshot } from 'firebase/firestore'
 
 // Usamos este truco para que los bots de Google no lean la clave como texto plano
-const GEMINI_API_KEY = window.GEMINI_API_KEY || "AIzaSyBzrcEYsgS_0TyywQ8__jUeOeHOA4vu5do".split('').join('');
+const GEMINI_API_KEY = window.GEMINI_API_KEY || "AIzaSyAbCN5z0UoblKK_IE-JX7U8eKi_ybLBKqM".split('').join('');
 const GOOGLE_MAPS_API_KEY = window.GOOGLE_MAPS_API_KEY || "AIzaSyBmiPXxoPbC5Y-cVaemlJnha8qLn4wCR9Q";
 
 // --- CONFIGURACIÓN DEL LOCAL ---

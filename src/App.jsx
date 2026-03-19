@@ -70,9 +70,6 @@ const INITIAL_SCHEDULE = {
 const INITIAL_ADMIN_AUTH = { email: 'albuenraviolmaipu@gmail.com', passHash: '', recoveryHash: '', isConfigured: false }
 const INITIAL_MANUAL_STATUS = { isClosed: false, message: '¡Estamos tomando pedidos! 🔥', chefPrompt: 'Reglas del local: 2 planchas de ravioles rinden para 3 personas. Sugerir siempre llevar una salsa para acompañar.' } 
 
-// --- CLAVES API ---
-
-
 // ==================================================
 // 🔥 CONFIGURACIÓN DE FIREBASE
 // ==================================================

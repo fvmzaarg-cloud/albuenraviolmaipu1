@@ -1,6 +1,6 @@
+import { GEMINI_API_KEY, GOOGLE_MAPS_API_KEY } from './claves.js';
 import React, { useState, useEffect, useRef } from 'react'
 import {
-import { GEMINI_API_KEY, GOOGLE_MAPS_API_KEY } from './claves.js';
   Home,
   ShoppingCart,
   User,

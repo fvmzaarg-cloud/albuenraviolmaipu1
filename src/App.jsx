@@ -46,7 +46,7 @@ const INITIAL_SCHEDULE = {
   6: [{ open: '09:30', close: '23:30' }], 
 }
 
-const INITIAL_ADMIN_AUTH = { email: 'albuenraviolmaipu@gmail.com', passHash: '', recoveryHash: '', isConfigured: false }
+const INITIAL_ADMIN_AUTH = { email: 'albuenraviolmaipu@gmail.com', passHash: '', recoveryHash: '', isConfigured: false, geminiKey: '' }
 const INITIAL_MANUAL_STATUS = { isClosed: false, message: '¡Estamos tomando pedidos! 🔥', chefPrompt: 'Reglas del local: 2 planchas de ravioles rinden para 3 personas. Sugerir siempre llevar una salsa para acompañar.' } 
 
 // ==================================================
@@ -117,9 +117,11 @@ const hashPassword = async password => {
   return hashArray.map(b => b.toString(16).padStart(2, '0')).join('')
 }
 
-const callGemini = async (prompt, systemInstruction = 'Eres un asistente útil.') => {
-  const currentKey = localStorage.getItem('gemini_key') || "";
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${currentKey}`;
+// ACÁ LE DECIMOS QUE USE LA CLAVE DE LA BASE DE DATOS
+const callGemini = async (prompt, systemInstruction = 'Eres un asistente útil.', apiKey = '') => {
+  if (!apiKey) return 'El Chef IA está durmiendo la siesta. El administrador debe configurar la clave en el panel de seguridad.';
+  
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
   
   const payload = {
     contents: [
@@ -154,12 +156,10 @@ const callGemini = async (prompt, systemInstruction = 'Eres un asistente útil.'
 // COMPONENTE PRINCIPAL
 // ==========================================
 export default function App() {
-  const [geminiKey, setGeminiKey] = useState(localStorage.getItem('gemini_key') || '');
   const [appMode, setAppMode] = useState('client');
   const [user, setUser] = useState(null);
   const [dbState, setDbState] = useState(null);
 
-  // --- LOGIN INVISIBLE ---
   useEffect(() => {
     if (auth) {
       const unsubscribe = onAuthStateChanged(auth, currentUser => {
@@ -178,7 +178,6 @@ export default function App() {
     }
   }, []);
 
-  // --- SALVAVIDAS ANTI-CUELGUE ---
   useEffect(() => {
     const timer = setTimeout(() => {
       if (!dbState) {
@@ -246,42 +245,11 @@ export default function App() {
     })
   }
 
-  if (!geminiKey) {
-    return (
-      <div className="min-h-[100dvh] bg-gray-900 flex flex-col items-center justify-center p-6 text-center z-50 fixed inset-0">
-        <div className="bg-white p-6 rounded-xl shadow-xl max-w-sm w-full">
-          <h2 className="text-2xl font-black text-[#cc292b] mb-2">🔐 Seguridad</h2>
-          <p className="text-gray-600 mb-4 text-sm">
-            Pegá acá tu nueva clave de Gemini. Solo se guardará en tu navegador y Google no la bloqueará.
-          </p>
-          <input 
-            type="password" 
-            id="inputKey"
-            placeholder="Empieza con AIzaSy..." 
-            className="w-full bg-gray-100 border border-gray-300 rounded-lg px-4 py-3 mb-4 outline-none focus:ring-2 focus:ring-red-500 text-center"
-          />
-          <button 
-            onClick={() => {
-              const val = document.getElementById('inputKey').value.trim();
-              if (val) {
-                localStorage.setItem('gemini_key', val);
-                setGeminiKey(val);
-              }
-            }}
-            className="w-full bg-[#cc292b] text-white font-bold py-3 rounded-lg shadow-lg hover:bg-red-800"
-          >
-            Activar Chef IA ✨
-          </button>
-        </div>
-      </div>
-    );
-  }
-
   if (!dbState) {
     return (
       <div className="min-h-screen bg-gray-100 flex flex-col items-center justify-center">
         <div className="w-12 h-12 border-4 border-[#cc292b] border-t-transparent rounded-full animate-spin mb-4"></div>
-        <p className="font-bold text-gray-600 animate-pulse">Conectando a la Nube...</p>
+        <p className="font-bold text-gray-600 animate-pulse">Cocinando los ravioles...</p>
       </div>
     )
   }
@@ -689,7 +657,8 @@ function ChefAssistant({ db, onClose }) {
     const customRules = db.manualStatus?.chefPrompt || 'Regla de porciones: 2 planchas rinden para 3 personas.';
     const sysPrompt = `Eres el Chef Experto de 'Al Buen Raviol', fábrica de pastas en Mendoza. Menú: ${menuContext}. Habla amigable y argentino (usa 'vos'). Recomienda SOLO productos del menú. \nREGLAS ESTRICTAS DEL LOCAL: ${customRules}. Mantén tus respuestas breves y concisas.`
 
-    const response = await callGemini(userMsg, sysPrompt)
+    // ACÁ LE MANDAMOS LA CLAVE DESDE LA BASE DE DATOS
+    const response = await callGemini(userMsg, sysPrompt, db.adminAuth?.geminiKey)
     setChat(prev => [...prev, { role: 'assistant', text: response }])
     setIsLoading(false)
   }
@@ -843,10 +812,7 @@ function ClientCheckout({ cart, cartTotal, db, setDb, setRoute, clearCart }) {
     const errors = []
     if (!formData.name.trim()) errors.push('name')
     if (!formData.phone.trim()) errors.push('phone')
-    
-    // ACÁ ESTÁ LA MAGIA: Exigimos que existan las coordenadas del mapa sí o sí
     if (orderType === 'delivery' && (!formData.address.trim() || !deliveryCoords)) errors.push('address')
-    
     if (paymentMethod === 'efectivo') {
       const amount = parseFloat(cashAmount)
       if (isNaN(amount) || amount < finalTotal) errors.push('cashAmount')
@@ -854,7 +820,6 @@ function ClientCheckout({ cart, cartTotal, db, setDb, setRoute, clearCart }) {
 
     if (errors.length > 0) {
       setInvalidFields(errors)
-      // ACÁ LE EXPLICAMOS AL CLIENTE EXACTAMENTE QUÉ LE FALTÓ HACER
       if (errors.includes('address') && orderType === 'delivery' && !deliveryCoords) {
         setFormError('Por favor seleccioná tu dirección de la lista de Google Maps o usá el botón de ubicación.')
       } else {
@@ -882,7 +847,7 @@ function ClientCheckout({ cart, cartTotal, db, setDb, setRoute, clearCart }) {
     }\n*Tipo:* ${orderType === 'retiro' ? '🏪 Retiro por local' : '🛵 Delivery'}\n`
     if (orderType === 'delivery') {
       text += `*Dirección:* ${formData.address}\n`
-      if (deliveryCoords) text += `*Mapa:* https://maps.google.com/?q=${deliveryCoords.lat},${deliveryCoords.lng}\n`
+      if (deliveryCoords) text += `*Mapa:* http://googleusercontent.com/maps.google.com/?q=${deliveryCoords.lat},${deliveryCoords.lng}\n`
     }
     
     if (formData.notes.trim()) {
@@ -1297,9 +1262,8 @@ function MapPicker({ address, shopLocation, onAddressChange, onLocationSelect, i
 function AdminApp({ db, setDb, switchMode }) {
   const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [adminRoute, setAdminRoute] = useState('dashboard')
-  const [newOrderPopup, setNewOrderPopup] = useState(false) // LA VENTANA EMERGENTE
+  const [newOrderPopup, setNewOrderPopup] = useState(false) 
 
-  // LA ALARMA EXCLUSIVA DEL DUEÑO
   const cantidadPedidosRef = useRef(db?.orders?.length || 0);
   const cargaInicialRef = useRef(true); 
 
@@ -1314,7 +1278,6 @@ function AdminApp({ db, setDb, switchMode }) {
       }
 
       if (actuales > cantidadPedidosRef.current) {
-        // Notificación nativa por si estás en la compu (protegido con Try/Catch)
         try {
           if ('Notification' in window && window.Notification) {
             if (Notification.permission === 'granted') {
@@ -1327,7 +1290,6 @@ function AdminApp({ db, setDb, switchMode }) {
           console.log("Navegador bloqueó notificación nativa.");
         }
 
-        // Sonido de la campana
         let parlante = document.getElementById('parlante-invencible');
         if (!parlante) {
           parlante = document.createElement('audio');
@@ -1338,7 +1300,6 @@ function AdminApp({ db, setDb, switchMode }) {
         parlante.currentTime = 0;
         parlante.play().catch(e => console.log('Sonido bloqueado temporalmente'));
 
-        // ¡Y ACÁ SE DISPARA LA VENTANA GIGANTE!
         setNewOrderPopup(true);
       }
       
@@ -1415,7 +1376,6 @@ function AdminApp({ db, setDb, switchMode }) {
         <NavBtn Icon={Truck} label="Envíos" active={adminRoute === 'envios'} onClick={() => setAdminRoute('envios')} />
       </div>
 
-      {/* ESTA ES LA MAGIA: LA VENTANA EMERGENTE (POPUP) */}
       {newOrderPopup && (
         <div className="fixed inset-0 bg-black/70 z-[9999] flex items-center justify-center p-4 animate-fadeIn">
           <div className="bg-white p-6 rounded-2xl shadow-2xl w-full max-w-sm text-center transform transition-all border-4 border-[#c82a2a]">
@@ -1423,7 +1383,7 @@ function AdminApp({ db, setDb, switchMode }) {
               <Store size={40} className="text-green-600" />
             </div>
             <h2 className="text-2xl font-black text-gray-800 mb-2">¡NUEVO PEDIDO! 🥟</h2>
-            <p className="text-gray-600 mb-6 font-medium">Acaba de ingresar un nuevo pedido!!!</p>
+            <p className="text-gray-600 mb-6 font-medium">Acaba de ingresar un nuevo pedido al sistema. ¡A la cocina!</p>
             <div className="flex gap-3">
               <button
                 onClick={() => setNewOrderPopup(false)}
@@ -1434,7 +1394,7 @@ function AdminApp({ db, setDb, switchMode }) {
               <button
                 onClick={() => {
                   setNewOrderPopup(false);
-                  setAdminRoute('pedidos'); // Te lleva directo a los pedidos
+                  setAdminRoute('pedidos'); 
                 }}
                 className="flex-1 bg-[#c82a2a] text-white font-bold py-3 rounded-xl hover:bg-red-800"
               >
@@ -1485,7 +1445,7 @@ function AdminLogin({ db, setDb, onLogin, switchMode }) {
 
     setDb(prev => ({
       ...prev,
-      adminAuth: { email: email, passHash: hashedPass, recoveryHash: hashedRecovery, isConfigured: true },
+      adminAuth: { email: email, passHash: hashedPass, recoveryHash: hashedRecovery, isConfigured: true, geminiKey: '' },
     }))
     onLogin()
   }
@@ -1668,12 +1628,15 @@ function AdminSeguridad({ db, setDb }) {
   const [email, setEmail] = useState(db.adminAuth.email)
   const [newPass, setNewPass] = useState('')
   const [newRecovery, setNewRecovery] = useState('')
+  // EL NUEVO ESTADO PARA LA CLAVE DE GEMINI
+  const [geminiKey, setGeminiKey] = useState(db.adminAuth.geminiKey || '')
+  
   const [saved, setSaved] = useState(false)
   const [errorMsg, setErrorMsg] = useState('')
 
   const handleSave = async () => {
     setErrorMsg('')
-    let authUpdate = { ...db.adminAuth, email }
+    let authUpdate = { ...db.adminAuth, email, geminiKey }
     if (newPass.trim()) {
       if (newPass.length < 6) return setErrorMsg('La nueva contraseña debe tener al menos 6 caracteres.')
       authUpdate.passHash = await hashPassword(newPass)
@@ -1728,6 +1691,24 @@ function AdminSeguridad({ db, setDb }) {
             className="w-full border rounded p-2 text-sm outline-none focus:border-blue-500"
           />
         </div>
+        
+        {/* LA ZONA DEL CHEF IA */}
+        <div className="pt-4 border-t border-gray-200 mt-4">
+          <h3 className="text-sm font-bold text-[#c82a2a] flex items-center gap-2 mb-2">
+            <Sparkles size={16} /> Clave API del Chef IA
+          </h3>
+          <p className="text-xs text-gray-500 mb-2">
+            Pegá acá tu clave de Gemini. Al guardarla en esta base de datos, Google no la bloqueará.
+          </p>
+          <input
+            type="password"
+            placeholder="Empieza con AIzaSy..."
+            value={geminiKey}
+            onChange={e => setGeminiKey(e.target.value)}
+            className="w-full border rounded p-2 text-sm outline-none focus:border-[#c82a2a] bg-red-50"
+          />
+        </div>
+
         <button
           onClick={handleSave}
           className="w-full bg-blue-600 text-white font-bold py-3 rounded-lg hover:bg-blue-700 flex justify-center gap-2 mt-4"
@@ -1969,7 +1950,8 @@ function AdminCatalogo({ db, setDb }) {
     setIsGeneratingDesc(true)
     const response = await callGemini(
       `Escribe una descripción comercial y apetitosa (max 2 líneas) para un plato llamado: "${formData.name}". Destaca su calidad casera.`,
-      'Eres un copywriter gastronómico.'
+      'Eres un copywriter gastronómico.',
+      db.adminAuth?.geminiKey
     )
     setFormData(prev => ({ ...prev, description: response.replace(/"/g, '') }))
     setIsGeneratingDesc(false)
@@ -2035,7 +2017,7 @@ function AdminCatalogo({ db, setDb }) {
               value={formData.unitType}
               onChange={e => setFormData({ ...formData, unitType: e.target.value })}
             >
-              <option value="unidad">Venta por Unidad (Plancha)</option>
+              <option value="unidad">Venta por Unidad / Plancha / Caja</option>
               <option value="peso">Venta por Peso (Suma de a 0.250 Kg)</option>
             </select>
           </div>

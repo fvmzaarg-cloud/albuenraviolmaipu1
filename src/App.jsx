@@ -50,7 +50,7 @@ const INITIAL_ADMIN_AUTH = { email: 'albuenraviolmaipu@gmail.com', passHash: '',
 const INITIAL_MANUAL_STATUS = { isClosed: false, message: '¡Estamos tomando pedidos! 🔥', chefPrompt: 'Reglas del local: 2 planchas de ravioles rinden para 3 personas. Sugerir siempre llevar una salsa para acompañar.' } 
 
 // ==================================================
-// 🔥 CONFIGURACIÓN DE FIREBASE 
+// 🔥 CONFIGURACIÓN DE FIREBASE
 // ==================================================
 const LOCAL_FIREBASE_CONFIG = {
   apiKey: "AIzaSyAu-6398vfb_Fz3jDvvmAprisBTZa8DAOs",
@@ -151,7 +151,7 @@ const callGemini = async (prompt, systemInstruction = 'Eres un asistente útil.'
 }
 
 // ==========================================
-// COMPONENTE PRINCIPAL
+// COMPONENTE PRINCIPAL (EL CEREBRO)
 // ==========================================
 export default function App() {
   const [geminiKey, setGeminiKey] = useState(localStorage.getItem('gemini_key') || '');
@@ -1290,12 +1290,11 @@ function AdminApp({ db, setDb, switchMode }) {
   const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [adminRoute, setAdminRoute] = useState('dashboard')
 
-  // ¡LA ALARMA AHORA VIVE ACÁ ADENTRO! (Nadie más la escucha)
+  // LA ALARMA AHORA VIVE EXCLUSIVAMENTE ACÁ (Y está blindada para celulares)
   const cantidadPedidosRef = useRef(db?.orders?.length || 0);
   const cargaInicialRef = useRef(true); 
 
   useEffect(() => {
-    // Solo se activa la oreja de la alarma si sos el dueño (está autenticado)
     if (isAuthenticated && db && db.orders) {
       const actuales = db.orders.length;
       
@@ -1306,19 +1305,23 @@ function AdminApp({ db, setDb, switchMode }) {
       }
 
       if (actuales > cantidadPedidosRef.current) {
-        if ('Notification' in window && window.Notification) {
-          if (Notification.permission === 'granted') {
-            new Notification('🥟 ¡Nuevo pedido en Al Buen Raviol!', { body: 'Revisá la pestaña de pedidos.' });
-          } else if (Notification.permission !== 'denied') {
-            Notification.requestPermission();
+        // Bloque de seguridad para notificaciones (evita el crasheo en Android)
+        try {
+          if ('Notification' in window && window.Notification) {
+            if (Notification.permission === 'granted') {
+              new Notification('🥟 ¡Nuevo pedido en Al Buen Raviol!', { body: 'Revisá la pestaña de pedidos.' });
+            } else if (Notification.permission !== 'denied') {
+              Notification.requestPermission();
+            }
           }
+        } catch (err) {
+          console.log("El navegador móvil bloqueó las notificaciones nativas de escritorio.");
         }
 
         let parlante = document.getElementById('parlante-invencible');
         if (!parlante) {
           parlante = document.createElement('audio');
           parlante.id = 'parlante-invencible';
-          // El timbre oficial a prueba de bloqueos de Cloudflare
           parlante.src = 'https://cdnjs.cloudflare.com/ajax/libs/ion-sound/3.0.7/sounds/bell_ring.mp3';
           document.body.appendChild(parlante);
         }
@@ -1351,10 +1354,9 @@ function AdminApp({ db, setDb, switchMode }) {
       <div className="bg-gray-900 text-white p-4 flex justify-between items-center shadow-md shrink-0">
         
         <div className="flex items-center gap-2">
-          {/* EL FAMOSO BOTÓN VOLVER (Solo aparece si no estás en el panel principal) */}
           {adminRoute !== 'dashboard' && (
-            <button onClick={() => setAdminRoute('dashboard')} className="text-gray-400 hover:text-white p-1">
-              <ChevronLeft size={20} />
+            <button onClick={() => setAdminRoute('dashboard')} className="text-gray-400 hover:text-white p-1 transition-colors">
+              <ChevronLeft size={22} />
             </button>
           )}
           <h1 className="font-bold tracking-wide text-sm flex items-center gap-2">

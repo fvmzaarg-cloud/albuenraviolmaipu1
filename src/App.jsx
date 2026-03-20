@@ -50,7 +50,7 @@ const INITIAL_ADMIN_AUTH = { email: 'albuenraviolmaipu@gmail.com', passHash: '',
 const INITIAL_MANUAL_STATUS = { isClosed: false, message: '¡Estamos tomando pedidos! 🔥', chefPrompt: 'Reglas del local: 2 planchas de ravioles rinden para 3 personas. Sugerir siempre llevar una salsa para acompañar.' } 
 
 // ==================================================
-// 🔥 CONFIGURACIÓN DE FIREBASE
+// 🔥 CONFIGURACIÓN DE FIREBASE 
 // ==================================================
 const LOCAL_FIREBASE_CONFIG = {
   apiKey: "AIzaSyAu-6398vfb_Fz3jDvvmAprisBTZa8DAOs",
@@ -151,7 +151,7 @@ const callGemini = async (prompt, systemInstruction = 'Eres un asistente útil.'
 }
 
 // ==========================================
-// COMPONENTE PRINCIPAL (EL CEREBRO)
+// COMPONENTE PRINCIPAL
 // ==========================================
 export default function App() {
   const [geminiKey, setGeminiKey] = useState(localStorage.getItem('gemini_key') || '');
@@ -1289,8 +1289,9 @@ function MapPicker({ address, shopLocation, onAddressChange, onLocationSelect, i
 function AdminApp({ db, setDb, switchMode }) {
   const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [adminRoute, setAdminRoute] = useState('dashboard')
+  const [newOrderPopup, setNewOrderPopup] = useState(false) // LA VENTANA EMERGENTE
 
-  // LA ALARMA AHORA VIVE EXCLUSIVAMENTE ACÁ (Y está blindada para celulares)
+  // LA ALARMA EXCLUSIVA DEL DUEÑO
   const cantidadPedidosRef = useRef(db?.orders?.length || 0);
   const cargaInicialRef = useRef(true); 
 
@@ -1305,7 +1306,7 @@ function AdminApp({ db, setDb, switchMode }) {
       }
 
       if (actuales > cantidadPedidosRef.current) {
-        // Bloque de seguridad para notificaciones (evita el crasheo en Android)
+        // Notificación nativa por si estás en la compu (protegido con Try/Catch)
         try {
           if ('Notification' in window && window.Notification) {
             if (Notification.permission === 'granted') {
@@ -1315,9 +1316,10 @@ function AdminApp({ db, setDb, switchMode }) {
             }
           }
         } catch (err) {
-          console.log("El navegador móvil bloqueó las notificaciones nativas de escritorio.");
+          console.log("Navegador bloqueó notificación nativa.");
         }
 
+        // Sonido de la campana
         let parlante = document.getElementById('parlante-invencible');
         if (!parlante) {
           parlante = document.createElement('audio');
@@ -1327,6 +1329,9 @@ function AdminApp({ db, setDb, switchMode }) {
         }
         parlante.currentTime = 0;
         parlante.play().catch(e => console.log('Sonido bloqueado temporalmente'));
+
+        // ¡Y ACÁ SE DISPARA LA VENTANA GIGANTE!
+        setNewOrderPopup(true);
       }
       
       cantidadPedidosRef.current = actuales;
@@ -1350,7 +1355,7 @@ function AdminApp({ db, setDb, switchMode }) {
   }
 
   return (
-    <div className="flex flex-col h-full bg-gray-50">
+    <div className="flex flex-col h-full bg-gray-50 relative">
       <div className="bg-gray-900 text-white p-4 flex justify-between items-center shadow-md shrink-0">
         
         <div className="flex items-center gap-2">
@@ -1401,6 +1406,36 @@ function AdminApp({ db, setDb, switchMode }) {
         <NavBtn Icon={MenuSquare} label="Catálogo" active={adminRoute === 'catalogo'} onClick={() => setAdminRoute('catalogo')} />
         <NavBtn Icon={Truck} label="Envíos" active={adminRoute === 'envios'} onClick={() => setAdminRoute('envios')} />
       </div>
+
+      {/* ESTA ES LA MAGIA: LA VENTANA EMERGENTE (POPUP) */}
+      {newOrderPopup && (
+        <div className="fixed inset-0 bg-black/70 z-[9999] flex items-center justify-center p-4 animate-fadeIn">
+          <div className="bg-white p-6 rounded-2xl shadow-2xl w-full max-w-sm text-center transform transition-all border-4 border-[#c82a2a]">
+            <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4 animate-bounce">
+              <Store size={40} className="text-green-600" />
+            </div>
+            <h2 className="text-2xl font-black text-gray-800 mb-2">¡NUEVO PEDIDO! 🥟</h2>
+            <p className="text-gray-600 mb-6 font-medium">Acaba de ingresar un nuevo pedido al sistema. ¡A la cocina!</p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setNewOrderPopup(false)}
+                className="flex-1 bg-gray-100 text-gray-700 font-bold py-3 rounded-xl hover:bg-gray-200"
+              >
+                Cerrar
+              </button>
+              <button
+                onClick={() => {
+                  setNewOrderPopup(false);
+                  setAdminRoute('pedidos'); // Te lleva directo a los pedidos
+                }}
+                className="flex-1 bg-[#c82a2a] text-white font-bold py-3 rounded-xl hover:bg-red-800"
+              >
+                Ver Pedido
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

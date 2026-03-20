@@ -874,7 +874,7 @@ function ClientCheckout({ cart, cartTotal, db, setDb, setRoute, clearCart }) {
     }\n*Tipo:* ${orderType === 'retiro' ? '🏪 Retiro por local' : '🛵 Delivery'}\n`
     if (orderType === 'delivery') {
       text += `*Dirección:* ${formData.address}\n`
-      if (deliveryCoords) text += `*Mapa:* http://googleusercontent.com/maps.google.com/?q=${deliveryCoords.lat},${deliveryCoords.lng}\n`
+      if (deliveryCoords) text += `*Mapa:* https://maps.google.com/?q=${deliveryCoords.lat},${deliveryCoords.lng}\n`
     }
     
     if (formData.notes.trim()) {

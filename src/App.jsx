@@ -1298,9 +1298,34 @@ function MapPicker({ address, shopLocation, onAddressChange, onLocationSelect, i
 // ==========================================
 // ÁREA ADMINISTRADOR
 // ==========================================
+// ==========================================
+// ÁREA ADMINISTRADOR
+// ==========================================
 function AdminApp({ db, setDb, switchMode }) {
   const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [adminRoute, setAdminRoute] = useState('dashboard')
+  
+  // --- MAGIA: DETECTAR PEDIDOS NUEVOS ---
+  const [cantidadPedidos, setCantidadPedidos] = useState(db.orders.length);
+
+  useEffect(() => {
+    // Si la cantidad de pedidos actual es mayor a la que teníamos guardada... ¡ENTRÓ UNO NUEVO!
+    if (db.orders.length > cantidadPedidos) {
+      // 1. Reproducir sonido de campanita de cocina
+      const audio = new Audio('https://actions.google.com/sounds/v1/alarms/beep_short.ogg');
+      audio.play().catch(e => console.log('Sonido bloqueado hasta que hagas el primer clic en la página.'));
+      
+      // 2. Mostrar Notificación del navegador
+      if (Notification.permission === 'granted') {
+        new Notification('🥟 ¡Nuevo pedido en Al Buen Raviol!', { body: 'Revisá la pestaña de pedidos para ver los detalles.' });
+      } else if (Notification.permission !== 'denied') {
+        Notification.requestPermission();
+      }
+    }
+    // Actualizamos el contador
+    setCantidadPedidos(db.orders.length);
+  }, [db.orders.length]);
+  // ----------------------------------------
 
   if (!isAuthenticated)
     return <AdminLogin db={db} setDb={setDb} onLogin={() => setIsAuthenticated(true)} switchMode={switchMode} />

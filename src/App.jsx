@@ -175,7 +175,7 @@ const callGemini = async (prompt, systemInstruction = 'Eres un asistente útil.'
   }
 }
 // --- MAGIA: Cargamos el sonido AFUERA de React para que jamás lo corte ---
-const sonidoAlarma = new Audio('https://upload.wikimedia.org/wikipedia/commons/5/58/Cash_register_x.ogg');
+const sonidoAlarma = new Audio('https://upload.wikimedia.org/wikipedia/commons/3/34/Sound_Effect_-_Door_Bell.ogg');
 sonidoAlarma.preload = 'auto'; // Obligamos al navegador a tenerlo listo
 // ------------------------------------------------------------------------
 

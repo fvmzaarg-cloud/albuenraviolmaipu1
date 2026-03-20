@@ -50,7 +50,7 @@ const INITIAL_ADMIN_AUTH = { email: 'albuenraviolmaipu@gmail.com', passHash: '',
 const INITIAL_MANUAL_STATUS = { isClosed: false, message: '¡Estamos tomando pedidos! 🔥', chefPrompt: 'Reglas del local: 2 planchas de ravioles rinden para 3 personas. Sugerir siempre llevar una salsa para acompañar.' } 
 
 // ==================================================
-// 🔥 CONFIGURACIÓN DE FIREBASE (TUS LLAVES NUEVAS)
+// 🔥 CONFIGURACIÓN DE FIREBASE
 // ==================================================
 const LOCAL_FIREBASE_CONFIG = {
   apiKey: "AIzaSyAu-6398vfb_Fz3jDvvmAprisBTZa8DAOs",
@@ -151,7 +151,7 @@ const callGemini = async (prompt, systemInstruction = 'Eres un asistente útil.'
 }
 
 // ==========================================
-// COMPONENTE PRINCIPAL (EL CEREBRO)
+// COMPONENTE PRINCIPAL
 // ==========================================
 export default function App() {
   const [geminiKey, setGeminiKey] = useState(localStorage.getItem('gemini_key') || '');
@@ -159,7 +159,6 @@ export default function App() {
   const [user, setUser] = useState(null);
   const [dbState, setDbState] = useState(null);
 
-  // --- LOGIN INVISIBLE PARA ENTRAR A FIREBASE ---
   useEffect(() => {
     if (auth) {
       const unsubscribe = onAuthStateChanged(auth, currentUser => {
@@ -178,7 +177,6 @@ export default function App() {
     }
   }, []);
 
-  // --- SALVAVIDAS ANTI-CUELGUE ---
   useEffect(() => {
     const timer = setTimeout(() => {
       if (!dbState) {
@@ -189,7 +187,6 @@ export default function App() {
     return () => clearTimeout(timer);
   }, [dbState]);
 
-  // --- ALARMA GLOBAL DE PEDIDOS ---
   const cantidadPedidosRef = useRef(0);
   const cargaInicialRef = useRef(true); 
 
@@ -204,7 +201,6 @@ export default function App() {
       }
 
       if (actuales > cantidadPedidosRef.current) {
-        // 1. Notificación Visual
         if ('Notification' in window) {
           if (Notification.permission === 'granted') {
             new Notification('🥟 ¡Nuevo pedido en Al Buen Raviol!', { body: 'Revisá la pestaña de pedidos.' });
@@ -213,7 +209,6 @@ export default function App() {
           }
         }
 
-        // 2. Parlante Físico (Imposible que se corte)
         let parlante = document.getElementById('parlante-invencible');
         if (!parlante) {
           parlante = document.createElement('audio');
@@ -287,7 +282,6 @@ export default function App() {
     })
   }
 
-  // --- CAJONCITO DE SEGURIDAD GEMINI ---
   if (!geminiKey) {
     return (
       <div className="min-h-[100dvh] bg-gray-900 flex flex-col items-center justify-center p-6 text-center z-50 fixed inset-0">
@@ -346,7 +340,6 @@ function ClientApp({ db, setDb, switchMode }) {
   const [cart, setCart] = useState([])
   const [showAssistant, setShowAssistant] = useState(false)
 
-  // LA MAGIA: Si es por peso, ahora suma de a CUARTO KILO (0.250)
   const addToCart = product => {
     const step = product.unitType === 'peso' ? 0.25 : 1;
     
@@ -362,7 +355,7 @@ function ClientApp({ db, setDb, switchMode }) {
     setCart(prev =>
       prev.map(item => {
           if (item.product.id === productId) {
-            const step = item.product.unitType === 'peso' ? 0.25 : 1; // Sube/Baja de a 250 gramos
+            const step = item.product.unitType === 'peso' ? 0.25 : 1; 
             const newQ = item.quantity + (direction * step);
             return newQ > 0 ? { ...item, quantity: newQ } : null
           }
@@ -385,6 +378,8 @@ function ClientApp({ db, setDb, switchMode }) {
             cartItemsCount={cartItemsCount}
             cartTotal={cartTotal}
             setRoute={setRoute}
+            cart={cart}
+            updateQuantity={updateQuantity}
           />
         )}
         {route === 'cart' && (
@@ -445,7 +440,7 @@ function ClientNavBtn({ Icon, label, active, onClick, badge }) {
   )
 }
 
-function ClientHome({ db, addToCart, switchMode, cartItemsCount, cartTotal, setRoute }) {
+function ClientHome({ db, addToCart, switchMode, cartItemsCount, cartTotal, setRoute, cart, updateQuantity }) {
   const [activeCategory, setActiveCategory] = useState(null)
   const [storeStatus, setStoreStatus] = useState({ isOpen: false, isForcedClosed: false, isTimeClosed: false, nextOpen: '', customMessage: '' })
   const [showScrollTop, setShowScrollTop] = useState(false)
@@ -582,7 +577,14 @@ function ClientHome({ db, addToCart, switchMode, cartItemsCount, cartTotal, setR
             </h2>
             <div className="grid grid-cols-1 gap-4">
               {featuredProducts.map(product => (
-                <ProductCard key={product.id} product={product} onAdd={addToCart} storeOpen={storeStatus.isOpen} />
+                <ProductCard 
+                  key={product.id} 
+                  product={product} 
+                  onAdd={addToCart} 
+                  storeOpen={storeStatus.isOpen} 
+                  cartItem={cart.find(item => item.product.id === product.id)}
+                  updateQuantity={updateQuantity}
+                />
               ))}
             </div>
           </div>
@@ -594,7 +596,14 @@ function ClientHome({ db, addToCart, switchMode, cartItemsCount, cartTotal, setR
           </h2>
           <div className="grid grid-cols-1 gap-4">
             {filteredProducts.map(product => (
-              <ProductCard key={product.id} product={product} onAdd={addToCart} storeOpen={storeStatus.isOpen} />
+              <ProductCard 
+                key={product.id} 
+                product={product} 
+                onAdd={addToCart} 
+                storeOpen={storeStatus.isOpen} 
+                cartItem={cart.find(item => item.product.id === product.id)}
+                updateQuantity={updateQuantity}
+              />
             ))}
             {filteredProducts.length === 0 && (
               <p className="text-center text-gray-500 py-8">No hay productos en esta categoría.</p>
@@ -630,7 +639,10 @@ function ClientHome({ db, addToCart, switchMode, cartItemsCount, cartTotal, setR
   )
 }
 
-function ProductCard({ product, onAdd, storeOpen }) {
+function ProductCard({ product, onAdd, storeOpen, cartItem, updateQuantity }) {
+  const quantity = cartItem ? cartItem.quantity : 0;
+  const step = product.unitType === 'peso' ? 0.25 : 1;
+
   return (
     <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden flex h-32">
       <div className="w-1/3 h-full">
@@ -646,15 +658,38 @@ function ProductCard({ product, onAdd, storeOpen }) {
             {formatCurrency(product.price)}
             {product.unitType === 'peso' && <span className="text-[10px] text-gray-500 font-normal mb-0.5">/ kg</span>}
           </span>
-          <button
-            disabled={!storeOpen}
-            onClick={() => onAdd(product)}
-            className={`w-8 h-8 rounded-full flex items-center justify-center transition-transform active:scale-90 ${
-              storeOpen ? 'bg-red-50 text-[#c82a2a] hover:bg-red-100' : 'bg-gray-100 text-gray-400'
-            }`}
-          >
-            <Plus size={18} />
-          </button>
+          
+          {quantity > 0 ? (
+            <div className="flex items-center gap-2 bg-red-50 border border-red-100 rounded-lg px-2 py-1 animate-fadeIn">
+              <button
+                disabled={!storeOpen}
+                onClick={() => updateQuantity(product.id, -1)}
+                className="text-[#c82a2a] p-1 active:scale-90 transition-transform"
+              >
+                {quantity <= step ? <Trash2 size={14} /> : <Minus size={14} />}
+              </button>
+              <span className="font-bold text-sm w-6 text-center text-[#c82a2a]">
+                {quantity}
+              </span>
+              <button
+                disabled={!storeOpen}
+                onClick={() => updateQuantity(product.id, 1)}
+                className="text-[#c82a2a] p-1 active:scale-90 transition-transform"
+              >
+                <Plus size={14} />
+              </button>
+            </div>
+          ) : (
+            <button
+              disabled={!storeOpen}
+              onClick={() => onAdd(product)}
+              className={`w-8 h-8 rounded-full flex items-center justify-center transition-transform active:scale-90 ${
+                storeOpen ? 'bg-red-50 text-[#c82a2a] hover:bg-red-100' : 'bg-gray-100 text-gray-400'
+              }`}
+            >
+              <Plus size={18} />
+            </button>
+          )}
         </div>
       </div>
     </div>
@@ -778,7 +813,6 @@ function ClientCart({ cart, updateQuantity, setRoute, cartTotal }) {
                     <span className="font-bold text-gray-600 text-sm">{formatCurrency(item.product.price * item.quantity)}</span>
                     <div className="flex items-center gap-3 bg-white border border-gray-200 rounded-lg px-2 py-1">
                       <button onClick={() => updateQuantity(item.product.id, -1)} className="text-red-500 p-1">
-                        {/* Se actualiza el chequeo del ícono tacho de basura para los 250 gramos */}
                         {item.quantity <= (item.product.unitType === 'peso' ? 0.25 : 1) ? <Trash2 size={14} /> : <Minus size={14} />}
                       </button>
                       <span className="font-bold text-sm w-10 text-center">
@@ -1941,7 +1975,7 @@ function AdminCatalogo({ db, setDb }) {
               value={formData.unitType}
               onChange={e => setFormData({ ...formData, unitType: e.target.value })}
             >
-              <option value="unidad">Venta por Unidad ( Plancha )</option>
+              <option value="unidad">Venta por Unidad / Plancha / Caja</option>
               <option value="peso">Venta por Peso (Suma de a 0.250 Kg)</option>
             </select>
           </div>

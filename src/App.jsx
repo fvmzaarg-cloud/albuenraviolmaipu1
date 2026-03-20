@@ -1,37 +1,14 @@
 import React, { useState, useEffect, useRef } from 'react'
 import {
-  Home,
-  ShoppingCart,
-  User,
-  MapPin,
-  Search,
-  Plus,
-  Minus,
-  ChevronLeft,
-  Trash2,
-  Clock,
-  CheckCircle,
-  XCircle,
-  Package,
-  LayoutDashboard,
-  ListOrdered,
-  Settings,
-  Store,
-  MenuSquare,
-  Truck,
-  LogOut,
-  Sparkles,
-  Send,
-  X,
-  ArrowUp,
-  ArrowDown,
-  KeyRound,
+  Home, ShoppingCart, User, MapPin, Search, Plus, Minus, ChevronLeft,
+  Trash2, Clock, CheckCircle, XCircle, Package, LayoutDashboard,
+  ListOrdered, Settings, Store, MenuSquare, Truck, LogOut, Sparkles,
+  Send, X, ArrowUp, ArrowDown, KeyRound,
 } from 'lucide-react'
 import { initializeApp } from 'firebase/app'
 import { getAuth, signInWithCustomToken, signInAnonymously, onAuthStateChanged } from 'firebase/auth'
 import { getFirestore, doc, setDoc, onSnapshot } from 'firebase/firestore'
 
-// Borramos la clave de Gemini de acá para que Google no la lea
 const GOOGLE_MAPS_API_KEY = "AIzaSyBmiPXxoPbC5Y-cVaemlJnha8qLn4wCR9Q";
 
 // --- CONFIGURACIÓN DEL LOCAL ---
@@ -136,11 +113,9 @@ const hashPassword = async password => {
 }
 
 const callGemini = async (prompt, systemInstruction = 'Eres un asistente útil.') => {
-  // ACÁ BUSCAMOS LA CLAVE EN LA MEMORIA SECRETA DEL NAVEGADOR
   const currentKey = localStorage.getItem('gemini_key') || "";
   const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${currentKey}`;
   
-  // Armamos el paquete con la estructura EXACTA que exige Google
   const payload = {
     contents: [
       {
@@ -175,43 +150,54 @@ const callGemini = async (prompt, systemInstruction = 'Eres un asistente útil.'
   }
 }
 
-export default function App() {
-// ... acá sigue tu código normal
+// --- PARLANTE ATORNILLADO A LA PARED (Bypass de React) ---
+const reproducirSonidoFuerte = () => {
+  let parlante = document.getElementById('parlante-intocable');
+  if (!parlante) {
+    parlante = document.createElement('audio');
+    parlante.id = 'parlante-intocable';
+    parlante.src = 'https://upload.wikimedia.org/wikipedia/commons/5/58/Cash_register_x.ogg'; // El sonido de la caja
+    document.body.appendChild(parlante);
+  }
+  parlante.currentTime = 0;
+  parlante.play().catch(e => console.log('Navegador bloqueó el sonido:', e));
+};
+// --------------------------------------------------------
+
 // ==========================================
 // COMPONENTE PRINCIPAL
 // ==========================================
 export default function App() {
   const [geminiKey, setGeminiKey] = useState(localStorage.getItem('gemini_key') || '');
-  const [appMode, setAppMode] = useState('client')
-  const [user, setUser] = useState(null)
-  const [dbState, setDbState] = useState(null)
+  const [appMode, setAppMode] = useState('client');
+  const [user, setUser] = useState(null);
+  const [dbState, setDbState] = useState(null);
 
-// --- ALARMA GLOBAL DE PEDIDOS ---
-const cantidadPedidosRef = useRef(0);
+  // --- ALARMA GLOBAL DE PEDIDOS ---
+  const cantidadPedidosRef = useRef(0);
 
-useEffect(() => {
-  if (dbState && dbState.orders) {
-    const actuales = dbState.orders.length;
-    
-    if (actuales > cantidadPedidosRef.current && cantidadPedidosRef.current > 0) {
+  useEffect(() => {
+    if (dbState && dbState.orders) {
+      const actuales = dbState.orders.length;
       
-      // 1. Buscamos el parlante físico y le damos play
-      const parlante = document.getElementById('parlante-cocina');
-      if (parlante) {
-          parlante.play().catch(e => console.log('Sonido bloqueado'));
-      }
-      
-      // 2. Notificación
-      if ('Notification' in window) {
-        if (Notification.permission === 'granted') {
-          new Notification('🥟 ¡Nuevo pedido en Al Buen Raviol!', { body: 'Revisá el panel de control.' });
+      if (actuales > cantidadPedidosRef.current && cantidadPedidosRef.current > 0) {
+        
+        // 1. Llamamos al parlante de la pared (¡no se corta más!)
+        reproducirSonidoFuerte();
+        
+        // 2. Notificación BLINDADA
+        if ('Notification' in window) {
+          if (Notification.permission === 'granted') {
+            new Notification('🥟 ¡Nuevo pedido en Al Buen Raviol!', { body: 'Revisá el panel de control.' });
+          } else if (Notification.permission !== 'denied') {
+            Notification.requestPermission().catch(console.error);
+          }
         }
       }
+      
+      cantidadPedidosRef.current = actuales;
     }
-    
-    cantidadPedidosRef.current = actuales;
-  }
-}, [dbState?.orders]);
+  }, [dbState?.orders]);
   // ----------------------------------------
 
   useEffect(() => {
@@ -261,7 +247,6 @@ useEffect(() => {
     }
   }
 
-  // LA FUNCIÓN setDb BLINDADA PARA EVITAR ERRORES DE VITE
   function updateDbState(updater) {
     setDbState(prev => {
       const newState = typeof updater === 'function' ? updater(prev) : updater
@@ -272,37 +257,7 @@ useEffect(() => {
       return newState
     })
   }
-// --- CAJONCITO DE SEGURIDAD (AHORA SÍ, EN EL LUGAR CORRECTO) ---
-  if (!geminiKey) {
-    return (
-      <div className="min-h-[100dvh] bg-gray-900 flex flex-col items-center justify-center p-6 text-center z-50 fixed inset-0">
-        <div className="bg-white p-6 rounded-xl shadow-xl max-w-sm w-full">
-          <h2 className="text-2xl font-black text-[#cc292b] mb-2">🔐 Seguridad</h2>
-          <p className="text-gray-600 mb-4 text-sm">
-            Pegá acá tu nueva clave de Gemini. Solo se guardará en tu navegador y Google no la bloqueará.
-          </p>
-          <input 
-            type="password" 
-            id="inputKey"
-            placeholder="Empieza con AIzaSy..." 
-            className="w-full bg-gray-100 border border-gray-300 rounded-lg px-4 py-3 mb-4 outline-none focus:ring-2 focus:ring-red-500 text-center"
-          />
-          <button 
-            onClick={() => {
-              const val = document.getElementById('inputKey').value.trim();
-              if (val) {
-                localStorage.setItem('gemini_key', val);
-                setGeminiKey(val);
-              }
-            }}
-            className="w-full bg-[#cc292b] text-white font-bold py-3 rounded-lg shadow-lg hover:bg-red-800"
-          >
-            Activar Chef IA ✨
-          </button>
-        </div>
-      </div>
-    );
-  }
+
   // --- CAJONCITO DE SEGURIDAD ---
   if (!geminiKey) {
     return (
@@ -334,10 +289,10 @@ useEffect(() => {
       </div>
     );
   }
+
   if (!dbState) {
     return (
       <div className="min-h-screen bg-gray-100 flex flex-col items-center justify-center">
-        <audio id="parlante-cocina" src="https://actions.google.com/sounds/v1/transportation/bicycle_bell.ogg" preload="auto"></audio>
         <div className="w-12 h-12 border-4 border-[#cc292b] border-t-transparent rounded-full animate-spin mb-4"></div>
         <p className="font-bold text-gray-600 animate-pulse">Conectando a la Nube...</p>
       </div>

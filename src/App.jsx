@@ -218,7 +218,7 @@ export default function App() {
         if (!parlante) {
           parlante = document.createElement('audio');
           parlante.id = 'parlante-invencible';
-          parlante.src = 'https://www.myinstants.com/media/sounds/door-bell-ii.mp3';
+          parlante.src = 'https://assets.mixkit.co/active_storage/sfx/2218/2218-preview.mp3';
           document.body.appendChild(parlante);
         }
         parlante.currentTime = 0;
@@ -1320,7 +1320,7 @@ function AdminApp({ db, setDb, switchMode }) {
               if (!parlante) {
                 parlante = document.createElement('audio');
                 parlante.id = 'parlante-invencible';
-                parlante.src = 'https://www.myinstants.com/media/sounds/door-bell-ii.mp3';
+                parlante.src = 'https://assets.mixkit.co/active_storage/sfx/2218/2218-preview.mp3';
                 document.body.appendChild(parlante);
               }
               parlante.currentTime = 0;

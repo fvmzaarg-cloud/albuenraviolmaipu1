@@ -6,7 +6,7 @@ import {
   Send, X, ArrowUp, ArrowDown, KeyRound,
 } from 'lucide-react'
 import { initializeApp } from 'firebase/app'
-import { getAuth, signInWithCustomToken, signInAnonymously, onAuthStateChanged } from 'firebase/auth'
+import { getAuth, signInAnonymously, onAuthStateChanged } from 'firebase/auth'
 import { getFirestore, doc, setDoc, onSnapshot } from 'firebase/firestore'
 
 const GOOGLE_MAPS_API_KEY = "AIzaSyBmiPXxoPbC5Y-cVaemlJnha8qLn4wCR9Q";
@@ -26,10 +26,10 @@ const INITIAL_CATEGORIES = [
 ]
 
 const INITIAL_PRODUCTS = [
-  { id: 1, name: 'Ravioles de Carne y Verdura', description: 'Clásicos ravioles caseros rellenos de carne premium y espinaca fresca.', price: 4500, categoryId: 1, featured: true, active: true, image: 'https://images.unsplash.com/photo-1551183053-bf91a1d81141?auto=format&fit=crop&q=80&w=400' },
-  { id: 2, name: 'Ravioles de Ricota', description: 'Suaves ravioles de ricota magra y nuez.', price: 4500, categoryId: 1, featured: false, active: true, image: 'https://images.unsplash.com/photo-1551183053-bf91a1d81141?auto=format&fit=crop&q=80&w=400' },
-  { id: 3, name: 'Sorrentinos de Jamón y Queso', description: 'Abundante relleno de jamón cocido y muzzarella.', price: 5200, categoryId: 2, featured: true, active: true, image: 'https://images.unsplash.com/photo-1621996311239-53cbdf018245?auto=format&fit=crop&q=80&w=400' },
-  { id: 4, name: 'Tallarines al Huevo', description: 'Fideos frescos cortados a cuchillo.', price: 3000, categoryId: 3, featured: false, active: true, image: 'https://images.unsplash.com/photo-1612874742237-6526221588e3?auto=format&fit=crop&q=80&w=400' },
+  { id: 1, name: 'Ravioles de Carne y Verdura', description: 'Clásicos ravioles caseros rellenos de carne premium y espinaca fresca.', price: 4500, categoryId: 1, featured: true, active: true, unitType: 'unidad', image: 'https://images.unsplash.com/photo-1551183053-bf91a1d81141?auto=format&fit=crop&q=80&w=400' },
+  { id: 2, name: 'Ravioles de Ricota', description: 'Suaves ravioles de ricota magra y nuez.', price: 4500, categoryId: 1, featured: false, active: true, unitType: 'unidad', image: 'https://images.unsplash.com/photo-1551183053-bf91a1d81141?auto=format&fit=crop&q=80&w=400' },
+  { id: 3, name: 'Sorrentinos de Jamón y Queso', description: 'Abundante relleno de jamón cocido y muzzarella.', price: 5200, categoryId: 2, featured: true, active: true, unitType: 'unidad', image: 'https://images.unsplash.com/photo-1621996311239-53cbdf018245?auto=format&fit=crop&q=80&w=400' },
+  { id: 4, name: 'Tallarines al Huevo', description: 'Fideos frescos cortados a cuchillo.', price: 3000, categoryId: 3, featured: false, active: true, unitType: 'peso', image: 'https://images.unsplash.com/photo-1612874742237-6526221588e3?auto=format&fit=crop&q=80&w=400' },
 ]
 
 const INITIAL_SHIPPING_CONFIG = {
@@ -50,20 +50,25 @@ const INITIAL_ADMIN_AUTH = { email: 'albuenraviolmaipu@gmail.com', passHash: '',
 const INITIAL_MANUAL_STATUS = { isClosed: false, message: '¡Estamos tomando pedidos! 🔥', chefPrompt: 'Reglas del local: 2 planchas de ravioles rinden para 3 personas. Sugerir siempre llevar una salsa para acompañar.' } 
 
 // ==================================================
-// 🔥 CONFIGURACIÓN DE FIREBASE
+// 🔥 CONFIGURACIÓN DE FIREBASE (TUS LLAVES NUEVAS)
 // ==================================================
-const LOCAL_FIREBASE_CONFIG = {};
+const LOCAL_FIREBASE_CONFIG = {
+  apiKey: "AIzaSyAu-6398vfb_Fz3jDvvmAprisBTZa8DAOs",
+  authDomain: "abrmaipu-pastas.firebaseapp.com",
+  projectId: "abrmaipu-pastas",
+  storageBucket: "abrmaipu-pastas.firebasestorage.app",
+  messagingSenderId: "335783544635",
+  appId: "1:335783544635:web:c54b41b2cfac3c014c591e"
+};
 
 let firebaseApp, auth, firestoreDb, appId
 try {
-  const canvasConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : null;
-  const finalConfig = Object.keys(LOCAL_FIREBASE_CONFIG).length > 0 ? LOCAL_FIREBASE_CONFIG : canvasConfig;
-
+  const finalConfig = LOCAL_FIREBASE_CONFIG;
   if (finalConfig) {
     firebaseApp = initializeApp(finalConfig)
     auth = getAuth(firebaseApp)
     firestoreDb = getFirestore(firebaseApp)
-    appId = typeof __app_id !== 'undefined' ? __app_id : 'al-buen-raviol-maipu'
+    appId = 'al-buen-raviol-maipu-v2' 
   }
 } catch (e) {
   console.error('Error inicializando Firebase:', e)
@@ -137,12 +142,7 @@ const callGemini = async (prompt, systemInstruction = 'Eres un asistente útil.'
     });
     
     const data = await response.json();
-    
-    if (!response.ok) {
-      console.error("🚨 MOTIVO DEL ERROR 400:", JSON.stringify(data, null, 2));
-      throw new Error(data.error?.message || 'Error en API');
-    }
-    
+    if (!response.ok) throw new Error(data.error?.message || 'Error en API');
     return data.candidates?.[0]?.content?.parts?.[0]?.text || 'Sin respuesta.';
   } catch (error) {
     console.error("❌ Falló la conexión:", error);
@@ -150,22 +150,8 @@ const callGemini = async (prompt, systemInstruction = 'Eres un asistente útil.'
   }
 }
 
-// --- PARLANTE ATORNILLADO A LA PARED (Bypass de React) ---
-const reproducirSonidoFuerte = () => {
-  let parlante = document.getElementById('parlante-intocable');
-  if (!parlante) {
-    parlante = document.createElement('audio');
-    parlante.id = 'parlante-intocable';
-    parlante.src = 'https://upload.wikimedia.org/wikipedia/commons/5/58/Cash_register_x.ogg'; // El sonido de la caja
-    document.body.appendChild(parlante);
-  }
-  parlante.currentTime = 0;
-  parlante.play().catch(e => console.log('Navegador bloqueó el sonido:', e));
-};
-// --------------------------------------------------------
-
 // ==========================================
-// COMPONENTE PRINCIPAL
+// COMPONENTE PRINCIPAL (EL CEREBRO)
 // ==========================================
 export default function App() {
   const [geminiKey, setGeminiKey] = useState(localStorage.getItem('gemini_key') || '');
@@ -173,32 +159,75 @@ export default function App() {
   const [user, setUser] = useState(null);
   const [dbState, setDbState] = useState(null);
 
+  // --- LOGIN INVISIBLE PARA ENTRAR A FIREBASE ---
+  useEffect(() => {
+    if (auth) {
+      const unsubscribe = onAuthStateChanged(auth, currentUser => {
+        if (currentUser) {
+          setUser(currentUser);
+        } else {
+          signInAnonymously(auth).catch(error => {
+            console.log("Forzando entrada local...", error);
+            setUser({ uid: 'usuario-local' }); 
+          });
+        }
+      });
+      return () => unsubscribe();
+    } else {
+       setUser({ uid: 'usuario-local' });
+    }
+  }, []);
+
+  // --- SALVAVIDAS ANTI-CUELGUE ---
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (!dbState) {
+        console.log("Firebase demora, forzando carga de seguridad...");
+        loadFallback();
+      }
+    }, 4000);
+    return () => clearTimeout(timer);
+  }, [dbState]);
+
   // --- ALARMA GLOBAL DE PEDIDOS ---
   const cantidadPedidosRef = useRef(0);
+  const cargaInicialRef = useRef(true); 
 
   useEffect(() => {
     if (dbState && dbState.orders) {
       const actuales = dbState.orders.length;
       
-      if (actuales > cantidadPedidosRef.current && cantidadPedidosRef.current > 0) {
-        
-        // 1. Llamamos al parlante de la pared (¡no se corta más!)
-        reproducirSonidoFuerte();
-        
-        // 2. Notificación BLINDADA
+      if (cargaInicialRef.current) {
+        cargaInicialRef.current = false;
+        cantidadPedidosRef.current = actuales;
+        return;
+      }
+
+      if (actuales > cantidadPedidosRef.current) {
+        // 1. Notificación Visual
         if ('Notification' in window) {
           if (Notification.permission === 'granted') {
-            new Notification('🥟 ¡Nuevo pedido en Al Buen Raviol!', { body: 'Revisá el panel de control.' });
+            new Notification('🥟 ¡Nuevo pedido en Al Buen Raviol!', { body: 'Revisá la pestaña de pedidos.' });
           } else if (Notification.permission !== 'denied') {
-            Notification.requestPermission().catch(console.error);
+            Notification.requestPermission();
           }
         }
+
+        // 2. Parlante Físico (Imposible que se corte)
+        let parlante = document.getElementById('parlante-invencible');
+        if (!parlante) {
+          parlante = document.createElement('audio');
+          parlante.id = 'parlante-invencible';
+          parlante.src = 'https://upload.wikimedia.org/wikipedia/commons/5/58/Cash_register_x.ogg';
+          document.body.appendChild(parlante);
+        }
+        parlante.currentTime = 0;
+        parlante.play().catch(e => console.log('Sonido bloqueado temporalmente por Chrome'));
       }
       
       cantidadPedidosRef.current = actuales;
     }
   }, [dbState?.orders]);
-  // ----------------------------------------
 
   useEffect(() => {
     if (firestoreDb && user) {
@@ -228,7 +257,7 @@ export default function App() {
         }
       )
       return () => unsubscribe()
-    } else if (!firestoreDb) {
+    } else if (!firestoreDb && user) {
       loadFallback()
     }
   }, [user])
@@ -258,7 +287,7 @@ export default function App() {
     })
   }
 
-  // --- CAJONCITO DE SEGURIDAD ---
+  // --- CAJONCITO DE SEGURIDAD GEMINI ---
   if (!geminiKey) {
     return (
       <div className="min-h-[100dvh] bg-gray-900 flex flex-col items-center justify-center p-6 text-center z-50 fixed inset-0">
@@ -317,26 +346,28 @@ function ClientApp({ db, setDb, switchMode }) {
   const [cart, setCart] = useState([])
   const [showAssistant, setShowAssistant] = useState(false)
 
+  // LA MAGIA: Si es por peso, ahora suma de a CUARTO KILO (0.250)
   const addToCart = product => {
+    const step = product.unitType === 'peso' ? 0.25 : 1;
+    
     setCart(prev => {
       const existing = prev.find(item => item.product.id === product.id)
       if (existing)
-        return prev.map(item => (item.product.id === product.id ? { ...item, quantity: item.quantity + 1 } : item))
-      return [...prev, { product, quantity: 1 }]
+        return prev.map(item => (item.product.id === product.id ? { ...item, quantity: item.quantity + step } : item))
+      return [...prev, { product, quantity: step }]
     })
   }
 
-  const updateQuantity = (productId, delta) => {
+  const updateQuantity = (productId, direction) => {
     setCart(prev =>
-      prev
-        .map(item => {
+      prev.map(item => {
           if (item.product.id === productId) {
-            const newQ = item.quantity + delta
+            const step = item.product.unitType === 'peso' ? 0.25 : 1; // Sube/Baja de a 250 gramos
+            const newQ = item.quantity + (direction * step);
             return newQ > 0 ? { ...item, quantity: newQ } : null
           }
           return item
-        })
-        .filter(Boolean)
+        }).filter(Boolean)
     )
   }
 
@@ -611,7 +642,10 @@ function ProductCard({ product, onAdd, storeOpen }) {
           <p className="text-xs text-gray-500 mt-1 line-clamp-2">{product.description}</p>
         </div>
         <div className="flex items-center justify-between mt-2">
-          <span className="font-black text-[#c82a2a]">{formatCurrency(product.price)}</span>
+          <span className="font-black text-[#c82a2a] flex items-end gap-1">
+            {formatCurrency(product.price)}
+            {product.unitType === 'peso' && <span className="text-[10px] text-gray-500 font-normal mb-0.5">/ kg</span>}
+          </span>
           <button
             disabled={!storeOpen}
             onClick={() => onAdd(product)}
@@ -648,12 +682,10 @@ function ChefAssistant({ db, onClose }) {
 
     const menuContext = db.products
       .filter(p => p.active)
-      .map(p => `${p.name} ($${p.price}): ${p.description}`)
+      .map(p => `${p.name} ($${p.price} ${p.unitType==='peso'?'por kg':'por unidad'}): ${p.description}`)
       .join(' | ')
       
-    // AQUI EL CHEF LEE TUS REGLAS DESDE LA BASE DE DATOS
     const customRules = db.manualStatus?.chefPrompt || 'Regla de porciones: 2 planchas rinden para 3 personas.';
-    
     const sysPrompt = `Eres el Chef Experto de 'Al Buen Raviol', fábrica de pastas en Mendoza. Menú: ${menuContext}. Habla amigable y argentino (usa 'vos'). Recomienda SOLO productos del menú. \nREGLAS ESTRICTAS DEL LOCAL: ${customRules}. Mantén tus respuestas breves y concisas.`
 
     const response = await callGemini(userMsg, sysPrompt)
@@ -743,12 +775,15 @@ function ClientCart({ cart, updateQuantity, setRoute, cartTotal }) {
                 <div className="flex-1 flex flex-col justify-between">
                   <h4 className="font-bold text-sm text-gray-800">{item.product.name}</h4>
                   <div className="flex items-center justify-between w-full">
-                    <span className="font-bold text-gray-600 text-sm">{formatCurrency(item.product.price)}</span>
+                    <span className="font-bold text-gray-600 text-sm">{formatCurrency(item.product.price * item.quantity)}</span>
                     <div className="flex items-center gap-3 bg-white border border-gray-200 rounded-lg px-2 py-1">
                       <button onClick={() => updateQuantity(item.product.id, -1)} className="text-red-500 p-1">
-                        {item.quantity === 1 ? <Trash2 size={14} /> : <Minus size={14} />}
+                        {/* Se actualiza el chequeo del ícono tacho de basura para los 250 gramos */}
+                        {item.quantity <= (item.product.unitType === 'peso' ? 0.25 : 1) ? <Trash2 size={14} /> : <Minus size={14} />}
                       </button>
-                      <span className="font-bold text-sm w-4 text-center">{item.quantity}</span>
+                      <span className="font-bold text-sm w-10 text-center">
+                        {item.quantity} {item.product.unitType === 'peso' ? 'kg' : 'u'}
+                      </span>
                       <button onClick={() => updateQuantity(item.product.id, 1)} className="text-red-500 p-1">
                         <Plus size={14} />
                       </button>
@@ -780,7 +815,6 @@ function ClientCart({ cart, updateQuantity, setRoute, cartTotal }) {
 }
 
 function ClientCheckout({ cart, cartTotal, db, setDb, setRoute, clearCart }) {
-  // 1. Agregamos 'notes' para guardar las aclaraciones
   const [formData, setFormData] = useState({ name: '', phone: '', address: '', notes: '' })
   const [orderType, setOrderType] = useState('retiro')
   const [paymentMethod, setPaymentMethod] = useState('efectivo')
@@ -843,15 +877,16 @@ function ClientCheckout({ cart, cartTotal, db, setDb, setRoute, clearCart }) {
       if (deliveryCoords) text += `*Mapa:* http://googleusercontent.com/maps.google.com/?q=${deliveryCoords.lat},${deliveryCoords.lng}\n`
     }
     
-    // 2. Si el cliente escribió aclaraciones, las sumamos al WhatsApp
     if (formData.notes.trim()) {
       text += `*Aclaraciones:* ${formData.notes.trim()}\n`
     }
 
     text += `\n*Detalle:*\n`
     cart.forEach(
-      item =>
-        (text += `- ${item.quantity}x ${item.product.name} (${formatCurrency(item.product.price * item.quantity)})\n`)
+      item => {
+        const unitLabel = item.product.unitType === 'peso' ? 'kg' : 'un'
+        text += `- ${item.quantity} ${unitLabel} x ${item.product.name} (${formatCurrency(item.product.price * item.quantity)})\n`
+      }
     )
     text += `\n*Subtotal:* ${formatCurrency(cartTotal)}\n`
     if (orderType === 'delivery') text += `*Envío:* ${formatCurrency(shippingCost)}\n`
@@ -937,8 +972,6 @@ function ClientCheckout({ cart, cartTotal, db, setDb, setRoute, clearCart }) {
                   : 'bg-gray-50 border border-gray-200 focus:ring-2 focus:ring-red-500'
               }`}
             />
-            
-            {/* 3. ¡Acá está el cajón de aclaraciones! */}
             <textarea
               placeholder="Aclaraciones (Ej: Timbre 2, sin queso, etc.) - Opcional"
               value={formData.notes}
@@ -1068,7 +1101,7 @@ function ClientCheckout({ cart, cartTotal, db, setDb, setRoute, clearCart }) {
             {cart.map(item => (
               <div key={item.product.id} className="flex justify-between text-sm">
                 <span className="text-gray-600">
-                  {item.quantity}x {item.product.name}
+                  {item.quantity} {item.product.unitType === 'peso' ? 'kg' : 'u'} x {item.product.name}
                 </span>
                 <span className="font-medium text-gray-800">{formatCurrency(item.product.price * item.quantity)}</span>
               </div>
@@ -1253,36 +1286,23 @@ function MapPicker({ address, shopLocation, onAddressChange, onLocationSelect, i
 // ==========================================
 // ÁREA ADMINISTRADOR
 // ==========================================
-// ==========================================
-// ÁREA ADMINISTRADOR
-// ==========================================
 function AdminApp({ db, setDb, switchMode }) {
   const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [adminRoute, setAdminRoute] = useState('dashboard')
   
-  // ----------------------------------------
-
   if (!isAuthenticated)
     return <AdminLogin db={db} setDb={setDb} onLogin={() => setIsAuthenticated(true)} switchMode={switchMode} />
 
   const renderView = () => {
     switch (adminRoute) {
-      case 'dashboard':
-        return <AdminDashboard db={db} setDb={setDb} setRoute={setAdminRoute} />
-      case 'pedidos':
-        return <AdminPedidos db={db} setDb={setDb} />
-      case 'catalogo':
-        return <AdminCatalogo db={db} setDb={setDb} />
-      case 'categorias':
-        return <AdminCategorias db={db} setDb={setDb} />
-      case 'horarios':
-        return <AdminHorarios db={db} setDb={setDb} />
-      case 'envios':
-        return <AdminEnvios db={db} setDb={setDb} />
-      case 'seguridad':
-        return <AdminSeguridad db={db} setDb={setDb} />
-      default:
-        return <AdminDashboard db={db} setDb={setDb} setRoute={setAdminRoute} />
+      case 'dashboard': return <AdminDashboard db={db} setDb={setDb} setRoute={setAdminRoute} />
+      case 'pedidos': return <AdminPedidos db={db} setDb={setDb} />
+      case 'catalogo': return <AdminCatalogo db={db} setDb={setDb} />
+      case 'categorias': return <AdminCategorias db={db} setDb={setDb} />
+      case 'horarios': return <AdminHorarios db={db} setDb={setDb} />
+      case 'envios': return <AdminEnvios db={db} setDb={setDb} />
+      case 'seguridad': return <AdminSeguridad db={db} setDb={setDb} />
+      default: return <AdminDashboard db={db} setDb={setDb} setRoute={setAdminRoute} />
     }
   }
 
@@ -1290,23 +1310,33 @@ function AdminApp({ db, setDb, switchMode }) {
     <div className="flex flex-col h-full bg-gray-50">
       <div className="bg-gray-900 text-white p-4 flex justify-between items-center shadow-md shrink-0">
         <h1 className="font-bold tracking-wide text-sm flex items-center gap-2">
-          <Settings size={16} className="text-[#fbb03b]" /> ADMINISTRACIÓN
+          <Settings size={16} className="text-[#fbb03b]" /> ADMIN
         </h1>
         <div className="flex items-center gap-3">
-          <button
-            onClick={() => setAdminRoute('seguridad')}
-            className="text-gray-400 hover:text-white"
-            title="Seguridad"
-          >
-            <User size={16} />
-          </button>
+          
           <button
             onClick={() => {
-              setIsAuthenticated(false)
-              switchMode()
+              let parlante = document.getElementById('parlante-invencible');
+              if (!parlante) {
+                parlante = document.createElement('audio');
+                parlante.id = 'parlante-invencible';
+                parlante.src = 'https://upload.wikimedia.org/wikipedia/commons/5/58/Cash_register_x.ogg';
+                document.body.appendChild(parlante);
+              }
+              parlante.currentTime = 0;
+              parlante.play()
+                .then(() => alert("¡Campanita lista para recibir pedidos!"))
+                .catch(e => alert("Navegador dice: " + e.message));
             }}
-            className="text-gray-400 hover:text-white flex items-center gap-1 text-xs"
+            className="bg-[#c82a2a] px-2 py-1 rounded-lg text-xs font-bold shadow-sm hover:bg-red-700 transition-colors"
           >
+            🔔 Activar Sonido
+          </button>
+
+          <button onClick={() => setAdminRoute('seguridad')} className="text-gray-400 hover:text-white" title="Seguridad">
+            <User size={16} />
+          </button>
+          <button onClick={() => { setIsAuthenticated(false); switchMode() }} className="text-gray-400 hover:text-white flex items-center gap-1 text-xs">
             <LogOut size={14} /> Salir
           </button>
         </div>
@@ -1315,30 +1345,10 @@ function AdminApp({ db, setDb, switchMode }) {
       <div className="flex-1 overflow-y-auto p-4 hide-scrollbar">{renderView()}</div>
 
       <div className="bg-white border-t border-gray-200 flex justify-around p-2 pb-6 shrink-0 text-xs shadow-[0_-4px_10px_rgba(0,0,0,0.05)]">
-        <NavBtn
-          Icon={LayoutDashboard}
-          label="Panel"
-          active={adminRoute === 'dashboard'}
-          onClick={() => setAdminRoute('dashboard')}
-        />
-        <NavBtn
-          Icon={ListOrdered}
-          label="Pedidos"
-          active={adminRoute === 'pedidos'}
-          onClick={() => setAdminRoute('pedidos')}
-        />
-        <NavBtn
-          Icon={MenuSquare}
-          label="Catálogo"
-          active={adminRoute === 'catalogo'}
-          onClick={() => setAdminRoute('catalogo')}
-        />
-        <NavBtn
-          Icon={Truck}
-          label="Envíos"
-          active={adminRoute === 'envios'}
-          onClick={() => setAdminRoute('envios')}
-        />
+        <NavBtn Icon={LayoutDashboard} label="Panel" active={adminRoute === 'dashboard'} onClick={() => setAdminRoute('dashboard')} />
+        <NavBtn Icon={ListOrdered} label="Pedidos" active={adminRoute === 'pedidos'} onClick={() => setAdminRoute('pedidos')} />
+        <NavBtn Icon={MenuSquare} label="Catálogo" active={adminRoute === 'catalogo'} onClick={() => setAdminRoute('catalogo')} />
+        <NavBtn Icon={Truck} label="Envíos" active={adminRoute === 'envios'} onClick={() => setAdminRoute('envios')} />
       </div>
     </div>
   )
@@ -1791,7 +1801,6 @@ function AdminPedidos({ db, setDb }) {
                 {order.type === 'delivery' && (
                   <p>
                     <strong>Dir:</strong> {order.customer.address}{' '}
-                    {/* ACÁ ESTÁ LA MAGIA: El signo de interrogación evita que la página crashee */}
                     <span className="text-xs text-gray-500">({order.distance ? order.distance.toFixed(1) : 0} km)</span>
                   </p>
                 )}
@@ -1800,7 +1809,7 @@ function AdminPedidos({ db, setDb }) {
                 {order.items.map((i, idx) => (
                   <div key={idx} className="flex justify-between text-gray-600">
                     <span>
-                      {i.quantity}x {i.product.name}
+                      {i.quantity} {i.product.unitType === 'peso' ? 'kg' : 'u'} x {i.product.name}
                     </span>
                     <span>{formatCurrency(i.product.price * i.quantity)}</span>
                   </div>
@@ -1826,7 +1835,7 @@ function AdminCatalogo({ db, setDb }) {
   const startEdit = prod => {
     setFormData(
       prod
-        ? { ...prod }
+        ? { ...prod, unitType: prod.unitType || 'unidad' } 
         : {
             id: Date.now(),
             name: '',
@@ -1834,6 +1843,7 @@ function AdminCatalogo({ db, setDb }) {
             price: 0,
             categoryId: db.categories[0]?.id || 1,
             image: '',
+            unitType: 'unidad', 
             featured: false,
             active: true,
           }
@@ -1923,8 +1933,21 @@ function AdminCatalogo({ db, setDb }) {
               ))}
             </select>
           </div>
+          
+          <div className="pt-1">
+            <label className="text-xs font-bold text-gray-600 block mb-1">Forma de Venta</label>
+            <select
+              className="w-full border rounded p-2 text-sm outline-none bg-gray-50"
+              value={formData.unitType}
+              onChange={e => setFormData({ ...formData, unitType: e.target.value })}
+            >
+              <option value="unidad">Venta por Unidad / Plancha / Caja</option>
+              <option value="peso">Venta por Peso (Suma de a 0.250 Kg)</option>
+            </select>
+          </div>
+
           <input
-            className="w-full border rounded p-2 text-sm outline-none"
+            className="w-full border rounded p-2 text-sm outline-none mt-1"
             placeholder="URL Imagen"
             value={formData.image}
             onChange={e => setFormData({ ...formData, image: e.target.value })}
@@ -1983,7 +2006,10 @@ function AdminCatalogo({ db, setDb }) {
             <div className="flex-1">
               <h4 className="font-bold text-sm leading-tight">{p.name}</h4>
               <p className="text-xs text-gray-500">{db.categories.find(c => c.id === p.categoryId)?.name}</p>
-              <p className="font-bold text-red-600 text-sm mt-1">{formatCurrency(p.price)}</p>
+              <p className="font-bold text-red-600 text-sm mt-1">
+                {formatCurrency(p.price)} 
+                {p.unitType === 'peso' && <span className="text-gray-400 font-normal text-xs ml-1">/kg</span>}
+              </p>
             </div>
             <div className="flex flex-col gap-2 justify-center items-end">
               <div className="flex gap-2">

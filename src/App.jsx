@@ -50,7 +50,7 @@ const INITIAL_ADMIN_AUTH = { email: 'albuenraviolmaipu@gmail.com', passHash: '',
 const INITIAL_MANUAL_STATUS = { isClosed: false, message: '¡Estamos tomando pedidos! 🔥', chefPrompt: 'Reglas del local: 2 planchas de ravioles rinden para 3 personas. Sugerir siempre llevar una salsa para acompañar.' } 
 
 // ==================================================
-// 🔥 CONFIGURACIÓN DE FIREBASE
+// 🔥 CONFIGURACIÓN DE FIREBASE 
 // ==================================================
 const LOCAL_FIREBASE_CONFIG = {
   apiKey: "AIzaSyAu-6398vfb_Fz3jDvvmAprisBTZa8DAOs",
@@ -159,6 +159,7 @@ export default function App() {
   const [user, setUser] = useState(null);
   const [dbState, setDbState] = useState(null);
 
+  // --- LOGIN INVISIBLE ---
   useEffect(() => {
     if (auth) {
       const unsubscribe = onAuthStateChanged(auth, currentUser => {
@@ -177,52 +178,15 @@ export default function App() {
     }
   }, []);
 
+  // --- SALVAVIDAS ANTI-CUELGUE ---
   useEffect(() => {
     const timer = setTimeout(() => {
       if (!dbState) {
-        console.log("Firebase demora, forzando carga de seguridad...");
         loadFallback();
       }
     }, 4000);
     return () => clearTimeout(timer);
   }, [dbState]);
-
-  const cantidadPedidosRef = useRef(0);
-  const cargaInicialRef = useRef(true); 
-
-  useEffect(() => {
-    if (dbState && dbState.orders) {
-      const actuales = dbState.orders.length;
-      
-      if (cargaInicialRef.current) {
-        cargaInicialRef.current = false;
-        cantidadPedidosRef.current = actuales;
-        return;
-      }
-
-      if (actuales > cantidadPedidosRef.current) {
-        if ('Notification' in window) {
-          if (Notification.permission === 'granted') {
-            new Notification('🥟 ¡Nuevo pedido en Al Buen Raviol!', { body: 'Revisá la pestaña de pedidos.' });
-          } else if (Notification.permission !== 'denied') {
-            Notification.requestPermission();
-          }
-        }
-
-        let parlante = document.getElementById('parlante-invencible');
-        if (!parlante) {
-          parlante = document.createElement('audio');
-          parlante.id = 'parlante-invencible';
-          parlante.src = 'https://assets.mixkit.co/active_storage/sfx/2218/2218-preview.mp3';
-          document.body.appendChild(parlante);
-        }
-        parlante.currentTime = 0;
-        parlante.play().catch(e => console.log('Sonido bloqueado temporalmente por Chrome'));
-      }
-      
-      cantidadPedidosRef.current = actuales;
-    }
-  }, [dbState?.orders]);
 
   useEffect(() => {
     if (firestoreDb && user) {
@@ -335,6 +299,9 @@ export default function App() {
   )
 }
 
+// ==========================================
+// ÁREA CLIENTE
+// ==========================================
 function ClientApp({ db, setDb, switchMode }) {
   const [route, setRoute] = useState('home')
   const [cart, setCart] = useState([])
@@ -342,7 +309,6 @@ function ClientApp({ db, setDb, switchMode }) {
 
   const addToCart = product => {
     const step = product.unitType === 'peso' ? 0.25 : 1;
-    
     setCart(prev => {
       const existing = prev.find(item => item.product.id === product.id)
       if (existing)
@@ -942,7 +908,7 @@ function ClientCheckout({ cart, cartTotal, db, setDb, setRoute, clearCart }) {
 
   if (whatsappLink) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-full bg-white p-6 text-center animate-fadeIn">
+      <div className="flex flex-col items-center justify-center min-h-[60vh] bg-white p-6 text-center animate-fadeIn">
         <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mb-6">
           <CheckCircle size={40} className="text-green-500" />
         </div>
@@ -1323,6 +1289,46 @@ function MapPicker({ address, shopLocation, onAddressChange, onLocationSelect, i
 function AdminApp({ db, setDb, switchMode }) {
   const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [adminRoute, setAdminRoute] = useState('dashboard')
+
+  // ¡LA ALARMA AHORA VIVE ACÁ ADENTRO! (Nadie más la escucha)
+  const cantidadPedidosRef = useRef(db?.orders?.length || 0);
+  const cargaInicialRef = useRef(true); 
+
+  useEffect(() => {
+    // Solo se activa la oreja de la alarma si sos el dueño (está autenticado)
+    if (isAuthenticated && db && db.orders) {
+      const actuales = db.orders.length;
+      
+      if (cargaInicialRef.current) {
+        cargaInicialRef.current = false;
+        cantidadPedidosRef.current = actuales;
+        return;
+      }
+
+      if (actuales > cantidadPedidosRef.current) {
+        if ('Notification' in window && window.Notification) {
+          if (Notification.permission === 'granted') {
+            new Notification('🥟 ¡Nuevo pedido en Al Buen Raviol!', { body: 'Revisá la pestaña de pedidos.' });
+          } else if (Notification.permission !== 'denied') {
+            Notification.requestPermission();
+          }
+        }
+
+        let parlante = document.getElementById('parlante-invencible');
+        if (!parlante) {
+          parlante = document.createElement('audio');
+          parlante.id = 'parlante-invencible';
+          // El timbre oficial a prueba de bloqueos de Cloudflare
+          parlante.src = 'https://cdnjs.cloudflare.com/ajax/libs/ion-sound/3.0.7/sounds/bell_ring.mp3';
+          document.body.appendChild(parlante);
+        }
+        parlante.currentTime = 0;
+        parlante.play().catch(e => console.log('Sonido bloqueado temporalmente'));
+      }
+      
+      cantidadPedidosRef.current = actuales;
+    }
+  }, [db?.orders, isAuthenticated]);
   
   if (!isAuthenticated)
     return <AdminLogin db={db} setDb={setDb} onLogin={() => setIsAuthenticated(true)} switchMode={switchMode} />
@@ -1343,18 +1349,27 @@ function AdminApp({ db, setDb, switchMode }) {
   return (
     <div className="flex flex-col h-full bg-gray-50">
       <div className="bg-gray-900 text-white p-4 flex justify-between items-center shadow-md shrink-0">
-        <h1 className="font-bold tracking-wide text-sm flex items-center gap-2">
-          <Settings size={16} className="text-[#fbb03b]" /> ADMIN
-        </h1>
+        
+        <div className="flex items-center gap-2">
+          {/* EL FAMOSO BOTÓN VOLVER (Solo aparece si no estás en el panel principal) */}
+          {adminRoute !== 'dashboard' && (
+            <button onClick={() => setAdminRoute('dashboard')} className="text-gray-400 hover:text-white p-1">
+              <ChevronLeft size={20} />
+            </button>
+          )}
+          <h1 className="font-bold tracking-wide text-sm flex items-center gap-2">
+            <Settings size={16} className="text-[#fbb03b]" /> ADMIN
+          </h1>
+        </div>
+
         <div className="flex items-center gap-3">
-          
           <button
             onClick={() => {
               let parlante = document.getElementById('parlante-invencible');
               if (!parlante) {
                 parlante = document.createElement('audio');
                 parlante.id = 'parlante-invencible';
-                parlante.src = 'https://assets.mixkit.co/active_storage/sfx/2218/2218-preview.mp3';
+                parlante.src = 'https://cdnjs.cloudflare.com/ajax/libs/ion-sound/3.0.7/sounds/bell_ring.mp3';
                 document.body.appendChild(parlante);
               }
               parlante.currentTime = 0;
@@ -1975,7 +1990,7 @@ function AdminCatalogo({ db, setDb }) {
               value={formData.unitType}
               onChange={e => setFormData({ ...formData, unitType: e.target.value })}
             >
-              <option value="unidad">Venta por Unidad ( Plancha )</option>
+              <option value="unidad">Venta por Unidad / Plancha / Caja</option>
               <option value="peso">Venta por Peso (Suma de a 0.250 Kg)</option>
             </select>
           </div>

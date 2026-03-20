@@ -1813,7 +1813,7 @@ function AdminPedidos({ db, setDb }) {
                   value={order.status}
                   onChange={e => updateStatus(order.id, e.target.value)}
                   className={`text-xs font-bold px-2 py-1 rounded-full outline-none cursor-pointer ${
-                    statusColors[order.status]
+                    statusColors[order.status] || 'bg-gray-100 text-gray-800'
                   }`}
                 >
                   <option value="Recibido">Recibido</option>
@@ -1831,7 +1831,8 @@ function AdminPedidos({ db, setDb }) {
                 {order.type === 'delivery' && (
                   <p>
                     <strong>Dir:</strong> {order.customer.address}{' '}
-                    <span className="text-xs text-gray-500">({order.distance.toFixed(1)} km)</span>
+                    {/* ACÁ ESTÁ LA MAGIA: El signo de interrogación evita que la página crashee */}
+                    <span className="text-xs text-gray-500">({order.distance ? order.distance.toFixed(1) : 0} km)</span>
                   </p>
                 )}
               </div>

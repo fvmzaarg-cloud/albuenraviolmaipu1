@@ -218,7 +218,7 @@ export default function App() {
         if (!parlante) {
           parlante = document.createElement('audio');
           parlante.id = 'parlante-invencible';
-          parlante.src = 'https://www.myinstants.com/media/sounds/taco-bell-bong.mp3';
+          parlante.src = 'https://www.myinstants.com/media/sounds/door-bell-ii.mp3';
           document.body.appendChild(parlante);
         }
         parlante.currentTime = 0;
@@ -1320,7 +1320,7 @@ function AdminApp({ db, setDb, switchMode }) {
               if (!parlante) {
                 parlante = document.createElement('audio');
                 parlante.id = 'parlante-invencible';
-                parlante.src = 'https://www.myinstants.com/media/sounds/taco-bell-bong.mp3';
+                parlante.src = 'https://www.myinstants.com/media/sounds/door-bell-ii.mp3';
                 document.body.appendChild(parlante);
               }
               parlante.currentTime = 0;

@@ -192,28 +192,27 @@ export default function App() {
   const [user, setUser] = useState(null)
   const [dbState, setDbState] = useState(null)
 
-  // >>> ACÁ ABAJO TIENE QUE QUEDAR TU useEffect <<<
+  // --- ALARMA GLOBAL DE PEDIDOS ---
+  const cantidadPedidosRef = useRef(0);
+
   useEffect(() => {
-    if (!auth) {
-      loadFallback()
-      return
-    }
-    const initAuth = async () => {
-      try {
-        if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-          await signInWithCustomToken(auth, __initial_auth_token)
-        } else {
-          await signInAnonymously(auth)
+    if (dbState && dbState.orders) {
+      const actuales = dbState.orders.length;
+      // Si hay más pedidos que antes, y no es la carga inicial de la página...
+      if (actuales > cantidadPedidosRef.current && cantidadPedidosRef.current > 0) {
+        const audio = new Audio('https://actions.google.com/sounds/v1/alarms/beep_short.ogg');
+        audio.play().catch(e => console.log('Sonido bloqueado temporalmente'));
+        
+        if (Notification.permission === 'granted') {
+          new Notification('🥟 ¡Nuevo pedido en Al Buen Raviol!', { body: 'Revisá el panel de control.' });
+        } else if (Notification.permission !== 'denied') {
+          Notification.requestPermission();
         }
-      } catch (e) {
-        console.error('Auth error', e)
-        loadFallback()
       }
+      cantidadPedidosRef.current = actuales;
     }
-    initAuth()
-    const unsubscribe = onAuthStateChanged(auth, setUser)
-    return () => unsubscribe()
-  }, [])
+  }, [dbState?.orders]);
+  // ----------------------------------------
 
   useEffect(() => {
     if (firestoreDb && user) {

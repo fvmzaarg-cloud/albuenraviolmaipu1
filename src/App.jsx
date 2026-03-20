@@ -174,7 +174,13 @@ const callGemini = async (prompt, systemInstruction = 'Eres un asistente útil.'
     return 'Tuve un problema conectándome con el Chef Virtual.';
   }
 }
+// --- MAGIA: Cargamos el sonido AFUERA de React para que jamás lo corte ---
+const sonidoAlarma = new Audio('https://upload.wikimedia.org/wikipedia/commons/5/58/Cash_register_x.ogg');
+sonidoAlarma.preload = 'auto'; // Obligamos al navegador a tenerlo listo
+// ------------------------------------------------------------------------
 
+export default function App() {
+// ... acá sigue tu código normal
 // ==========================================
 // COMPONENTE PRINCIPAL
 // ==========================================
@@ -184,33 +190,33 @@ export default function App() {
   const [user, setUser] = useState(null)
   const [dbState, setDbState] = useState(null)
 
-  // --- ALARMA GLOBAL DE PEDIDOS ---
-  const cantidadPedidosRef = useRef(0);
+// --- ALARMA GLOBAL DE PEDIDOS ---
+const cantidadPedidosRef = useRef(0);
 
-  useEffect(() => {
-    if (dbState && dbState.orders) {
-      const actuales = dbState.orders.length;
+useEffect(() => {
+  if (dbState && dbState.orders) {
+    const actuales = dbState.orders.length;
+    
+    // Si hay más pedidos que antes, y no es la carga inicial...
+    if (actuales > cantidadPedidosRef.current && cantidadPedidosRef.current > 0) {
       
-      // Si hay más pedidos que antes, y no es la carga inicial de la página...
-      if (actuales > cantidadPedidosRef.current && cantidadPedidosRef.current > 0) {
-        
-        // 1. Reproducimos el Sonido
-        window.alarmaCocina = new Audio('https://actions.google.com/sounds/v1/communications/incoming_phone_call.ogg');
-        window.alarmaCocina.play().catch(e => console.log('Sonido bloqueado temporalmente'));
-        
-        // 2. Notificación BLINDADA (solo si el navegador lo permite)
-        if ('Notification' in window) {
-          if (Notification.permission === 'granted') {
-            new Notification('🥟 ¡Nuevo pedido en Al Buen Raviol!', { body: 'Revisá el panel de control.' });
-          } else if (Notification.permission !== 'denied') {
-            Notification.requestPermission().catch(console.error);
-          }
+      // 1. Reproducimos el Sonido Global (y lo rebobinamos por si entran 2 pedidos juntos)
+      sonidoAlarma.currentTime = 0; 
+      sonidoAlarma.play().catch(e => console.log('Sonido bloqueado temporalmente'));
+      
+      // 2. Notificación BLINDADA
+      if ('Notification' in window) {
+        if (Notification.permission === 'granted') {
+          new Notification('🥟 ¡Nuevo pedido en Al Buen Raviol!', { body: 'Revisá el panel de control.' });
+        } else if (Notification.permission !== 'denied') {
+          Notification.requestPermission().catch(console.error);
         }
       }
-      
-      cantidadPedidosRef.current = actuales;
     }
-  }, [dbState?.orders]);
+    
+    cantidadPedidosRef.current = actuales;
+  }
+}, [dbState?.orders]);
   // ----------------------------------------
 
   useEffect(() => {

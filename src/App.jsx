@@ -812,7 +812,10 @@ function ClientCheckout({ cart, cartTotal, db, setDb, setRoute, clearCart }) {
     const errors = []
     if (!formData.name.trim()) errors.push('name')
     if (!formData.phone.trim()) errors.push('phone')
+    
+    // ACÁ ESTÁ LA MAGIA: Exigimos que existan las coordenadas del mapa sí o sí
     if (orderType === 'delivery' && (!formData.address.trim() || !deliveryCoords)) errors.push('address')
+    
     if (paymentMethod === 'efectivo') {
       const amount = parseFloat(cashAmount)
       if (isNaN(amount) || amount < finalTotal) errors.push('cashAmount')
@@ -820,6 +823,7 @@ function ClientCheckout({ cart, cartTotal, db, setDb, setRoute, clearCart }) {
 
     if (errors.length > 0) {
       setInvalidFields(errors)
+      // ACÁ LE EXPLICAMOS AL CLIENTE EXACTAMENTE QUÉ LE FALTÓ HACER
       if (errors.includes('address') && orderType === 'delivery' && !deliveryCoords) {
         setFormError('Por favor seleccioná tu dirección de la lista de Google Maps o usá el botón de ubicación.')
       } else {

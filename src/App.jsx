@@ -173,32 +173,41 @@ export default function App() {
   const [user, setUser] = useState(null);
   const [dbState, setDbState] = useState(null);
 
-  // --- ALARMA GLOBAL DE PEDIDOS ---
-  const cantidadPedidosRef = useRef(0);
+ // --- ALARMA GLOBAL DE PEDIDOS ---
+ const cantidadPedidosRef = useRef(0);
 
-  useEffect(() => {
-    if (dbState && dbState.orders) {
-      const actuales = dbState.orders.length;
-      
-      if (actuales > cantidadPedidosRef.current && cantidadPedidosRef.current > 0) {
-        
-        // 1. Llamamos al parlante de la pared (¡no se corta más!)
-        reproducirSonidoFuerte();
-        
-        // 2. Notificación BLINDADA
-        if ('Notification' in window) {
-          if (Notification.permission === 'granted') {
-            new Notification('🥟 ¡Nuevo pedido en Al Buen Raviol!', { body: 'Revisá el panel de control.' });
-          } else if (Notification.permission !== 'denied') {
-            Notification.requestPermission().catch(console.error);
-          }
-        }
-      }
-      
-      cantidadPedidosRef.current = actuales;
-    }
-  }, [dbState?.orders]);
-  // ----------------------------------------
+ useEffect(() => {
+   if (dbState && dbState.orders) {
+     const actuales = dbState.orders.length;
+     
+     if (actuales > cantidadPedidosRef.current && cantidadPedidosRef.current > 0) {
+       
+       // 1. Mostrar Notificación (¡Que ya funciona perfecto!)
+       if ('Notification' in window) {
+         if (Notification.permission === 'granted') {
+           new Notification('🥟 ¡Nuevo pedido en Al Buen Raviol!', { body: 'Revisá la pestaña de pedidos.' });
+         } else if (Notification.permission !== 'denied') {
+           Notification.requestPermission();
+         }
+       }
+
+       // 2. EL SECRETO ANTI-CORTES: Timer de 3 segundos
+       window.ultimoSonido = window.ultimoSonido || 0; // Creamos un reloj global
+       
+       // Si pasaron más de 3000 milisegundos (3 seg) desde la última vez que sonó...
+       if (Date.now() - window.ultimoSonido > 3000) {
+         window.ultimoSonido = Date.now(); // Actualizamos el reloj
+         
+         // Creamos un audio "fantasma" que React no puede borrar
+         const audioFantasma = new Audio('https://upload.wikimedia.org/wikipedia/commons/5/58/Cash_register_x.ogg');
+         audioFantasma.play().catch(e => console.log('Aviso: sonido bloqueado temporalmente'));
+       }
+     }
+     
+     cantidadPedidosRef.current = actuales;
+   }
+ }, [dbState?.orders]);
+ // ----------------------------------------
 
   useEffect(() => {
     if (firestoreDb && user) {

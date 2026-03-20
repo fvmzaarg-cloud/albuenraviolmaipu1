@@ -174,10 +174,6 @@ const callGemini = async (prompt, systemInstruction = 'Eres un asistente útil.'
     return 'Tuve un problema conectándome con el Chef Virtual.';
   }
 }
-// --- MAGIA: Cargamos el sonido AFUERA de React para que jamás lo corte ---
-const sonidoAlarma = new Audio('https://upload.wikimedia.org/wikipedia/commons/3/34/Sound_Effect_-_Door_Bell.ogg');
-sonidoAlarma.preload = 'auto'; // Obligamos al navegador a tenerlo listo
-// ------------------------------------------------------------------------
 
 export default function App() {
 // ... acá sigue tu código normal
@@ -197,19 +193,18 @@ useEffect(() => {
   if (dbState && dbState.orders) {
     const actuales = dbState.orders.length;
     
-    // Si hay más pedidos que antes, y no es la carga inicial...
     if (actuales > cantidadPedidosRef.current && cantidadPedidosRef.current > 0) {
       
-      // 1. Reproducimos el Sonido Global (y lo rebobinamos por si entran 2 pedidos juntos)
-      sonidoAlarma.currentTime = 0; 
-      sonidoAlarma.play().catch(e => console.log('Sonido bloqueado temporalmente'));
+      // 1. Buscamos el parlante físico y le damos play
+      const parlante = document.getElementById('parlante-cocina');
+      if (parlante) {
+          parlante.play().catch(e => console.log('Sonido bloqueado'));
+      }
       
-      // 2. Notificación BLINDADA
+      // 2. Notificación
       if ('Notification' in window) {
         if (Notification.permission === 'granted') {
           new Notification('🥟 ¡Nuevo pedido en Al Buen Raviol!', { body: 'Revisá el panel de control.' });
-        } else if (Notification.permission !== 'denied') {
-          Notification.requestPermission().catch(console.error);
         }
       }
     }
@@ -342,6 +337,7 @@ useEffect(() => {
   if (!dbState) {
     return (
       <div className="min-h-screen bg-gray-100 flex flex-col items-center justify-center">
+        <audio id="parlante-cocina" src="https://actions.google.com/sounds/v1/transportation/bicycle_bell.ogg" preload="auto"></audio>
         <div className="w-12 h-12 border-4 border-[#cc292b] border-t-transparent rounded-full animate-spin mb-4"></div>
         <p className="font-bold text-gray-600 animate-pulse">Conectando a la Nube...</p>
       </div>

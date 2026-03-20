@@ -52,13 +52,7 @@ const INITIAL_MANUAL_STATUS = { isClosed: false, message: '¡Estamos tomando ped
 // ==================================================
 // 🔥 CONFIGURACIÓN DE FIREBASE
 // ==================================================
-const LOCAL_FIREBASE_CONFIG = { apiKey: "AIzaSyDXYG1LHNLWiCT7__ty4VOPjIbmtMNjoYA",
-authDomain: "al-buen-raviol-maipu.firebaseapp.com",
-projectId: "al-buen-raviol-maipu",
-storageBucket: "al-buen-raviol-maipu.firebasestorage.app",
-messagingSenderId: "948036246969",
-appId: "1:948036246969:web:4f42f7e5e46cdb60552a68",
-measurementId: "G-TT5WNYMV5W"};
+const LOCAL_FIREBASE_CONFIG = {};
 
 let firebaseApp, auth, firestoreDb, appId
 try {
@@ -181,46 +175,26 @@ export default function App() {
 
   // --- ALARMA GLOBAL DE PEDIDOS ---
   const cantidadPedidosRef = useRef(0);
-  const cargaInicialRef = useRef(true); // El guardián de la primera carga
 
   useEffect(() => {
     if (dbState && dbState.orders) {
       const actuales = dbState.orders.length;
       
-      // Si recién abrimos la página, anotamos los pedidos en silencio y salimos.
-      if (cargaInicialRef.current) {
-        cargaInicialRef.current = false;
-        cantidadPedidosRef.current = actuales;
-        return;
-      }
-
-      // Si ahora hay MÁS pedidos que antes... ¡ENTRÓ UNO NUEVO!
-      if (actuales > cantidadPedidosRef.current) {
+      if (actuales > cantidadPedidosRef.current && cantidadPedidosRef.current > 0) {
         
-        // 1. Notificación Visual
+        // 1. Llamamos al parlante de la pared (¡no se corta más!)
+        reproducirSonidoFuerte();
+        
+        // 2. Notificación BLINDADA
         if ('Notification' in window) {
           if (Notification.permission === 'granted') {
-            new Notification('🥟 ¡Nuevo pedido en Al Buen Raviol!', { body: 'Revisá la pestaña de pedidos.' });
+            new Notification('🥟 ¡Nuevo pedido en Al Buen Raviol!', { body: 'Revisá el panel de control.' });
           } else if (Notification.permission !== 'denied') {
-            Notification.requestPermission();
+            Notification.requestPermission().catch(console.error);
           }
         }
-
-        // 2. Parlante Físico (Imposible que se corte)
-        let parlante = document.getElementById('parlante-invencible');
-        if (!parlante) {
-          parlante = document.createElement('audio');
-          parlante.id = 'parlante-invencible';
-          parlante.src = 'https://upload.wikimedia.org/wikipedia/commons/5/58/Cash_register_x.ogg';
-          document.body.appendChild(parlante);
-        }
-        
-        // Lo reproducimos de principio a fin
-        parlante.currentTime = 0;
-        parlante.play().catch(e => console.log('El navegador pide que hagas un clic en la página primero'));
       }
       
-      // Actualizamos la memoria para el próximo pedido
       cantidadPedidosRef.current = actuales;
     }
   }, [dbState?.orders]);

@@ -1415,7 +1415,7 @@ function AdminApp({ db, setDb, switchMode }) {
               <Store size={40} className="text-green-600" />
             </div>
             <h2 className="text-2xl font-black text-gray-800 mb-2">¡NUEVO PEDIDO! 🥟</h2>
-            <p className="text-gray-600 mb-6 font-medium">Acaba de ingresar un nuevo pedido al sistema. ¡A la cocina!</p>
+            <p className="text-gray-600 mb-6 font-medium">Acaba de ingresar un nuevo pedido!!!</p>
             <div className="flex gap-3">
               <button
                 onClick={() => setNewOrderPopup(false)}

@@ -2017,7 +2017,7 @@ function AdminCatalogo({ db, setDb }) {
               value={formData.unitType}
               onChange={e => setFormData({ ...formData, unitType: e.target.value })}
             >
-              <option value="unidad">Venta por Unidad / Plancha / Caja</option>
+              <option value="unidad">Venta por Unidad ( Plancha )</option>
               <option value="peso">Venta por Peso (Suma de a 0.250 Kg)</option>
             </select>
           </div>

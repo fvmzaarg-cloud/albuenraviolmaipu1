@@ -195,8 +195,8 @@ export default function App() {
       if (actuales > cantidadPedidosRef.current && cantidadPedidosRef.current > 0) {
         
         // 1. Reproducimos el Sonido
-        const audio = new Audio('https://actions.google.com/sounds/v1/alarms/dinner_bell_triangle.ogg');
-        audio.play().catch(e => console.log('Sonido bloqueado temporalmente'));
+        window.alarmaCocina = new Audio('https://actions.google.com/sounds/v1/communications/incoming_phone_call.ogg');
+        window.alarmaCocina.play().catch(e => console.log('Sonido bloqueado temporalmente'));
         
         // 2. Notificación BLINDADA (solo si el navegador lo permite)
         if ('Notification' in window) {

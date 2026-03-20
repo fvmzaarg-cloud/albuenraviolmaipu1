@@ -198,17 +198,24 @@ export default function App() {
   useEffect(() => {
     if (dbState && dbState.orders) {
       const actuales = dbState.orders.length;
+      
       // Si hay más pedidos que antes, y no es la carga inicial de la página...
       if (actuales > cantidadPedidosRef.current && cantidadPedidosRef.current > 0) {
+        
+        // 1. Reproducimos el Sonido
         const audio = new Audio('https://actions.google.com/sounds/v1/alarms/beep_short.ogg');
         audio.play().catch(e => console.log('Sonido bloqueado temporalmente'));
         
-        if (Notification.permission === 'granted') {
-          new Notification('🥟 ¡Nuevo pedido en Al Buen Raviol!', { body: 'Revisá el panel de control.' });
-        } else if (Notification.permission !== 'denied') {
-          Notification.requestPermission();
+        // 2. Notificación BLINDADA (solo si el navegador lo permite)
+        if ('Notification' in window) {
+          if (Notification.permission === 'granted') {
+            new Notification('🥟 ¡Nuevo pedido en Al Buen Raviol!', { body: 'Revisá el panel de control.' });
+          } else if (Notification.permission !== 'denied') {
+            Notification.requestPermission().catch(console.error);
+          }
         }
       }
+      
       cantidadPedidosRef.current = actuales;
     }
   }, [dbState?.orders]);

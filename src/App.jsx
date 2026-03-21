@@ -1836,6 +1836,7 @@ function AdminDashboard({ db, setDb, setRoute }) {
 
 function AdminPedidos({ db, setDb }) {
   const [ticketToPrint, setTicketToPrint] = useState(null)
+  const [isPrinting, setIsPrinting] = useState(false) // 🔥 EL ESTADO ANTI-ANDROID
 
   const updateStatus = (id, newStatus) =>
     setDb(prev => ({ ...prev, orders: prev.orders.map(o => (o.id === id ? { ...o, status: newStatus } : o)) }))
@@ -1846,13 +1847,26 @@ function AdminPedidos({ db, setDb }) {
     Cancelado: 'bg-red-100 text-red-800',
   }
 
-  // 🔥 PANTALLA EXCLUSIVA DE IMPRESIÓN (AHORA CENTRADA Y SIN ESPACIO SOBRANTE)
+  // 🔥 LA FUNCIÓN QUE DESAPARECE LOS BOTONES
+  const handlePrintAction = () => {
+    setIsPrinting(true); // 1. Escondemos los botones físicamente
+    
+    setTimeout(() => {
+      window.print(); // 2. Imprimimos 200 milisegundos después (cuando ya no hay botones)
+      
+      setTimeout(() => {
+        setIsPrinting(false); // 3. Devolvemos los botones 1 segundo después para que puedas salir
+      }, 1000);
+    }, 200);
+  }
+
+  // 🔥 PANTALLA EXCLUSIVA DE IMPRESIÓN
   if (ticketToPrint) {
     const order = ticketToPrint;
     return (
-      <div className="fixed inset-0 bg-white z-[99999] overflow-y-auto print:overflow-visible">
+      <div className="fixed inset-0 bg-white z-[99999] overflow-y-auto">
         
-        {/* MAGIA CSS: Le dice a la impresora que corte el papel justo donde termina el texto */}
+        {/* MAGIA CSS: Tamaño de hoja */}
         <style>{`
           @media print {
             @page { margin: 0; size: 58mm auto; }
@@ -1861,21 +1875,23 @@ function AdminPedidos({ db, setDb }) {
           }
         `}</style>
 
-        {/* BARRA DE CONTROLES */}
-        <div className="flex gap-2 p-4 bg-gray-100 border-b print-hidden sticky top-0 shadow-sm">
-          <button 
-            onClick={() => setTicketToPrint(null)}
-            className="bg-gray-500 text-white px-4 py-3 rounded-xl font-bold flex items-center gap-2"
-          >
-            <ChevronLeft size={20} /> Volver
-          </button>
-          <button 
-            onClick={() => window.print()}
-            className="flex-1 bg-[#25D366] text-white font-bold py-3 rounded-xl shadow-lg flex items-center justify-center gap-2 active:scale-95 transition-transform"
-          >
-            🖨️ MANDAR A TICKETERA
-          </button>
-        </div>
+        {/* BOTONERA: ¡Solo se muestra si NO estamos imprimiendo en este exacto milisegundo! */}
+        {!isPrinting && (
+          <div className="flex gap-2 p-4 bg-gray-100 border-b sticky top-0 shadow-sm">
+            <button 
+              onClick={() => setTicketToPrint(null)}
+              className="bg-gray-500 text-white px-4 py-3 rounded-xl font-bold flex items-center gap-2"
+            >
+              <ChevronLeft size={20} /> Volver
+            </button>
+            <button 
+              onClick={handlePrintAction}
+              className="flex-1 bg-[#25D366] text-white font-bold py-3 rounded-xl shadow-lg flex items-center justify-center gap-2 active:scale-95 transition-transform"
+            >
+              🖨️ MANDAR A TICKETERA
+            </button>
+          </div>
+        )}
 
         {/* 🧾 ZONA DEL TICKET */}
         <div style={{ 
@@ -1884,16 +1900,14 @@ function AdminPedidos({ db, setDb }) {
           margin: '0 auto', 
           padding: '2mm',
           fontFamily: '"Courier New", Courier, monospace', 
-          fontSize: '14px', /* LETRA MÁS GRANDE */
+          fontSize: '14px',
           color: '#000', 
           lineHeight: '1.2' 
         }}>
-          {/* ENCABEZADO CENTRADO */}
           <div style={{ textAlign: 'center', fontWeight: 'bold', fontSize: '18px' }}>AL BUEN RAVIOL</div>
           <div style={{ textAlign: 'center', fontSize: '12px' }}>Maipú, Mendoza</div>
           <div style={{ borderTop: '1px dashed #000', margin: '8px 0' }}></div>
           
-          {/* INFO DEL CLIENTE CENTRADA Y MÁS GRANDE */}
           <div style={{ textAlign: 'center' }}>
             <div><span style={{ fontWeight: 'bold' }}>Pedido:</span> #{order.id}</div>
             <div><span style={{ fontWeight: 'bold' }}>Fecha:</span> {new Date(order.date).toLocaleString('es-AR')}</div>
@@ -1922,7 +1936,6 @@ function AdminPedidos({ db, setDb }) {
             CANT - PRODUCTO - SUBTOTAL
           </div>
           
-          {/* PRODUCTOS (Alineados a los lados para que se entienda el precio) */}
           {order.items.map((i, idx) => (
             <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', marginBottom: '4px' }}>
               <span style={{ flex: 1, textAlign: 'left', paddingRight: '5px' }}>
@@ -1941,7 +1954,6 @@ function AdminPedidos({ db, setDb }) {
             </div>
           )}
           
-          {/* TOTAL GIGANTE */}
           <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 'bold', fontSize: '18px', marginTop: '6px' }}>
             <span>TOTAL:</span>
             <span>{formatCurrency(order.total)}</span>

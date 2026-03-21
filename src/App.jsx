@@ -1837,10 +1837,95 @@ function AdminDashboard({ db, setDb, setRoute }) {
 function AdminPedidos({ db, setDb }) {
   const updateStatus = (id, newStatus) =>
     setDb(prev => ({ ...prev, orders: prev.orders.map(o => (o.id === id ? { ...o, status: newStatus } : o)) }))
+  
   const statusColors = {
     Recibido: 'bg-yellow-100 text-yellow-800',
     Entregado: 'bg-green-100 text-green-800',
     Cancelado: 'bg-red-100 text-red-800',
+  }
+
+  // 🔥 MOTOR DE IMPRESIÓN TÉRMICA 58MM
+  const handlePrintTicket = (order) => {
+    const printWindow = window.open('', '_blank', 'width=400,height=600');
+    if (!printWindow) return alert('Por favor, habilitá las ventanas emergentes en tu navegador para poder imprimir.');
+
+    const itemsHtml = order.items.map(i => `
+      <div style="display: flex; justify-content: space-between; font-size: 11px; margin-bottom: 3px;">
+        <span style="flex: 1; text-align: left;">${i.quantity}${i.product.unitType === 'peso' ? 'kg' : 'u'} ${i.product.name}</span>
+        <span style="font-weight: bold; margin-left: 5px;">${formatCurrency(i.product.price * i.quantity)}</span>
+      </div>
+    `).join('');
+
+    const html = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>Ticket #${order.id}</title>
+        <style>
+          @page { margin: 0; }
+          body { 
+            font-family: 'Courier New', Courier, monospace; 
+            width: 48mm;
+            margin: 0; 
+            padding: 2mm;
+            color: #000;
+            font-size: 12px;
+            line-height: 1.2;
+          }
+          .center { text-align: center; }
+          .bold { font-weight: bold; }
+          .divider { border-top: 1px dashed #000; margin: 5px 0; }
+          .row { display: flex; justify-content: space-between; }
+        </style>
+      </head>
+      <body>
+        <div class="center bold" style="font-size: 16px;">AL BUEN RAVIOL</div>
+        <div class="center" style="font-size: 10px;">Maipú, Mendoza</div>
+        <div class="divider"></div>
+        
+        <div><span class="bold">Pedido:</span> #${order.id}</div>
+        <div><span class="bold">Fecha:</span> ${new Date(order.date).toLocaleString('es-AR')}</div>
+        <div><span class="bold">Cliente:</span> ${order.customer.name}</div>
+        <div><span class="bold">Tel:</span> ${order.customer.phone}</div>
+        <div style="font-size: 14px; margin-top: 3px;"><span class="bold">Tipo:</span> ${order.type.toUpperCase()}</div>
+        ${order.type === 'delivery' ? `<div style="margin-top: 3px;"><span class="bold">Dir:</span> ${order.customer.address}</div>` : ''}
+        ${order.customer.notes ? `<div style="margin-top: 3px;"><span class="bold">Nota:</span> ${order.customer.notes}</div>` : ''}
+        
+        <div class="divider"></div>
+        <div class="bold" style="font-size: 10px; margin-bottom: 5px;">CANT   PRODUCTO         SUBTOTAL</div>
+        ${itemsHtml}
+        <div class="divider"></div>
+        
+        ${order.type === 'delivery' ? `
+        <div class="row" style="font-size: 11px;">
+          <span>Envío:</span>
+          <span>${formatCurrency(order.shippingCost)}</span>
+        </div>
+        ` : ''}
+        
+        <div class="row bold" style="font-size: 14px; margin-top: 5px;">
+          <span>TOTAL:</span>
+          <span>${formatCurrency(order.total)}</span>
+        </div>
+        
+        <div class="divider"></div>
+        <div class="center" style="margin-top: 5px; font-size: 10px;">¡Gracias por su compra!</div>
+        <div class="center" style="font-size: 10px;">---</div>
+        
+        <script>
+          window.onload = () => { 
+            setTimeout(() => {
+              window.print(); 
+              window.close(); 
+            }, 250);
+          }
+        </script>
+      </body>
+      </html>
+    `;
+
+    printWindow.document.write(html);
+    printWindow.document.close();
   }
 
   return (
@@ -1858,32 +1943,44 @@ function AdminPedidos({ db, setDb }) {
                   <p className="font-bold text-gray-800 mt-1">{order.customer.name}</p>
                   <p className="text-xs text-gray-500">{new Date(order.date).toLocaleString('es-AR')}</p>
                 </div>
-                <select
-                  value={order.status}
-                  onChange={e => updateStatus(order.id, e.target.value)}
-                  className={`text-xs font-bold px-2 py-1 rounded-full outline-none cursor-pointer ${
-                    statusColors[order.status] || 'bg-gray-100 text-gray-800'
-                  }`}
-                >
-                  <option value="Recibido">Recibido</option>
-                  <option value="Entregado">Entregado</option>
-                  <option value="Cancelado">Cancelado</option>
-                </select>
+                
+                <div className="flex flex-col gap-2 items-end">
+                  <select
+                    value={order.status}
+                    onChange={e => updateStatus(order.id, e.target.value)}
+                    className={`text-xs font-bold px-2 py-1 rounded-full outline-none cursor-pointer ${
+                      statusColors[order.status] || 'bg-gray-100 text-gray-800'
+                    }`}
+                  >
+                    <option value="Recibido">Recibido</option>
+                    <option value="Entregado">Entregado</option>
+                    <option value="Cancelado">Cancelado</option>
+                  </select>
+                  
+                  <button 
+                    onClick={() => handlePrintTicket(order)}
+                    className="text-xs font-bold text-gray-600 bg-gray-100 hover:bg-gray-200 px-2 py-1 rounded flex items-center gap-1 transition-colors"
+                    title="Imprimir Comanda"
+                  >
+                    🖨️ Imprimir
+                  </button>
+                </div>
               </div>
+
               <div className="text-sm bg-gray-50 p-2 rounded mb-2">
-                <p>
-                  <strong>Tel:</strong> {order.customer.phone}
-                </p>
-                <p>
-                  <strong>Tipo:</strong> {order.type.toUpperCase()}
-                </p>
+                <p><strong>Tel:</strong> {order.customer.phone}</p>
+                <p><strong>Tipo:</strong> {order.type.toUpperCase()}</p>
                 {order.type === 'delivery' && (
                   <p>
                     <strong>Dir:</strong> {order.customer.address}{' '}
                     <span className="text-xs text-gray-500">({order.distance ? order.distance.toFixed(1) : 0} km)</span>
                   </p>
                 )}
+                {order.customer.notes && (
+                  <p className="text-red-600 font-bold mt-1">📝 Nota: {order.customer.notes}</p>
+                )}
               </div>
+              
               <div className="text-xs space-y-1 mb-2">
                 {order.items.map((i, idx) => (
                   <div key={idx} className="flex justify-between text-gray-600">
@@ -1893,7 +1990,16 @@ function AdminPedidos({ db, setDb }) {
                     <span>{formatCurrency(i.product.price * i.quantity)}</span>
                   </div>
                 ))}
+                
+                {/* 👇 ACÁ SE SUMA EL RENGLÓN DEL ENVÍO SI ES DELIVERY 👇 */}
+                {order.type === 'delivery' && (
+                  <div className="flex justify-between text-gray-500 pt-1 border-t border-gray-100 mt-2">
+                    <span>Costo de envío</span>
+                    <span>{formatCurrency(order.shippingCost || 0)}</span>
+                  </div>
+                )}
               </div>
+              
               <div className="flex justify-between items-center pt-2 border-t border-gray-100">
                 <span className="text-sm font-bold text-gray-500">Total:</span>
                 <span className="font-black text-gray-900">{formatCurrency(order.total)}</span>

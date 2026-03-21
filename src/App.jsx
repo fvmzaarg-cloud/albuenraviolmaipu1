@@ -1928,7 +1928,119 @@ function AdminPedidos({ db, setDb }) {
           {/* PRODUCTOS (Alineados a los lados para que se entienda el precio) */}
           {order.items.map((i, idx) => (
             <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', marginBottom: '4px' }}>
-              <span style={{ flex: 1
+              <span style={{ flex: 1, textAlign: 'left', paddingRight: '5px' }}>
+                {i.quantity}{i.product.unitType === 'peso' ? 'kg' : 'u'} {i.product.name}
+              </span>
+              <span style={{ fontWeight: 'bold' }}>{formatCurrency(i.product.price * i.quantity)}</span>
+            </div>
+          ))}
+          
+          <div style={{ borderTop: '1px dashed #000', margin: '8px 0' }}></div>
+          
+          {order.type === 'delivery' && (
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px' }}>
+              <span>Envío:</span>
+              <span>{formatCurrency(order.shippingCost || 0)}</span>
+            </div>
+          )}
+          
+          {/* TOTAL GIGANTE */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 'bold', fontSize: '18px', marginTop: '6px' }}>
+            <span>TOTAL:</span>
+            <span>{formatCurrency(order.total)}</span>
+          </div>
+          
+          <div style={{ borderTop: '1px dashed #000', margin: '8px 0' }}></div>
+          <div style={{ textAlign: 'center', marginTop: '5px', fontSize: '12px', fontWeight: 'bold' }}>¡Gracias por su compra!</div>
+          <div style={{ textAlign: 'center', fontSize: '12px' }}>---</div>
+        </div>
+      </div>
+    );
+  }
+
+  // 📋 LISTA NORMAL DE PEDIDOS
+  return (
+    <div className="space-y-4 animate-fadeIn">
+      <h2 className="text-xl font-bold text-gray-800">Gestión de Pedidos</h2>
+      {db.orders.length === 0 ? (
+        <p className="text-gray-500 text-center py-10">No hay pedidos registrados.</p>
+      ) : (
+        <div className="space-y-4">
+          {db.orders.map(order => (
+            <div key={order.id} className="bg-white p-4 rounded-xl shadow-sm border border-gray-200">
+              <div className="flex justify-between items-start mb-2">
+                <div>
+                  <span className="text-xs font-mono bg-gray-100 text-gray-600 px-2 py-1 rounded">#{order.id}</span>
+                  <p className="font-bold text-gray-800 mt-1">{order.customer.name}</p>
+                  <p className="text-xs text-gray-500">{new Date(order.date).toLocaleString('es-AR')}</p>
+                </div>
+                
+                <div className="flex flex-col gap-2 items-end">
+                  <select
+                    value={order.status}
+                    onChange={e => updateStatus(order.id, e.target.value)}
+                    className={`text-xs font-bold px-2 py-1 rounded-full outline-none cursor-pointer ${
+                      statusColors[order.status] || 'bg-gray-100 text-gray-800'
+                    }`}
+                  >
+                    <option value="Recibido">Recibido</option>
+                    <option value="Entregado">Entregado</option>
+                    <option value="Cancelado">Cancelado</option>
+                  </select>
+                  
+                  <button 
+                    onClick={() => setTicketToPrint(order)}
+                    className="text-xs font-bold text-gray-600 bg-gray-100 hover:bg-gray-200 px-2 py-1 rounded flex items-center gap-1 transition-colors"
+                  >
+                    🖨️ Imprimir
+                  </button>
+                </div>
+              </div>
+
+              <div className="text-sm bg-gray-50 p-2 rounded mb-2">
+                <p><strong>Tel:</strong> {order.customer.phone}</p>
+                <p><strong>Tipo:</strong> {order.type.toUpperCase()}</p>
+                {order.type === 'delivery' && (
+                  <p>
+                    <strong>Dir:</strong> {order.customer.address}{' '}
+                    <span className="text-xs text-gray-500">({order.distance ? order.distance.toFixed(1) : 0} km)</span>
+                  </p>
+                )}
+                {order.customer.notes && (
+                  <p className="text-red-600 font-bold mt-1">📝 Nota: {order.customer.notes}</p>
+                )}
+              </div>
+              
+              <div className="text-xs space-y-1 mb-2">
+                {order.items.map((i, idx) => (
+                  <div key={idx} className="flex justify-between text-gray-600">
+                    <span>
+                      {i.quantity} {i.product.unitType === 'peso' ? 'kg' : 'u'} x {i.product.name}
+                    </span>
+                    <span>{formatCurrency(i.product.price * i.quantity)}</span>
+                  </div>
+                ))}
+                
+                {order.type === 'delivery' && (
+                  <div className="flex justify-between text-gray-500 pt-1 border-t border-gray-100 mt-2">
+                    <span>Costo de envío</span>
+                    <span>{formatCurrency(order.shippingCost || 0)}</span>
+                  </div>
+                )}
+              </div>
+              
+              <div className="flex justify-between items-center pt-2 border-t border-gray-100">
+                <span className="text-sm font-bold text-gray-500">Total:</span>
+                <span className="font-black text-gray-900">{formatCurrency(order.total)}</span>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
 function AdminCatalogo({ db, setDb }) {
   const [editingId, setEditingId] = useState(null)
   const [formData, setFormData] = useState(null)

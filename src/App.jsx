@@ -1884,7 +1884,7 @@ function AdminPedidos({ db, setDb }) {
           maxWidth: '58mm', 
           margin: '0 auto', 
           padding: '2mm',
-          fontFamily: '"Courier New", Courier, monospace', 
+          fontFamily: 'Calibri, Arial, sans-serif',
           fontSize: '14px', 
           color: '#000', 
           lineHeight: '1.2' 

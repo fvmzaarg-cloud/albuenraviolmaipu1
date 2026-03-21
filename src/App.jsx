@@ -1835,6 +1835,8 @@ function AdminDashboard({ db, setDb, setRoute }) {
 }
 
 function AdminPedidos({ db, setDb }) {
+  const [ticketToPrint, setTicketToPrint] = useState(null)
+
   const updateStatus = (id, newStatus) =>
     setDb(prev => ({ ...prev, orders: prev.orders.map(o => (o.id === id ? { ...o, status: newStatus } : o)) }))
   
@@ -1844,177 +1846,89 @@ function AdminPedidos({ db, setDb }) {
     Cancelado: 'bg-red-100 text-red-800',
   }
 
-  // 🔥 MOTOR DE IMPRESIÓN POR CSS (100% COMPATIBLE CON ANDROID)
-  const handlePrintTicket = (order) => {
-    // 1. Creamos un contenedor exclusivo para el ticket
-    const printContainer = document.createElement('div');
-    printContainer.id = 'print-container';
+  // 🔥 PANTALLA EXCLUSIVA DE IMPRESIÓN (AHORA CENTRADA Y SIN ESPACIO SOBRANTE)
+  if (ticketToPrint) {
+    const order = ticketToPrint;
+    return (
+      <div className="fixed inset-0 bg-white z-[99999] overflow-y-auto print:overflow-visible">
+        
+        {/* MAGIA CSS: Le dice a la impresora que corte el papel justo donde termina el texto */}
+        <style>{`
+          @media print {
+            @page {
+              margin: 0;
+              size: 58mm auto; 
+            }
+            body { margin: 0; padding: 0; background: white; }
+            .print-hidden { display: none !important; }
+          }
+        `}</style>
 
-    // 2. Inyectamos los estilos que esconden la app y le dan formato de 58mm al ticket
-    const style = document.createElement('style');
-    style.id = 'print-styles';
-    style.textContent = `
-      @media screen {
-        #print-container { display: none; } /* En la pantalla normal no se ve */
-      }
-      @media print {
-        body * { visibility: hidden; } /* Esconde toda la app */
-        #print-container, #print-container * { visibility: visible; } /* Muestra SOLO el ticket */
-        #print-container {
-          position: absolute;
-          left: 0;
-          top: 0;
-          width: 48mm; /* Tamaño de ticketera 58mm */
-          padding: 2mm;
-          font-family: 'Courier New', Courier, monospace;
-          font-size: 12px;
-          color: #000;
-        }
-        .ticket-center { text-align: center; }
-        .ticket-bold { font-weight: bold; }
-        .ticket-divider { border-top: 1px dashed #000; margin: 5px 0; }
-        .ticket-row { display: flex; justify-content: space-between; }
-      }
-    `;
-    document.head.appendChild(style);
-
-    // 3. Armamos la lista de productos
-    const itemsHtml = order.items.map(i => `
-      <div class="ticket-row" style="font-size: 11px; margin-bottom: 3px;">
-        <span style="flex: 1; text-align: left;">${i.quantity}${i.product.unitType === 'peso' ? 'kg' : 'u'} ${i.product.name}</span>
-        <span class="ticket-bold" style="margin-left: 5px;">${formatCurrency(i.product.price * i.quantity)}</span>
-      </div>
-    `).join('');
-
-    // 4. Dibujamos el Ticket HTML
-    printContainer.innerHTML = `
-      <div class="ticket-center ticket-bold" style="font-size: 16px;">AL BUEN RAVIOL</div>
-      <div class="ticket-center" style="font-size: 10px;">Maipú, Mendoza</div>
-      <div class="ticket-divider"></div>
-      
-      <div><span class="ticket-bold">Pedido:</span> #${order.id}</div>
-      <div><span class="ticket-bold">Fecha:</span> ${new Date(order.date).toLocaleString('es-AR')}</div>
-      <div><span class="ticket-bold">Cliente:</span> ${order.customer.name}</div>
-      <div><span class="ticket-bold">Tel:</span> ${order.customer.phone}</div>
-      <div style="font-size: 14px; margin-top: 3px;"><span class="ticket-bold">Tipo:</span> ${order.type.toUpperCase()}</div>
-      ${order.type === 'delivery' ? `<div style="margin-top: 3px;"><span class="ticket-bold">Dir:</span> ${order.customer.address}</div>` : ''}
-      ${order.customer.notes ? `<div style="margin-top: 3px;"><span class="ticket-bold">Nota:</span> ${order.customer.notes}</div>` : ''}
-      
-      <div class="ticket-divider"></div>
-      <div class="ticket-bold" style="font-size: 10px; margin-bottom: 5px;">CANT   PRODUCTO         SUBTOTAL</div>
-      ${itemsHtml}
-      <div class="ticket-divider"></div>
-      
-      ${order.type === 'delivery' ? `
-      <div class="ticket-row" style="font-size: 11px;">
-        <span>Envío:</span>
-        <span>${formatCurrency(order.shippingCost || 0)}</span>
-      </div>
-      ` : ''}
-      
-      <div class="ticket-row ticket-bold" style="font-size: 14px; margin-top: 5px;">
-        <span>TOTAL:</span>
-        <span>${formatCurrency(order.total)}</span>
-      </div>
-      
-      <div class="ticket-divider"></div>
-      <div class="ticket-center" style="margin-top: 5px; font-size: 10px;">¡Gracias por su compra!</div>
-      <div class="ticket-center" style="font-size: 10px;">---</div>
-    `;
-    document.body.appendChild(printContainer);
-
-    // 5. Imprimimos y limpiamos la basura
-    window.print();
-    
-    // Lo borramos después de un ratito para dejar la app limpia
-    setTimeout(() => {
-      document.body.removeChild(printContainer);
-      document.head.removeChild(style);
-    }, 2000);
-  }
-
-  return (
-    <div className="space-y-4 animate-fadeIn">
-      <h2 className="text-xl font-bold text-gray-800">Gestión de Pedidos</h2>
-      {db.orders.length === 0 ? (
-        <p className="text-gray-500 text-center py-10">No hay pedidos registrados.</p>
-      ) : (
-        <div className="space-y-4">
-          {db.orders.map(order => (
-            <div key={order.id} className="bg-white p-4 rounded-xl shadow-sm border border-gray-200">
-              <div className="flex justify-between items-start mb-2">
-                <div>
-                  <span className="text-xs font-mono bg-gray-100 text-gray-600 px-2 py-1 rounded">#{order.id}</span>
-                  <p className="font-bold text-gray-800 mt-1">{order.customer.name}</p>
-                  <p className="text-xs text-gray-500">{new Date(order.date).toLocaleString('es-AR')}</p>
-                </div>
-                
-                <div className="flex flex-col gap-2 items-end">
-                  <select
-                    value={order.status}
-                    onChange={e => updateStatus(order.id, e.target.value)}
-                    className={`text-xs font-bold px-2 py-1 rounded-full outline-none cursor-pointer ${
-                      statusColors[order.status] || 'bg-gray-100 text-gray-800'
-                    }`}
-                  >
-                    <option value="Recibido">Recibido</option>
-                    <option value="Entregado">Entregado</option>
-                    <option value="Cancelado">Cancelado</option>
-                  </select>
-                  
-                  <button 
-                    onClick={() => handlePrintTicket(order)}
-                    className="text-xs font-bold text-gray-600 bg-gray-100 hover:bg-gray-200 px-2 py-1 rounded flex items-center gap-1 transition-colors"
-                    title="Imprimir Comanda"
-                  >
-                    🖨️ Imprimir
-                  </button>
-                </div>
-              </div>
-
-              <div className="text-sm bg-gray-50 p-2 rounded mb-2">
-                <p><strong>Tel:</strong> {order.customer.phone}</p>
-                <p><strong>Tipo:</strong> {order.type.toUpperCase()}</p>
-                {order.type === 'delivery' && (
-                  <p>
-                    <strong>Dir:</strong> {order.customer.address}{' '}
-                    <span className="text-xs text-gray-500">({order.distance ? order.distance.toFixed(1) : 0} km)</span>
-                  </p>
-                )}
-                {order.customer.notes && (
-                  <p className="text-red-600 font-bold mt-1">📝 Nota: {order.customer.notes}</p>
-                )}
-              </div>
-              
-              <div className="text-xs space-y-1 mb-2">
-                {order.items.map((i, idx) => (
-                  <div key={idx} className="flex justify-between text-gray-600">
-                    <span>
-                      {i.quantity} {i.product.unitType === 'peso' ? 'kg' : 'u'} x {i.product.name}
-                    </span>
-                    <span>{formatCurrency(i.product.price * i.quantity)}</span>
-                  </div>
-                ))}
-                
-                {order.type === 'delivery' && (
-                  <div className="flex justify-between text-gray-500 pt-1 border-t border-gray-100 mt-2">
-                    <span>Costo de envío</span>
-                    <span>{formatCurrency(order.shippingCost || 0)}</span>
-                  </div>
-                )}
-              </div>
-              
-              <div className="flex justify-between items-center pt-2 border-t border-gray-100">
-                <span className="text-sm font-bold text-gray-500">Total:</span>
-                <span className="font-black text-gray-900">{formatCurrency(order.total)}</span>
-              </div>
-            </div>
-          ))}
+        {/* BARRA DE CONTROLES */}
+        <div className="flex gap-2 p-4 bg-gray-100 border-b print-hidden sticky top-0 shadow-sm">
+          <button 
+            onClick={() => setTicketToPrint(null)}
+            className="bg-gray-500 text-white px-4 py-3 rounded-xl font-bold flex items-center gap-2"
+          >
+            <ChevronLeft size={20} /> Volver
+          </button>
+          <button 
+            onClick={() => window.print()}
+            className="flex-1 bg-[#25D366] text-white font-bold py-3 rounded-xl shadow-lg flex items-center justify-center gap-2 active:scale-95 transition-transform"
+          >
+            🖨️ MANDAR A TICKETERA
+          </button>
         </div>
-      )}
-    </div>
-  )
-}
+
+        {/* 🧾 ZONA DEL TICKET */}
+        <div style={{ 
+          width: '100%', 
+          maxWidth: '58mm', 
+          margin: '0 auto', 
+          padding: '2mm',
+          fontFamily: '"Courier New", Courier, monospace', 
+          fontSize: '14px', /* LETRA MÁS GRANDE */
+          color: '#000', 
+          lineHeight: '1.2' 
+        }}>
+          {/* ENCABEZADO CENTRADO */}
+          <div style={{ textAlign: 'center', fontWeight: 'bold', fontSize: '18px' }}>AL BUEN RAVIOL</div>
+          <div style={{ textAlign: 'center', fontSize: '12px' }}>Maipú, Mendoza</div>
+          <div style={{ borderTop: '1px dashed #000', margin: '8px 0' }}></div>
+          
+          {/* INFO DEL CLIENTE CENTRADA Y MÁS GRANDE */}
+          <div style={{ textAlign: 'center' }}>
+            <div><span style={{ fontWeight: 'bold' }}>Pedido:</span> #{order.id}</div>
+            <div><span style={{ fontWeight: 'bold' }}>Fecha:</span> {new Date(order.date).toLocaleString('es-AR')}</div>
+            <div style={{ marginTop: '3px' }}><span style={{ fontWeight: 'bold' }}>Cliente:</span> {order.customer.name}</div>
+            <div><span style={{ fontWeight: 'bold' }}>Tel:</span> {order.customer.phone}</div>
+            
+            <div style={{ fontSize: '16px', marginTop: '5px', fontWeight: 'bold' }}>
+              Tipo: {order.type.toUpperCase()}
+            </div>
+            
+            {order.type === 'delivery' && (
+              <div style={{ marginTop: '2px', fontSize: '13px' }}>
+                <span style={{ fontWeight: 'bold' }}>Dir:</span> {order.customer.address}
+              </div>
+            )}
+            
+            {order.customer.notes && (
+              <div style={{ marginTop: '4px', color: 'black', border: '1px solid #000', padding: '2px', borderRadius: '4px' }}>
+                <span style={{ fontWeight: 'bold' }}>Nota:</span> {order.customer.notes}
+              </div>
+            )}
+          </div>
+          
+          <div style={{ borderTop: '1px dashed #000', margin: '8px 0' }}></div>
+          <div style={{ fontWeight: 'bold', fontSize: '12px', marginBottom: '6px', textAlign: 'center' }}>
+            CANT - PRODUCTO - SUBTOTAL
+          </div>
+          
+          {/* PRODUCTOS (Alineados a los lados para que se entienda el precio) */}
+          {order.items.map((i, idx) => (
+            <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', marginBottom: '4px' }}>
+              <span style={{ flex: 1
 function AdminCatalogo({ db, setDb }) {
   const [editingId, setEditingId] = useState(null)
   const [formData, setFormData] = useState(null)

@@ -1836,7 +1836,7 @@ function AdminDashboard({ db, setDb, setRoute }) {
 
 function AdminPedidos({ db, setDb }) {
   const [ticketToPrint, setTicketToPrint] = useState(null)
-  const [isPrinting, setIsPrinting] = useState(false) // 🔥 EL ESTADO ANTI-ANDROID
+  const [isPrinting, setIsPrinting] = useState(false)
 
   const updateStatus = (id, newStatus) =>
     setDb(prev => ({ ...prev, orders: prev.orders.map(o => (o.id === id ? { ...o, status: newStatus } : o)) }))
@@ -1847,35 +1847,30 @@ function AdminPedidos({ db, setDb }) {
     Cancelado: 'bg-red-100 text-red-800',
   }
 
-  // 🔥 LA FUNCIÓN QUE DESAPARECE LOS BOTONES
   const handlePrintAction = () => {
-    setIsPrinting(true); // 1. Escondemos los botones físicamente
-    
+    setIsPrinting(true);
     setTimeout(() => {
-      window.print(); // 2. Imprimimos 200 milisegundos después (cuando ya no hay botones)
-      
+      window.print();
       setTimeout(() => {
-        setIsPrinting(false); // 3. Devolvemos los botones 1 segundo después para que puedas salir
+        setIsPrinting(false);
       }, 1000);
     }, 200);
   }
 
-  // 🔥 PANTALLA EXCLUSIVA DE IMPRESIÓN
+  // 🔥 PANTALLA EXCLUSIVA DE IMPRESIÓN (AHORA CON "TINTA CARGADA")
   if (ticketToPrint) {
     const order = ticketToPrint;
     return (
       <div className="fixed inset-0 bg-white z-[99999] overflow-y-auto">
         
-        {/* MAGIA CSS: Tamaño de hoja */}
         <style>{`
           @media print {
             @page { margin: 0; size: 58mm auto; }
             body { margin: 0; padding: 0; background: white; }
-            * { font-weight: 900 !important; color: #000 !important; }
+            * { color: #000 !important; } /* Fuerza negro puro en la impresora */
           }
         `}</style>
 
-        {/* BOTONERA: ¡Solo se muestra si NO estamos imprimiendo en este exacto milisegundo! */}
         {!isPrinting && (
           <div className="flex gap-2 p-4 bg-gray-100 border-b sticky top-0 shadow-sm">
             <button 
@@ -1893,75 +1888,78 @@ function AdminPedidos({ db, setDb }) {
           </div>
         )}
 
-        {/* 🧾 ZONA DEL TICKET */}
+        {/* 🧾 ZONA DEL TICKET - TRUCOS PARA TICKETERA TÉRMICA */}
         <div style={{ 
           width: '100%', 
           maxWidth: '58mm', 
           margin: '0 auto', 
           padding: '2mm',
           fontFamily: '"Courier New", Courier, monospace', 
-          fontSize: '14px',
+          fontSize: '15px', /* Aumenté 1 punto el tamaño general */
           color: '#000', 
-          lineHeight: '1.2' 
+          lineHeight: '1.2',
+          fontWeight: '900', /* TODO EXTRA BOLD */
+          textShadow: '0 0 1px #000', /* Engorda la letra artificialmente */
+          WebkitFontSmoothing: 'none' /* Evita que se vea borroso al imprimir */
         }}>
-          <div style={{ textAlign: 'center', fontWeight: 'bold', fontSize: '18px' }}>AL BUEN RAVIOL</div>
-          <div style={{ textAlign: 'center', fontSize: '12px' }}>Maipú, Mendoza</div>
-          <div style={{ borderTop: '1px dashed #000', margin: '8px 0' }}></div>
+          <div style={{ textAlign: 'center', fontSize: '20px', textTransform: 'uppercase' }}>AL BUEN RAVIOL</div>
+          <div style={{ textAlign: 'center', fontSize: '13px' }}>Maipú, Mendoza</div>
+          <div style={{ borderTop: '2px dashed #000', margin: '8px 0' }}></div>
           
           <div style={{ textAlign: 'center' }}>
-            <div><span style={{ fontWeight: 'bold' }}>Pedido:</span> #{order.id}</div>
-            <div><span style={{ fontWeight: 'bold' }}>Fecha:</span> {new Date(order.date).toLocaleString('es-AR')}</div>
-            <div style={{ marginTop: '3px' }}><span style={{ fontWeight: 'bold' }}>Cliente:</span> {order.customer.name}</div>
-            <div><span style={{ fontWeight: 'bold' }}>Tel:</span> {order.customer.phone}</div>
+            <div>Pedido: #{order.id}</div>
+            <div>Fecha: {new Date(order.date).toLocaleString('es-AR')}</div>
+            <div style={{ marginTop: '3px' }}>Cliente: {order.customer.name}</div>
+            <div>Tel: {order.customer.phone}</div>
             
-            <div style={{ fontSize: '16px', marginTop: '5px', fontWeight: 'bold' }}>
+            <div style={{ fontSize: '17px', marginTop: '5px' }}>
               Tipo: {order.type.toUpperCase()}
             </div>
             
             {order.type === 'delivery' && (
-              <div style={{ marginTop: '2px', fontSize: '13px' }}>
-                <span style={{ fontWeight: 'bold' }}>Dir:</span> {order.customer.address}
+              <div style={{ marginTop: '2px', fontSize: '14px' }}>
+                Dir: {order.customer.address}
               </div>
             )}
             
             {order.customer.notes && (
-              <div style={{ marginTop: '4px', color: 'black', border: '1px solid #000', padding: '2px', borderRadius: '4px' }}>
-                <span style={{ fontWeight: 'bold' }}>Nota:</span> {order.customer.notes}
+              <div style={{ marginTop: '4px', border: '2px solid #000', padding: '2px', borderRadius: '4px' }}>
+                Nota: {order.customer.notes}
               </div>
             )}
           </div>
           
-          <div style={{ borderTop: '1px dashed #000', margin: '8px 0' }}></div>
-          <div style={{ fontWeight: 'bold', fontSize: '12px', marginBottom: '6px', textAlign: 'center' }}>
+          <div style={{ borderTop: '2px dashed #000', margin: '8px 0' }}></div>
+          <div style={{ fontSize: '13px', marginBottom: '6px', textAlign: 'center' }}>
             CANT - PRODUCTO - SUBTOTAL
           </div>
           
           {order.items.map((i, idx) => (
-            <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', marginBottom: '4px' }}>
+            <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '14px', marginBottom: '4px' }}>
               <span style={{ flex: 1, textAlign: 'left', paddingRight: '5px' }}>
                 {i.quantity}{i.product.unitType === 'peso' ? 'kg' : 'u'} {i.product.name}
               </span>
-              <span style={{ fontWeight: 'bold' }}>{formatCurrency(i.product.price * i.quantity)}</span>
+              <span>{formatCurrency(i.product.price * i.quantity)}</span>
             </div>
           ))}
           
-          <div style={{ borderTop: '1px dashed #000', margin: '8px 0' }}></div>
+          <div style={{ borderTop: '2px dashed #000', margin: '8px 0' }}></div>
           
           {order.type === 'delivery' && (
-            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '14px' }}>
               <span>Envío:</span>
               <span>{formatCurrency(order.shippingCost || 0)}</span>
             </div>
           )}
           
-          <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 'bold', fontSize: '18px', marginTop: '6px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '19px', marginTop: '6px' }}>
             <span>TOTAL:</span>
             <span>{formatCurrency(order.total)}</span>
           </div>
           
-          <div style={{ borderTop: '1px dashed #000', margin: '8px 0' }}></div>
-          <div style={{ textAlign: 'center', marginTop: '5px', fontSize: '12px', fontWeight: 'bold' }}>¡Gracias por su compra!</div>
-          <div style={{ textAlign: 'center', fontSize: '12px' }}>---</div>
+          <div style={{ borderTop: '2px dashed #000', margin: '8px 0' }}></div>
+          <div style={{ textAlign: 'center', marginTop: '5px', fontSize: '13px' }}>¡Gracias por su compra!</div>
+          <div style={{ textAlign: 'center', fontSize: '13px' }}>---</div>
         </div>
       </div>
     );

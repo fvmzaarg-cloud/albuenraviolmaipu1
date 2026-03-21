@@ -1855,12 +1855,9 @@ function AdminPedidos({ db, setDb }) {
         {/* MAGIA CSS: Le dice a la impresora que corte el papel justo donde termina el texto */}
         <style>{`
           @media print {
-            @page {
-              margin: 0;
-              size: 58mm auto; 
-            }
+            @page { margin: 0; size: 58mm auto; }
             body { margin: 0; padding: 0; background: white; }
-            .print-hidden { display: none !important; }
+            * { font-weight: 700 !important; color: #000 !important; }
           }
         `}</style>
 

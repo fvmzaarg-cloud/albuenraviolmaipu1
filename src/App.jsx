@@ -1857,7 +1857,7 @@ function AdminPedidos({ db, setDb }) {
           @media print {
             @page { margin: 0; size: 58mm auto; }
             body { margin: 0; padding: 0; background: white; }
-            * { font-weight: 700 !important; color: #000 !important; }
+            * { font-weight: 900 !important; color: #000 !important; }
           }
         `}</style>
 

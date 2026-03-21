@@ -1152,12 +1152,12 @@ function MapPicker({ address, shopLocation, onAddressChange, onLocationSelect, i
     if (!mapLoaded || !mapRef.current || !inputRef.current) return
     if (mapInstance.current) return
 
-    const google = window.google
     const map = new google.maps.Map(mapRef.current, {
       center: shopLocation,
       zoom: 13,
       disableDefaultUI: true,
       zoomControl: true,
+      gestureHandling: 'cooperative', // <-- ESTA ES LA SOLUCIÓN
     })
     const marker = new google.maps.Marker({ position: shopLocation, map: map, draggable: true })
 
@@ -2117,7 +2117,8 @@ function AdminCatalogo({ db, setDb }) {
 }
 
 function AdminCategorias({ db, setDb }) {
-  const [newCatName, useState] = React.useState('')
+  // ACÁ ESTABA EL ERROR TONTO, YA ESTÁ CORREGIDO:
+  const [newCatName, setNewCatName] = useState('')
 
   const handleAdd = () => {
     if (!newCatName.trim()) return

@@ -1863,13 +1863,31 @@ function AdminPedidos({ db, setDb }) {
     return (
       <div className="fixed inset-0 bg-white z-[99999] overflow-y-auto">
         
+        {/* MAGIA CSS: Tamaño de hoja, todo en negrita, y ocultar botones */}
         <style>{`
           @media print {
             @page { margin: 0; size: 58mm auto; }
             body { margin: 0; padding: 0; background: white; }
-            * { color: #000 !important; } /* Fuerza negro puro en la impresora */
+            * { font-weight: 900 !important; color: #000 !important; }
+            .ocultar-en-ticket { display: none !important; }
           }
         `}</style>
+
+        {/* BARRA DE CONTROLES (Ahora tiene la clase 'ocultar-en-ticket') */}
+        <div className="ocultar-en-ticket flex gap-2 p-4 bg-gray-100 border-b sticky top-0 shadow-sm">
+          <button 
+            onClick={() => setTicketToPrint(null)}
+            className="bg-gray-500 text-white px-4 py-3 rounded-xl font-bold flex items-center gap-2"
+          >
+            <ChevronLeft size={20} /> Volver
+          </button>
+          <button 
+            onClick={() => window.print()}
+            className="flex-1 bg-[#25D366] text-white font-bold py-3 rounded-xl shadow-lg flex items-center justify-center gap-2 active:scale-95 transition-transform"
+          >
+            🖨️ MANDAR A TICKETERA
+          </button>
+        </div>
 
         {!isPrinting && (
           <div className="flex gap-2 p-4 bg-gray-100 border-b sticky top-0 shadow-sm">

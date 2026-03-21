@@ -1844,11 +1844,14 @@ function AdminPedidos({ db, setDb }) {
     Cancelado: 'bg-red-100 text-red-800',
   }
 
-  // 🔥 MOTOR DE IMPRESIÓN TÉRMICA 58MM
+  // 🔥 NUEVO MOTOR DE IMPRESIÓN (A PRUEBA DE ANDROID)
   const handlePrintTicket = (order) => {
-    const printWindow = window.open('', '_blank', 'width=400,height=600');
-    if (!printWindow) return alert('Por favor, habilitá las ventanas emergentes en tu navegador para poder imprimir.');
+    // 1. Creamos un "marco invisible" en la página actual (sin popups que enojen a Android)
+    const iframe = document.createElement('iframe');
+    iframe.style.display = 'none';
+    document.body.appendChild(iframe);
 
+    // 2. Armamos la lista de productos
     const itemsHtml = order.items.map(i => `
       <div style="display: flex; justify-content: space-between; font-size: 11px; margin-bottom: 3px;">
         <span style="flex: 1; text-align: left;">${i.quantity}${i.product.unitType === 'peso' ? 'kg' : 'u'} ${i.product.name}</span>
@@ -1856,6 +1859,7 @@ function AdminPedidos({ db, setDb }) {
       </div>
     `).join('');
 
+    // 3. Dibujamos el Ticket
     const html = `
       <!DOCTYPE html>
       <html>
@@ -1899,7 +1903,7 @@ function AdminPedidos({ db, setDb }) {
         ${order.type === 'delivery' ? `
         <div class="row" style="font-size: 11px;">
           <span>Envío:</span>
-          <span>${formatCurrency(order.shippingCost)}</span>
+          <span>${formatCurrency(order.shippingCost || 0)}</span>
         </div>
         ` : ''}
         
@@ -1911,21 +1915,25 @@ function AdminPedidos({ db, setDb }) {
         <div class="divider"></div>
         <div class="center" style="margin-top: 5px; font-size: 10px;">¡Gracias por su compra!</div>
         <div class="center" style="font-size: 10px;">---</div>
-        
-        <script>
-          window.onload = () => { 
-            setTimeout(() => {
-              window.print(); 
-              window.close(); 
-            }, 250);
-          }
-        </script>
       </body>
       </html>
     `;
 
-    printWindow.document.write(html);
-    printWindow.document.close();
+    // 4. Inyectamos el diseño en el marco invisible y le damos la orden de imprimir
+    iframe.contentWindow.document.open();
+    iframe.contentWindow.document.write(html);
+    iframe.contentWindow.document.close();
+
+    // Le damos a Android medio segundo para respirar antes de lanzar la pantalla de impresión
+    setTimeout(() => {
+      iframe.contentWindow.focus();
+      iframe.contentWindow.print();
+      
+      // Limpiamos la basura invisible después de unos segundos
+      setTimeout(() => {
+        document.body.removeChild(iframe);
+      }, 3000);
+    }, 500);
   }
 
   return (
@@ -1991,7 +1999,6 @@ function AdminPedidos({ db, setDb }) {
                   </div>
                 ))}
                 
-                {/* 👇 ACÁ SE SUMA EL RENGLÓN DEL ENVÍO SI ES DELIVERY 👇 */}
                 {order.type === 'delivery' && (
                   <div className="flex justify-between text-gray-500 pt-1 border-t border-gray-100 mt-2">
                     <span>Costo de envío</span>

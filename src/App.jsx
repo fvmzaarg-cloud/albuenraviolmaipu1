@@ -1844,96 +1844,93 @@ function AdminPedidos({ db, setDb }) {
     Cancelado: 'bg-red-100 text-red-800',
   }
 
-  // 🔥 NUEVO MOTOR DE IMPRESIÓN (A PRUEBA DE ANDROID)
+  // 🔥 MOTOR DE IMPRESIÓN POR CSS (100% COMPATIBLE CON ANDROID)
   const handlePrintTicket = (order) => {
-    // 1. Creamos un "marco invisible" en la página actual (sin popups que enojen a Android)
-    const iframe = document.createElement('iframe');
-    iframe.style.display = 'none';
-    document.body.appendChild(iframe);
+    // 1. Creamos un contenedor exclusivo para el ticket
+    const printContainer = document.createElement('div');
+    printContainer.id = 'print-container';
 
-    // 2. Armamos la lista de productos
+    // 2. Inyectamos los estilos que esconden la app y le dan formato de 58mm al ticket
+    const style = document.createElement('style');
+    style.id = 'print-styles';
+    style.textContent = `
+      @media screen {
+        #print-container { display: none; } /* En la pantalla normal no se ve */
+      }
+      @media print {
+        body * { visibility: hidden; } /* Esconde toda la app */
+        #print-container, #print-container * { visibility: visible; } /* Muestra SOLO el ticket */
+        #print-container {
+          position: absolute;
+          left: 0;
+          top: 0;
+          width: 48mm; /* Tamaño de ticketera 58mm */
+          padding: 2mm;
+          font-family: 'Courier New', Courier, monospace;
+          font-size: 12px;
+          color: #000;
+        }
+        .ticket-center { text-align: center; }
+        .ticket-bold { font-weight: bold; }
+        .ticket-divider { border-top: 1px dashed #000; margin: 5px 0; }
+        .ticket-row { display: flex; justify-content: space-between; }
+      }
+    `;
+    document.head.appendChild(style);
+
+    // 3. Armamos la lista de productos
     const itemsHtml = order.items.map(i => `
-      <div style="display: flex; justify-content: space-between; font-size: 11px; margin-bottom: 3px;">
+      <div class="ticket-row" style="font-size: 11px; margin-bottom: 3px;">
         <span style="flex: 1; text-align: left;">${i.quantity}${i.product.unitType === 'peso' ? 'kg' : 'u'} ${i.product.name}</span>
-        <span style="font-weight: bold; margin-left: 5px;">${formatCurrency(i.product.price * i.quantity)}</span>
+        <span class="ticket-bold" style="margin-left: 5px;">${formatCurrency(i.product.price * i.quantity)}</span>
       </div>
     `).join('');
 
-    // 3. Dibujamos el Ticket
-    const html = `
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <title>Ticket #${order.id}</title>
-        <style>
-          @page { margin: 0; }
-          body { 
-            font-family: 'Courier New', Courier, monospace; 
-            width: 48mm;
-            margin: 0; 
-            padding: 2mm;
-            color: #000;
-            font-size: 12px;
-            line-height: 1.2;
-          }
-          .center { text-align: center; }
-          .bold { font-weight: bold; }
-          .divider { border-top: 1px dashed #000; margin: 5px 0; }
-          .row { display: flex; justify-content: space-between; }
-        </style>
-      </head>
-      <body>
-        <div class="center bold" style="font-size: 16px;">AL BUEN RAVIOL</div>
-        <div class="center" style="font-size: 10px;">Maipú, Mendoza</div>
-        <div class="divider"></div>
-        
-        <div><span class="bold">Pedido:</span> #${order.id}</div>
-        <div><span class="bold">Fecha:</span> ${new Date(order.date).toLocaleString('es-AR')}</div>
-        <div><span class="bold">Cliente:</span> ${order.customer.name}</div>
-        <div><span class="bold">Tel:</span> ${order.customer.phone}</div>
-        <div style="font-size: 14px; margin-top: 3px;"><span class="bold">Tipo:</span> ${order.type.toUpperCase()}</div>
-        ${order.type === 'delivery' ? `<div style="margin-top: 3px;"><span class="bold">Dir:</span> ${order.customer.address}</div>` : ''}
-        ${order.customer.notes ? `<div style="margin-top: 3px;"><span class="bold">Nota:</span> ${order.customer.notes}</div>` : ''}
-        
-        <div class="divider"></div>
-        <div class="bold" style="font-size: 10px; margin-bottom: 5px;">CANT   PRODUCTO         SUBTOTAL</div>
-        ${itemsHtml}
-        <div class="divider"></div>
-        
-        ${order.type === 'delivery' ? `
-        <div class="row" style="font-size: 11px;">
-          <span>Envío:</span>
-          <span>${formatCurrency(order.shippingCost || 0)}</span>
-        </div>
-        ` : ''}
-        
-        <div class="row bold" style="font-size: 14px; margin-top: 5px;">
-          <span>TOTAL:</span>
-          <span>${formatCurrency(order.total)}</span>
-        </div>
-        
-        <div class="divider"></div>
-        <div class="center" style="margin-top: 5px; font-size: 10px;">¡Gracias por su compra!</div>
-        <div class="center" style="font-size: 10px;">---</div>
-      </body>
-      </html>
-    `;
-
-    // 4. Inyectamos el diseño en el marco invisible y le damos la orden de imprimir
-    iframe.contentWindow.document.open();
-    iframe.contentWindow.document.write(html);
-    iframe.contentWindow.document.close();
-
-    // Le damos a Android medio segundo para respirar antes de lanzar la pantalla de impresión
-    setTimeout(() => {
-      iframe.contentWindow.focus();
-      iframe.contentWindow.print();
+    // 4. Dibujamos el Ticket HTML
+    printContainer.innerHTML = `
+      <div class="ticket-center ticket-bold" style="font-size: 16px;">AL BUEN RAVIOL</div>
+      <div class="ticket-center" style="font-size: 10px;">Maipú, Mendoza</div>
+      <div class="ticket-divider"></div>
       
-      // Limpiamos la basura invisible después de unos segundos
-      setTimeout(() => {
-        document.body.removeChild(iframe);
-      }, 3000);
-    }, 500);
+      <div><span class="ticket-bold">Pedido:</span> #${order.id}</div>
+      <div><span class="ticket-bold">Fecha:</span> ${new Date(order.date).toLocaleString('es-AR')}</div>
+      <div><span class="ticket-bold">Cliente:</span> ${order.customer.name}</div>
+      <div><span class="ticket-bold">Tel:</span> ${order.customer.phone}</div>
+      <div style="font-size: 14px; margin-top: 3px;"><span class="ticket-bold">Tipo:</span> ${order.type.toUpperCase()}</div>
+      ${order.type === 'delivery' ? `<div style="margin-top: 3px;"><span class="ticket-bold">Dir:</span> ${order.customer.address}</div>` : ''}
+      ${order.customer.notes ? `<div style="margin-top: 3px;"><span class="ticket-bold">Nota:</span> ${order.customer.notes}</div>` : ''}
+      
+      <div class="ticket-divider"></div>
+      <div class="ticket-bold" style="font-size: 10px; margin-bottom: 5px;">CANT   PRODUCTO         SUBTOTAL</div>
+      ${itemsHtml}
+      <div class="ticket-divider"></div>
+      
+      ${order.type === 'delivery' ? `
+      <div class="ticket-row" style="font-size: 11px;">
+        <span>Envío:</span>
+        <span>${formatCurrency(order.shippingCost || 0)}</span>
+      </div>
+      ` : ''}
+      
+      <div class="ticket-row ticket-bold" style="font-size: 14px; margin-top: 5px;">
+        <span>TOTAL:</span>
+        <span>${formatCurrency(order.total)}</span>
+      </div>
+      
+      <div class="ticket-divider"></div>
+      <div class="ticket-center" style="margin-top: 5px; font-size: 10px;">¡Gracias por su compra!</div>
+      <div class="ticket-center" style="font-size: 10px;">---</div>
+    `;
+    document.body.appendChild(printContainer);
+
+    // 5. Imprimimos y limpiamos la basura
+    window.print();
+    
+    // Lo borramos después de un ratito para dejar la app limpia
+    setTimeout(() => {
+      document.body.removeChild(printContainer);
+      document.head.removeChild(style);
+    }, 2000);
   }
 
   return (
@@ -2018,7 +2015,6 @@ function AdminPedidos({ db, setDb }) {
     </div>
   )
 }
-
 function AdminCatalogo({ db, setDb }) {
   const [editingId, setEditingId] = useState(null)
   const [formData, setFormData] = useState(null)

@@ -2054,6 +2054,13 @@ function AdminCatalogo({ db, setDb }) {
   const [editingId, setEditingId] = useState(null)
   const [formData, setFormData] = useState(null)
   const [isGeneratingDesc, setIsGeneratingDesc] = useState(false)
+  
+  // 🔥 ESTADO NUEVO PARA CONTROLAR QUÉ CATEGORÍAS ESTÁN DESPLEGADAS
+  const [expandedCats, setExpandedCats] = useState({})
+
+  const toggleCat = (catId) => {
+    setExpandedCats(prev => ({ ...prev, [catId]: prev[catId] === false ? true : false }))
+  }
 
   const startEdit = prod => {
     setFormData(
@@ -2075,11 +2082,18 @@ function AdminCatalogo({ db, setDb }) {
   }
 
   const saveProduct = () => {
+    // Si es nuevo, le ponemos como orden el final de su categoría
+    let newOrder = 0;
+    if (editingId === 'new') {
+      const catProds = db.products.filter(p => p.categoryId === formData.categoryId);
+      newOrder = catProds.length > 0 ? Math.max(...catProds.map(p => p.order || 0)) + 1 : 1;
+    }
+
     setDb(prev => ({
       ...prev,
       products:
         editingId === 'new'
-          ? [...prev.products, formData]
+          ? [...prev.products, { ...formData, order: newOrder }]
           : prev.products.map(p => (p.id === formData.id ? formData : p)),
     }))
     setEditingId(null)
@@ -2105,33 +2119,32 @@ function AdminCatalogo({ db, setDb }) {
     setIsGeneratingDesc(false)
   }
 
-  // 🔥 MOTOR PARA MOVER PRODUCTOS DENTRO DE SU CATEGORÍA
+  // 🔥 MOTOR MEJORADO PARA MOVER PRODUCTOS (A PRUEBA DE ERRORES)
   const moveProduct = (productId, direction) => {
     setDb(prev => {
       const productToMove = prev.products.find(p => p.id === productId);
       if (!productToMove) return prev;
 
-      // Filtramos los productos de ESA categoría y los ordenamos
+      // 1. Agarramos todos los de esa categoría y los forzamos a tener un orden numérico limpio (0, 1, 2, 3...)
       let catProducts = prev.products
         .filter(p => p.categoryId === productToMove.categoryId)
-        .sort((a, b) => (a.order || 0) - (b.order || 0));
+        .sort((a, b) => (a.order || 0) - (b.order || 0))
+        .map((p, i) => ({ ...p, order: i }));
 
       const index = catProducts.findIndex(p => p.id === productId);
 
-      // Intercambiamos posiciones
+      // 2. Intercambiamos los números de orden
       if (direction === -1 && index > 0) {
-        const tempOrder = catProducts[index].order || index;
-        catProducts[index].order = catProducts[index - 1].order || (index - 1);
-        catProducts[index - 1].order = tempOrder;
+        catProducts[index].order = index - 1;
+        catProducts[index - 1].order = index;
       } else if (direction === 1 && index < catProducts.length - 1) {
-        const tempOrder = catProducts[index].order || index;
-        catProducts[index].order = catProducts[index + 1].order || (index + 1);
-        catProducts[index + 1].order = tempOrder;
+        catProducts[index].order = index + 1;
+        catProducts[index + 1].order = index;
       } else {
-        return prev;
+        return prev; // No se puede mover más
       }
 
-      // Devolvemos la lista general actualizada
+      // 3. Devolvemos la lista general actualizada
       const newProducts = prev.products.map(p => {
         const updatedP = catProducts.find(cp => cp.id === p.id);
         return updatedP ? updatedP : p;
@@ -2141,6 +2154,7 @@ function AdminCatalogo({ db, setDb }) {
     });
   };
 
+  // PANTALLA DE EDICIÓN
   if (editingId) {
     return (
       <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-200 animate-fadeIn">
@@ -2243,72 +2257,116 @@ function AdminCatalogo({ db, setDb }) {
     )
   }
 
+  // PANTALLA DEL CATÁLOGO (CATEGORÍAS PLEGABLES)
   return (
-    <div className="space-y-4 animate-fadeIn">
+    <div className="space-y-4 animate-fadeIn pb-10">
       <div className="flex justify-between items-center">
         <h2 className="text-xl font-bold text-gray-800">Catálogo</h2>
         <button
           onClick={() => startEdit()}
-          className="bg-red-600 text-white px-3 py-1 rounded-lg text-sm font-bold flex gap-1"
+          className="bg-red-600 text-white px-3 py-1 rounded-lg text-sm font-bold flex gap-1 items-center"
         >
-          <Plus size={16} /> Crear
+          <Plus size={16} /> Crear Producto
         </button>
       </div>
-      <div className="space-y-3">
-        {db.products
-          .slice() // Creamos una copia para poder ordenarla
-          .sort((a, b) => {
-            // 1. Agrupamos por categoría
-            if (a.categoryId !== b.categoryId) return a.categoryId - b.categoryId;
-            // 2. Ordenamos por la posición manual
-            return (a.order || 0) - (b.order || 0);
-          })
-          .map(p => (
-            <div
-              key={p.id}
-              className={`flex gap-3 bg-white p-3 rounded-xl border border-gray-100 shadow-sm ${
-                !p.active ? 'opacity-50 grayscale' : ''
-              }`}
-            >
-              {/* BOTONES PARA MOVER ARRIBA/ABAJO */}
-              <div className="flex flex-col items-center justify-center mr-1 border-r pr-2 border-gray-50">
-                <button onClick={() => moveProduct(p.id, -1)} className="text-gray-400 hover:text-gray-800 pb-1">
-                  <ArrowUp size={16} />
-                </button>
-                <button onClick={() => moveProduct(p.id, 1)} className="text-gray-400 hover:text-gray-800 pt-1">
-                  <ArrowDown size={16} />
-                </button>
-              </div>
 
-              <img src={p.image} className="w-16 h-16 object-cover rounded" alt="" />
-              <div className="flex-1">
-                <h4 className="font-bold text-sm leading-tight">{p.name}</h4>
-                <p className="text-xs text-gray-500">{db.categories.find(c => c.id === p.categoryId)?.name}</p>
-                <p className="font-bold text-red-600 text-sm mt-1">
-                  {formatCurrency(p.price)} 
-                  {p.unitType === 'peso' && <span className="text-gray-400 font-normal text-xs ml-1">/kg</span>}
-                </p>
-              </div>
-              <div className="flex flex-col gap-2 justify-center items-end">
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => toggleActive(p.id)}
-                    className={`p-1.5 rounded flex items-center gap-1 text-xs font-bold ${
-                      p.active ? 'text-green-700 bg-green-100' : 'text-gray-500 bg-gray-100'
-                    }`}
-                  >
-                    {p.active ? <CheckCircle size={14} /> : <Minus size={14} />} {p.active ? 'ON' : 'OFF'}
-                  </button>
-                  <button onClick={() => startEdit(p)} className="text-blue-500 bg-blue-50 p-1.5 rounded">
-                    <Settings size={16} />
-                  </button>
-                  <button onClick={() => deleteProduct(p.id)} className="text-red-500 bg-red-50 p-1.5 rounded">
-                    <Trash2 size={16} />
-                  </button>
+      <div className="space-y-4">
+        {db.categories
+          .slice()
+          .sort((a, b) => (a.order || 0) - (b.order || 0))
+          .map(cat => {
+            // Filtramos y ordenamos los productos de ESTA categoría
+            const catProducts = db.products
+              .filter(p => p.categoryId === cat.id)
+              .sort((a, b) => (a.order || 0) - (b.order || 0));
+
+            // Por defecto están abiertas (true), a menos que las toquemos
+            const isExpanded = expandedCats[cat.id] !== false;
+
+            return (
+              <div key={cat.id} className="border border-gray-200 rounded-xl bg-white overflow-hidden shadow-sm">
+                
+                {/* CABECERA PLEGABLE */}
+                <div 
+                  className="bg-gray-50 p-3 flex justify-between items-center cursor-pointer hover:bg-gray-100 transition-colors"
+                  onClick={() => toggleCat(cat.id)}
+                >
+                  <h3 className="font-bold text-gray-800 flex items-center gap-2">
+                    {cat.name} 
+                    <span className="bg-gray-200 text-gray-600 text-[10px] px-2 py-0.5 rounded-full">
+                      {catProducts.length}
+                    </span>
+                  </h3>
+                  <span className="text-gray-400">
+                    {isExpanded ? <ArrowUp size={18} /> : <ArrowDown size={18} />}
+                  </span>
                 </div>
+                
+                {/* LISTA DE PRODUCTOS (Solo se ve si está expandido) */}
+                {isExpanded && (
+                  <div className="p-3 space-y-2 border-t border-gray-100 bg-gray-50/50">
+                    {catProducts.length === 0 ? (
+                      <p className="text-sm text-gray-400 text-center py-4">No hay productos cargados en {cat.name}.</p>
+                    ) : (
+                      catProducts.map((p, index) => (
+                        <div
+                          key={p.id}
+                          className={`flex gap-3 bg-white p-2 rounded-lg border border-gray-100 shadow-sm ${
+                            !p.active ? 'opacity-50 grayscale' : ''
+                          }`}
+                        >
+                          {/* BOTONES PARA MOVER ARRIBA/ABAJO */}
+                          <div className="flex flex-col items-center justify-center mr-1 border-r pr-2 border-gray-50">
+                            <button 
+                              onClick={() => moveProduct(p.id, -1)} 
+                              disabled={index === 0}
+                              className={`pb-1 ${index === 0 ? 'text-gray-200' : 'text-gray-400 hover:text-gray-800'}`}
+                            >
+                              <ArrowUp size={16} />
+                            </button>
+                            <button 
+                              onClick={() => moveProduct(p.id, 1)} 
+                              disabled={index === catProducts.length - 1}
+                              className={`pt-1 ${index === catProducts.length - 1 ? 'text-gray-200' : 'text-gray-400 hover:text-gray-800'}`}
+                            >
+                              <ArrowDown size={16} />
+                            </button>
+                          </div>
+
+                          <img src={p.image} className="w-14 h-14 object-cover rounded" alt="" />
+                          <div className="flex-1">
+                            <h4 className="font-bold text-sm leading-tight">{p.name}</h4>
+                            <p className="font-bold text-red-600 text-sm mt-1">
+                              {formatCurrency(p.price)} 
+                              {p.unitType === 'peso' && <span className="text-gray-400 font-normal text-xs ml-1">/kg</span>}
+                            </p>
+                          </div>
+                          <div className="flex flex-col gap-2 justify-center items-end">
+                            <div className="flex gap-1">
+                              <button
+                                onClick={() => toggleActive(p.id)}
+                                className={`p-1.5 rounded flex items-center gap-1 text-xs font-bold ${
+                                  p.active ? 'text-green-700 bg-green-50' : 'text-gray-500 bg-gray-100'
+                                }`}
+                              >
+                                {p.active ? <CheckCircle size={14} /> : <Minus size={14} />}
+                              </button>
+                              <button onClick={() => startEdit(p)} className="text-blue-500 bg-blue-50 p-1.5 rounded">
+                                <Settings size={16} />
+                              </button>
+                              <button onClick={() => deleteProduct(p.id)} className="text-red-500 bg-red-50 p-1.5 rounded">
+                                <Trash2 size={16} />
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                )}
               </div>
-            </div>
-        ))}
+            )
+          })}
       </div>
     </div>
   )

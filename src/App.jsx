@@ -637,7 +637,7 @@ function ProductCard({ product, onAdd, storeOpen, cartItem, updateQuantity }) {
 function ChefAssistant({ db, onClose }) {
   const [query, setQuery] = useState('')
   const [chat, setChat] = useState([
-    { role: 'assistant', text: '¡Hola! Soy el Chef virtual de Al Buen Raviol Maipú ✨. ¿Qué tenés ganas de comer hoy?' },
+    { role: 'assistant'},
   ])
   const [isLoading, setIsLoading] = useState(false)
   const messagesEndRef = useRef(null)

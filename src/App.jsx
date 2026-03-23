@@ -1849,10 +1849,11 @@ function AdminPedidos({ db, setDb }) {
   // 🔥 PANTALLA EXCLUSIVA DE IMPRESIÓN
   if (ticketToPrint) {
     const order = ticketToPrint;
+    // Calculamos el subtotal de los productos
+    const subtotal = order.items.reduce((acc, i) => acc + (i.product.price * i.quantity), 0);
+
     return (
       <div className="fixed inset-0 bg-white z-[99999] overflow-y-auto print:overflow-visible">
-        
-        {/* MAGIA CSS: Tamaño de hoja, todo en negrita, y ocultar botones */}
         <style>{`
           @media print {
             @page { margin: 0; size: 58mm auto; }
@@ -1862,7 +1863,6 @@ function AdminPedidos({ db, setDb }) {
           }
         `}</style>
 
-        {/* BARRA DE CONTROLES (Desaparece al imprimir) */}
         <div className="ocultar-en-ticket flex gap-2 p-4 bg-gray-100 border-b sticky top-0 shadow-sm">
           <button 
             onClick={() => setTicketToPrint(null)}
@@ -1878,13 +1878,12 @@ function AdminPedidos({ db, setDb }) {
           </button>
         </div>
 
-        {/* 🧾 ZONA DEL TICKET (Formato ticketera 58mm) */}
         <div style={{ 
           width: '100%', 
           maxWidth: '58mm', 
           margin: '0 auto', 
           padding: '2mm',
-          fontFamily: 'Calibri, Arial, sans-serif',
+          fontFamily: 'Calibri, Arial, sans-serif', 
           fontSize: '14px', 
           color: '#000', 
           lineHeight: '1.2' 
@@ -1932,6 +1931,12 @@ function AdminPedidos({ db, setDb }) {
           
           <div style={{ borderTop: '2px dashed #000', margin: '8px 0' }}></div>
           
+          {/* 👇 FILA DEL SUBTOTAL 👇 */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', marginBottom: '2px' }}>
+            <span>Subtotal:</span>
+            <span>{formatCurrency(subtotal)}</span>
+          </div>
+
           {order.type === 'delivery' && (
             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px' }}>
               <span>Envío:</span>
@@ -1960,75 +1965,85 @@ function AdminPedidos({ db, setDb }) {
         <p className="text-gray-500 text-center py-10">No hay pedidos registrados.</p>
       ) : (
         <div className="space-y-4">
-          {db.orders.map(order => (
-            <div key={order.id} className="bg-white p-4 rounded-xl shadow-sm border border-gray-200">
-              <div className="flex justify-between items-start mb-2">
-                <div>
-                  <span className="text-xs font-mono bg-gray-100 text-gray-600 px-2 py-1 rounded">#{order.id}</span>
-                  <p className="font-bold text-gray-800 mt-1">{order.customer.name}</p>
-                  <p className="text-xs text-gray-500">{new Date(order.date).toLocaleString('es-AR')}</p>
-                </div>
-                
-                <div className="flex flex-col gap-2 items-end">
-                  <select
-                    value={order.status}
-                    onChange={e => updateStatus(order.id, e.target.value)}
-                    className={`text-xs font-bold px-2 py-1 rounded-full outline-none cursor-pointer ${
-                      statusColors[order.status] || 'bg-gray-100 text-gray-800'
-                    }`}
-                  >
-                    <option value="Recibido">Recibido</option>
-                    <option value="Entregado">Entregado</option>
-                    <option value="Cancelado">Cancelado</option>
-                  </select>
+          {db.orders.map(order => {
+            const subtotal = order.items.reduce((acc, i) => acc + (i.product.price * i.quantity), 0);
+            
+            return (
+              <div key={order.id} className="bg-white p-4 rounded-xl shadow-sm border border-gray-200">
+                <div className="flex justify-between items-start mb-2">
+                  <div>
+                    <span className="text-xs font-mono bg-gray-100 text-gray-600 px-2 py-1 rounded">#{order.id}</span>
+                    <p className="font-bold text-gray-800 mt-1">{order.customer.name}</p>
+                    <p className="text-xs text-gray-500">{new Date(order.date).toLocaleString('es-AR')}</p>
+                  </div>
                   
-                  <button 
-                    onClick={() => setTicketToPrint(order)}
-                    className="text-xs font-bold text-gray-600 bg-gray-100 hover:bg-gray-200 px-2 py-1 rounded flex items-center gap-1 transition-colors"
-                  >
-                    🖨️ Imprimir
-                  </button>
+                  <div className="flex flex-col gap-2 items-end">
+                    <select
+                      value={order.status}
+                      onChange={e => updateStatus(order.id, e.target.value)}
+                      className={`text-xs font-bold px-2 py-1 rounded-full outline-none cursor-pointer ${
+                        statusColors[order.status] || 'bg-gray-100 text-gray-800'
+                      }`}
+                    >
+                      <option value="Recibido">Recibido</option>
+                      <option value="Entregado">Entregado</option>
+                      <option value="Cancelado">Cancelado</option>
+                    </select>
+                    
+                    <button 
+                      onClick={() => setTicketToPrint(order)}
+                      className="text-xs font-bold text-gray-600 bg-gray-100 hover:bg-gray-200 px-2 py-1 rounded flex items-center gap-1 transition-colors"
+                    >
+                      🖨️ Imprimir
+                    </button>
+                  </div>
+                </div>
+
+                <div className="text-sm bg-gray-50 p-2 rounded mb-2">
+                  <p><strong>Tel:</strong> {order.customer.phone}</p>
+                  <p><strong>Tipo:</strong> {order.type.toUpperCase()}</p>
+                  {order.type === 'delivery' && (
+                    <p>
+                      <strong>Dir:</strong> {order.customer.address}{' '}
+                      <span className="text-xs text-gray-500">({order.distance ? order.distance.toFixed(1) : 0} km)</span>
+                    </p>
+                  )}
+                  {order.customer.notes && (
+                    <p className="text-red-600 font-bold mt-1">📝 Nota: {order.customer.notes}</p>
+                  )}
+                </div>
+                
+                <div className="text-xs space-y-1 mb-2">
+                  {order.items.map((i, idx) => (
+                    <div key={idx} className="flex justify-between text-gray-600">
+                      <span>
+                        {i.quantity} {i.product.unitType === 'peso' ? 'kg' : 'u'} x {i.product.name}
+                      </span>
+                      <span>{formatCurrency(i.product.price * i.quantity)}</span>
+                    </div>
+                  ))}
+                  
+                  {/* 👇 FILA DEL SUBTOTAL EN LA TARJETA 👇 */}
+                  <div className="flex justify-between text-gray-600 pt-1 border-t border-gray-100 mt-2 font-bold">
+                    <span>Subtotal</span>
+                    <span>{formatCurrency(subtotal)}</span>
+                  </div>
+
+                  {order.type === 'delivery' && (
+                    <div className="flex justify-between text-gray-500 pt-1">
+                      <span>Costo de envío</span>
+                      <span>{formatCurrency(order.shippingCost || 0)}</span>
+                    </div>
+                  )}
+                </div>
+                
+                <div className="flex justify-between items-center pt-2 border-t border-gray-100">
+                  <span className="text-sm font-bold text-gray-500">Total:</span>
+                  <span className="font-black text-gray-900">{formatCurrency(order.total)}</span>
                 </div>
               </div>
-
-              <div className="text-sm bg-gray-50 p-2 rounded mb-2">
-                <p><strong>Tel:</strong> {order.customer.phone}</p>
-                <p><strong>Tipo:</strong> {order.type.toUpperCase()}</p>
-                {order.type === 'delivery' && (
-                  <p>
-                    <strong>Dir:</strong> {order.customer.address}{' '}
-                    <span className="text-xs text-gray-500">({order.distance ? order.distance.toFixed(1) : 0} km)</span>
-                  </p>
-                )}
-                {order.customer.notes && (
-                  <p className="text-red-600 font-bold mt-1">📝 Nota: {order.customer.notes}</p>
-                )}
-              </div>
-              
-              <div className="text-xs space-y-1 mb-2">
-                {order.items.map((i, idx) => (
-                  <div key={idx} className="flex justify-between text-gray-600">
-                    <span>
-                      {i.quantity} {i.product.unitType === 'peso' ? 'kg' : 'u'} x {i.product.name}
-                    </span>
-                    <span>{formatCurrency(i.product.price * i.quantity)}</span>
-                  </div>
-                ))}
-                
-                {order.type === 'delivery' && (
-                  <div className="flex justify-between text-gray-500 pt-1 border-t border-gray-100 mt-2">
-                    <span>Costo de envío</span>
-                    <span>{formatCurrency(order.shippingCost || 0)}</span>
-                  </div>
-                )}
-              </div>
-              
-              <div className="flex justify-between items-center pt-2 border-t border-gray-100">
-                <span className="text-sm font-bold text-gray-500">Total:</span>
-                <span className="font-black text-gray-900">{formatCurrency(order.total)}</span>
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>
@@ -2089,6 +2104,42 @@ function AdminCatalogo({ db, setDb }) {
     setFormData(prev => ({ ...prev, description: response.replace(/"/g, '') }))
     setIsGeneratingDesc(false)
   }
+
+  // 🔥 MOTOR PARA MOVER PRODUCTOS DENTRO DE SU CATEGORÍA
+  const moveProduct = (productId, direction) => {
+    setDb(prev => {
+      const productToMove = prev.products.find(p => p.id === productId);
+      if (!productToMove) return prev;
+
+      // Filtramos los productos de ESA categoría y los ordenamos
+      let catProducts = prev.products
+        .filter(p => p.categoryId === productToMove.categoryId)
+        .sort((a, b) => (a.order || 0) - (b.order || 0));
+
+      const index = catProducts.findIndex(p => p.id === productId);
+
+      // Intercambiamos posiciones
+      if (direction === -1 && index > 0) {
+        const tempOrder = catProducts[index].order || index;
+        catProducts[index].order = catProducts[index - 1].order || (index - 1);
+        catProducts[index - 1].order = tempOrder;
+      } else if (direction === 1 && index < catProducts.length - 1) {
+        const tempOrder = catProducts[index].order || index;
+        catProducts[index].order = catProducts[index + 1].order || (index + 1);
+        catProducts[index + 1].order = tempOrder;
+      } else {
+        return prev;
+      }
+
+      // Devolvemos la lista general actualizada
+      const newProducts = prev.products.map(p => {
+        const updatedP = catProducts.find(cp => cp.id === p.id);
+        return updatedP ? updatedP : p;
+      });
+
+      return { ...prev, products: newProducts };
+    });
+  };
 
   if (editingId) {
     return (
@@ -2204,41 +2255,59 @@ function AdminCatalogo({ db, setDb }) {
         </button>
       </div>
       <div className="space-y-3">
-        {db.products.map(p => (
-          <div
-            key={p.id}
-            className={`flex gap-3 bg-white p-3 rounded-xl border border-gray-100 shadow-sm ${
-              !p.active ? 'opacity-50 grayscale' : ''
-            }`}
-          >
-            <img src={p.image} className="w-16 h-16 object-cover rounded" alt="" />
-            <div className="flex-1">
-              <h4 className="font-bold text-sm leading-tight">{p.name}</h4>
-              <p className="text-xs text-gray-500">{db.categories.find(c => c.id === p.categoryId)?.name}</p>
-              <p className="font-bold text-red-600 text-sm mt-1">
-                {formatCurrency(p.price)} 
-                {p.unitType === 'peso' && <span className="text-gray-400 font-normal text-xs ml-1">/kg</span>}
-              </p>
-            </div>
-            <div className="flex flex-col gap-2 justify-center items-end">
-              <div className="flex gap-2">
-                <button
-                  onClick={() => toggleActive(p.id)}
-                  className={`p-1.5 rounded flex items-center gap-1 text-xs font-bold ${
-                    p.active ? 'text-green-700 bg-green-100' : 'text-gray-500 bg-gray-100'
-                  }`}
-                >
-                  {p.active ? <CheckCircle size={14} /> : <Minus size={14} />} {p.active ? 'ON' : 'OFF'}
+        {db.products
+          .slice() // Creamos una copia para poder ordenarla
+          .sort((a, b) => {
+            // 1. Agrupamos por categoría
+            if (a.categoryId !== b.categoryId) return a.categoryId - b.categoryId;
+            // 2. Ordenamos por la posición manual
+            return (a.order || 0) - (b.order || 0);
+          })
+          .map(p => (
+            <div
+              key={p.id}
+              className={`flex gap-3 bg-white p-3 rounded-xl border border-gray-100 shadow-sm ${
+                !p.active ? 'opacity-50 grayscale' : ''
+              }`}
+            >
+              {/* BOTONES PARA MOVER ARRIBA/ABAJO */}
+              <div className="flex flex-col items-center justify-center mr-1 border-r pr-2 border-gray-50">
+                <button onClick={() => moveProduct(p.id, -1)} className="text-gray-400 hover:text-gray-800 pb-1">
+                  <ArrowUp size={16} />
                 </button>
-                <button onClick={() => startEdit(p)} className="text-blue-500 bg-blue-50 p-1.5 rounded">
-                  <Settings size={16} />
-                </button>
-                <button onClick={() => deleteProduct(p.id)} className="text-red-500 bg-red-50 p-1.5 rounded">
-                  <Trash2 size={16} />
+                <button onClick={() => moveProduct(p.id, 1)} className="text-gray-400 hover:text-gray-800 pt-1">
+                  <ArrowDown size={16} />
                 </button>
               </div>
+
+              <img src={p.image} className="w-16 h-16 object-cover rounded" alt="" />
+              <div className="flex-1">
+                <h4 className="font-bold text-sm leading-tight">{p.name}</h4>
+                <p className="text-xs text-gray-500">{db.categories.find(c => c.id === p.categoryId)?.name}</p>
+                <p className="font-bold text-red-600 text-sm mt-1">
+                  {formatCurrency(p.price)} 
+                  {p.unitType === 'peso' && <span className="text-gray-400 font-normal text-xs ml-1">/kg</span>}
+                </p>
+              </div>
+              <div className="flex flex-col gap-2 justify-center items-end">
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => toggleActive(p.id)}
+                    className={`p-1.5 rounded flex items-center gap-1 text-xs font-bold ${
+                      p.active ? 'text-green-700 bg-green-100' : 'text-gray-500 bg-gray-100'
+                    }`}
+                  >
+                    {p.active ? <CheckCircle size={14} /> : <Minus size={14} />} {p.active ? 'ON' : 'OFF'}
+                  </button>
+                  <button onClick={() => startEdit(p)} className="text-blue-500 bg-blue-50 p-1.5 rounded">
+                    <Settings size={16} />
+                  </button>
+                  <button onClick={() => deleteProduct(p.id)} className="text-red-500 bg-red-50 p-1.5 rounded">
+                    <Trash2 size={16} />
+                  </button>
+                </div>
+              </div>
             </div>
-          </div>
         ))}
       </div>
     </div>

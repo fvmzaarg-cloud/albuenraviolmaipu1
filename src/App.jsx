@@ -429,10 +429,14 @@ function ClientHome({ db, addToCart, switchMode, cartItemsCount, cartTotal, setR
     scrollRef.current?.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
-  const featuredProducts = db.products.filter(p => p.featured && p.active)
+  // 🔥 ACÁ ESTÁ EL ARREGLO: Agregamos el sort() para que el cliente vea el orden que elegiste.
+  const featuredProducts = db.products
+    .filter(p => p.featured && p.active)
+    .sort((a, b) => (a.order || 0) - (b.order || 0)); // Ordena recomendados
+
   const filteredProducts = activeCategory
-    ? db.products.filter(p => p.categoryId === activeCategory && p.active)
-    : db.products.filter(p => p.active)
+    ? db.products.filter(p => p.categoryId === activeCategory && p.active).sort((a, b) => (a.order || 0) - (b.order || 0)) // Ordena por categoría
+    : db.products.filter(p => p.active).sort((a, b) => (a.order || 0) - (b.order || 0)); // Ordena si se ven "Todos"
 
   return (
     <div ref={scrollRef} onScroll={handleScroll} className="h-full overflow-y-auto pb-32 relative hide-scrollbar">

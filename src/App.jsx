@@ -1858,16 +1858,11 @@ function AdminPedidos({ db, setDb }) {
 
     return (
       <div className="fixed inset-0 bg-white z-[99999] overflow-y-auto print:overflow-visible">
-       <style>{`
+        <style>{`
           @media print {
-            @page { margin: 0; size: 58mm 210mm; } /* Limitamos el tamaño en el código también */
+            @page { margin: 0; size: 58mm auto; }
             body { margin: 0; padding: 0; background: white; }
-            * { 
-              font-weight: 900 !important; 
-              color: #000 !important; 
-              -webkit-font-smoothing: none !important; /* 🔥 Evita que Chrome haga bordes grises pesados */
-              text-rendering: optimizeSpeed !important; /* 🔥 Le pide a Chrome que no sature la memoria */
-            }
+            * { font-weight: 900 !important; color: #000 !important; }
             .ocultar-en-ticket { display: none !important; }
           }
         `}</style>

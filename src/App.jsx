@@ -179,15 +179,6 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    const timer = setTimeout(() => {
-      if (!dbState) {
-        loadFallback();
-      }
-    }, 4000);
-    return () => clearTimeout(timer);
-  }, [dbState]);
-
-  useEffect(() => {
     if (firestoreDb && user) {
       const docRef = doc(firestoreDb, 'artifacts', appId, 'public', 'data', 'store_data', 'main')
       const unsubscribe = onSnapshot(
@@ -817,17 +808,17 @@ function ClientCheckout({ cart, cartTotal, db, setDb, setRoute, clearCart }) {
     if (!formData.name.trim()) errors.push('name')
     if (!formData.phone.trim()) errors.push('phone')
     
-    // ACÁ ESTÁ LA MAGIA: Exigimos que existan las coordenadas del mapa sí o sí
+    // Exigimos que existan las coordenadas si es delivery
     if (orderType === 'delivery' && (!formData.address.trim() || !deliveryCoords)) errors.push('address')
     
-    if (paymentMethod === 'efectivo') {
+    // Solo pedimos calcular el vuelto si es Delivery Y paga en efectivo
+    if (paymentMethod === 'efectivo' && orderType === 'delivery') {
       const amount = parseFloat(cashAmount)
       if (isNaN(amount) || amount < finalTotal) errors.push('cashAmount')
     }
 
     if (errors.length > 0) {
       setInvalidFields(errors)
-      // ACÁ LE EXPLICAMOS AL CLIENTE EXACTAMENTE QUÉ LE FALTÓ HACER
       if (errors.includes('address') && orderType === 'delivery' && !deliveryCoords) {
         setFormError('Por favor seleccioná tu dirección de la lista de Google Maps o usá el botón de ubicación.')
       } else {
@@ -871,16 +862,17 @@ function ClientCheckout({ cart, cartTotal, db, setDb, setRoute, clearCart }) {
     )
     text += `\n*Subtotal:* ${formatCurrency(cartTotal)}\n`
     if (orderType === 'delivery') text += `*Envío:* ${formatCurrency(shippingCost)}\n`
-    text += `*TOTAL A PAGAR: ${formatCurrency(finalTotal)}*\n\n*Método de Pago:* ${
-      paymentMethod === 'efectivo' ? '💵 Efectivo' : '🏦 Transferencia'
-    }\n`
+    text += `*TOTAL A PAGAR: ${formatCurrency(finalTotal)}*\n\n`
 
-    if (paymentMethod === 'efectivo') {
-      text += `*Abona con:* ${formatCurrency(Number(cashAmount))}\n`
+    // Armamos el texto del pago según si es retiro o delivery
+    if (paymentMethod === 'transferencia') {
+      text += `*Método de Pago:* 🏦 Transferencia\n*(El cliente enviará comprobante de transferencia)*\n`
+    } else if (orderType === 'retiro') {
+      text += `*Método de Pago:* 🏪 Pago en el local (Efectivo/Tarjeta/MP)\n`
+    } else {
+      text += `*Método de Pago:* 💵 Efectivo\n*Abona con:* ${formatCurrency(Number(cashAmount))}\n`
       const vuelto = Number(cashAmount) - finalTotal
       if (vuelto > 0) text += `*Vuelto a entregar:* ${formatCurrency(vuelto)}\n`
-    } else {
-      text += `*(El cliente enviará comprobante de transferencia)*\n`
     }
 
     setWhatsappLink(`https://wa.me/${SHOP_PHONE}?text=${encodeURIComponent(text)}`)
@@ -1025,7 +1017,7 @@ function ClientCheckout({ cart, cartTotal, db, setDb, setRoute, clearCart }) {
                 paymentMethod === 'efectivo' ? 'bg-white shadow-sm text-gray-800' : 'text-gray-500'
               }`}
             >
-              Efectivo
+              {orderType === 'retiro' ? 'Pago en Local' : 'Efectivo'}
             </button>
             <button
               onClick={() => setPaymentMethod('transferencia')}
@@ -1036,6 +1028,7 @@ function ClientCheckout({ cart, cartTotal, db, setDb, setRoute, clearCart }) {
               Transferencia
             </button>
           </div>
+          
           {paymentMethod === 'transferencia' ? (
             <div className="bg-blue-50 p-3 rounded-lg text-sm text-blue-800 border border-blue-100 animate-fadeIn">
               <p>
@@ -1045,32 +1038,39 @@ function ClientCheckout({ cart, cartTotal, db, setDb, setRoute, clearCart }) {
               <p className="mt-2 text-xs font-bold text-blue-600">⚠️ Adjuntá el comprobante de pago por WhatsApp.</p>
             </div>
           ) : (
-            <div className="animate-fadeIn">
-              <label className="text-sm font-bold text-gray-700 block mb-2">¿Con cuánto vas a abonar?</label>
-              <div className="flex items-center gap-2">
-                <span className="text-gray-500 font-bold">$</span>
-                <input
-                  type="number"
-                  placeholder={`Ej: ${finalTotal + 1000}`}
-                  value={cashAmount}
-                  onChange={e => {
-                    setCashAmount(e.target.value)
-                    setInvalidFields(p => p.filter(f => f !== 'cashAmount'))
-                  }}
-                  className={`flex-1 rounded-lg px-4 py-2 text-sm outline-none transition-all ${
-                    invalidFields.includes('cashAmount')
-                      ? 'bg-red-50 border border-red-500 ring-1 ring-red-500'
-                      : 'bg-gray-50 border border-gray-200 focus:ring-2 focus:ring-red-500'
-                  }`}
-                />
-              </div>
-              {Number(cashAmount) >= finalTotal && (
-                <div className="mt-3 bg-green-50 text-green-700 p-2 rounded text-sm text-center border border-green-100">
-                  <span className="font-bold">Tu vuelto será de:</span>{' '}
-                  {formatCurrency(Number(cashAmount) - finalTotal)}
+            orderType === 'delivery' ? (
+              <div className="animate-fadeIn">
+                <label className="text-sm font-bold text-gray-700 block mb-2">¿Con cuánto vas a abonar?</label>
+                <div className="flex items-center gap-2">
+                  <span className="text-gray-500 font-bold">$</span>
+                  <input
+                    type="number"
+                    placeholder={`Ej: ${finalTotal + 1000}`}
+                    value={cashAmount}
+                    onChange={e => {
+                      setCashAmount(e.target.value)
+                      setInvalidFields(p => p.filter(f => f !== 'cashAmount'))
+                    }}
+                    className={`flex-1 rounded-lg px-4 py-2 text-sm outline-none transition-all ${
+                      invalidFields.includes('cashAmount')
+                        ? 'bg-red-50 border border-red-500 ring-1 ring-red-500'
+                        : 'bg-gray-50 border border-gray-200 focus:ring-2 focus:ring-red-500'
+                    }`}
+                  />
                 </div>
-              )}
-            </div>
+                {Number(cashAmount) >= finalTotal && (
+                  <div className="mt-3 bg-green-50 text-green-700 p-2 rounded text-sm text-center border border-green-100">
+                    <span className="font-bold">Tu vuelto será de:</span>{' '}
+                    {formatCurrency(Number(cashAmount) - finalTotal)}
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="bg-green-50 p-3 rounded-lg text-sm text-green-800 border border-green-100 animate-fadeIn text-center">
+                <p className="font-bold">Abonás tu pedido al retirarlo.</p>
+                <p className="text-xs mt-1 opacity-80">Aceptamos efectivo, tarjetas y MercadoPago en el mostrador.</p>
+              </div>
+            )
           )}
         </div>
 

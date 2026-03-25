@@ -1915,7 +1915,11 @@ function AdminPedidos({ db, setDb }) {
             <div style={{ fontSize: '16px', marginTop: '5px' }}>
               Tipo: {order.type.toUpperCase()}
             </div>
-            
+            {order.paymentDetails && (
+              <div style={{ fontSize: '14px', marginTop: '4px', borderBottom: '1px solid #000', paddingBottom: '2px', fontWeight: 'bold' }}>
+                💰 Pago: {order.paymentDetails}
+              </div>
+            )}
             {order.type === 'delivery' && (
               <div style={{ marginTop: '2px', fontSize: '13px' }}>
                 Dir: {order.customer.address}

@@ -827,6 +827,16 @@ function ClientCheckout({ cart, cartTotal, db, setDb, setRoute, clearCart }) {
       return
     }
 
+    // Preparamos el texto del pago para guardarlo en el ticket
+    let paymentString = '';
+    if (paymentMethod === 'transferencia') {
+      paymentString = 'Transferencia';
+    } else if (orderType === 'retiro') {
+      paymentString = 'Pago en local';
+    } else {
+      paymentString = `Efectivo (Abona con ${formatCurrency(Number(cashAmount))})`;
+    }
+
     const newOrder = {
       id: Math.random().toString(36).substr(2, 9),
       date: new Date().toISOString(),
@@ -837,8 +847,8 @@ function ClientCheckout({ cart, cartTotal, db, setDb, setRoute, clearCart }) {
       shippingCost,
       total: finalTotal,
       status: 'Recibido',
+      paymentDetails: paymentString, // 🔥 ACÁ GUARDAMOS EL PAGO PARA EL TICKET
     }
-
     setDb(prev => ({ ...prev, orders: [newOrder, ...prev.orders] }))
 
     let text = `*Hola Al Buen Raviol Maipú! Quiero hacer un pedido*\n\n*Cliente:* ${formData.name}\n*Tel:* ${

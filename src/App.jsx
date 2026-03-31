@@ -153,7 +153,7 @@ const callGemini = async (prompt, systemInstruction = 'Eres un asistente útil.'
 }
 
 // ==========================================
-// COMPONENTE PRINCIPAL
+// COMPONENTE PRINCIPAL BLINDADO
 // ==========================================
 export default function App() {
   const [appMode, setAppMode] = useState('client');
@@ -185,8 +185,10 @@ export default function App() {
         docRef,
         docSnap => {
           if (docSnap.exists()) {
-            setDbState(docSnap.data())
+            // 🔥 CANDADO: Le ponemos la etiqueta secreta indicando que son DATOS REALES
+            setDbState({ ...docSnap.data(), _isCloudSecured: true })
           } else {
+            // Si la base de datos está realmente vacía por primera vez, la creamos y la validamos
             const initialData = {
               categories: INITIAL_CATEGORIES,
               products: INITIAL_PRODUCTS,
@@ -195,6 +197,7 @@ export default function App() {
               orders: [],
               adminAuth: INITIAL_ADMIN_AUTH,
               manualStatus: INITIAL_MANUAL_STATUS, 
+              _isCloudSecured: true
             }
             setDoc(docRef, initialData).catch(console.error)
             setDbState(initialData)
@@ -213,6 +216,7 @@ export default function App() {
 
   const loadFallback = () => {
     if (!dbState) {
+      // 🛑 DATOS DE EMERGENCIA: Se cargan SIN la etiqueta secreta. El candado queda cerrado.
       setDbState({
         categories: INITIAL_CATEGORIES,
         products: INITIAL_PRODUCTS,
@@ -221,6 +225,7 @@ export default function App() {
         orders: [],
         adminAuth: INITIAL_ADMIN_AUTH,
         manualStatus: INITIAL_MANUAL_STATUS,
+        _isCloudSecured: false 
       })
     }
   }
@@ -228,10 +233,17 @@ export default function App() {
   function updateDbState(updater) {
     setDbState(prev => {
       const newState = typeof updater === 'function' ? updater(prev) : updater
-      if (firestoreDb && user) {
+      
+      // 🛡️ CANDADO MAESTRO EN ACCIÓN: Solo guarda en Firebase si los datos tienen la etiqueta de seguridad
+      if (firestoreDb && user && prev._isCloudSecured) {
+        const dataToSave = { ...newState }
+        delete dataToSave._isCloudSecured // Le sacamos la etiqueta antes de subirlo para que no ensucie la base de datos
         const docRef = doc(firestoreDb, 'artifacts', appId, 'public', 'data', 'store_data', 'main')
-        setDoc(docRef, newState).catch(console.error)
+        setDoc(docRef, dataToSave).catch(console.error)
+      } else if (!prev._isCloudSecured) {
+        console.warn("🛡️ SISTEMA BLINDADO: Se evitó sobreescribir Firebase porque la app no logró leer la nube correctamente.");
       }
+      
       return newState
     })
   }

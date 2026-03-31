@@ -119,28 +119,45 @@ const hashPassword = async password => {
 
 // ACÁ LE DECIMOS QUE USE LA CLAVE DE LA BASE DE DATOS Y LEA EL HISTORIAL COMPLETO
 const callGemini = async (chatHistory, systemInstruction = 'Eres un asistente útil.', apiKey = '') => {
-  if (!apiKey) return 'El Chef IA está durmiendo la siesta. El administrador debe configurar la clave en el panel de seguridad.';
+  if (!apiKey) return 'Falta la clave API. El administrador debe configurarla en el panel de Seguridad.';
   
-  // Usamos el modelo 2.5 Flash que es el actual y más rápido
+  // Usamos el modelo 2.5-flash que es el correcto y actual
   const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
   
-  // 🔥 ARREGLO: Google exige que el historial empiece con el usuario.
-  // Escondemos el saludo inicial de la IA para que no tire error.
-  let historyToSend = chatHistory;
-  if (historyToSend.length > 0 && historyToSend[0].role === 'assistant') {
-    historyToSend = historyToSend.slice(1);
+  // 1. Limpiamos cualquier mensaje de error previo para que no viaje a la nube
+  let cleanHistory = chatHistory.filter(msg => !msg.text.includes('Error') && !msg.text.includes('problema conectándome'));
+
+  // 2. Google EXIGE que la charla empiece con el usuario
+  while (cleanHistory.length > 0 && cleanHistory[0].role !== 'user') {
+    cleanHistory.shift();
   }
 
-  // Transformamos el historial limpio al formato exacto que pide Google
-  const formattedContents = historyToSend.map(msg => ({
-    role: msg.role === 'assistant' ? 'model' : 'user',
-    parts: [{ text: msg.text || 'Hola' }]
-  }));
+  // 3. Google EXIGE turnos alternados estrictamente (Usuario -> IA -> Usuario)
+  let formattedContents = [];
+  for (let msg of cleanHistory) {
+    let mappedRole = msg.role === 'assistant' ? 'model' : 'user';
 
+    if (formattedContents.length === 0) {
+      formattedContents.push({ role: mappedRole, parts: [{ text: msg.text || 'Hola' }] });
+    } else {
+      let lastMsg = formattedContents[formattedContents.length - 1];
+      if (lastMsg.role === mappedRole) {
+        lastMsg.parts[0].text += " \n " + (msg.text || '');
+      } else {
+        formattedContents.push({ role: mappedRole, parts: [{ text: msg.text || 'Hola' }] });
+      }
+    }
+  }
+
+  // Si nos quedamos sin mensajes, mandamos un salvavidas
+  if (formattedContents.length === 0) {
+    formattedContents.push({ role: 'user', parts: [{ text: 'Hola' }] });
+  }
+
+  // 🔥 ARREGLO CRÍTICO: system_instruction con guion bajo y sin mezclar roles
   const payload = {
     contents: formattedContents,
-    systemInstruction: {
-      role: "system",
+    system_instruction: {
       parts: [{ text: systemInstruction }]
     }
   };
@@ -153,11 +170,17 @@ const callGemini = async (chatHistory, systemInstruction = 'Eres un asistente ú
     });
     
     const data = await response.json();
-    if (!response.ok) throw new Error(data.error?.message || 'Error en API');
-    return data.candidates?.[0]?.content?.parts?.[0]?.text || 'Sin respuesta.';
+    
+    // 🔥 MODO CHISMOSO: Si Google lo rebota, mostramos el motivo exacto en el chat
+    if (!response.ok) {
+      console.error("❌ Rechazo de Google:", data);
+      return `Error de Google: ${data.error?.message || 'Desconocido'}.`;
+    }
+    
+    return data.candidates?.[0]?.content?.parts?.[0]?.text || 'El Chef se quedó sin palabras.';
   } catch (error) {
-    console.error("❌ Falló la conexión:", error);
-    return 'Tuve un problema conectándome con la cocina virtual. ¿Podemos intentar de nuevo?';
+    console.error("❌ Falló el fetch:", error);
+    return `Error de red local: ${error.message}. Revisá tu conexión a internet.`;
   }
 }
 

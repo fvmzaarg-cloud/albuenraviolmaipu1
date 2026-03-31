@@ -121,8 +121,8 @@ const hashPassword = async password => {
 const callGemini = async (chatHistory, systemInstruction = 'Eres un asistente útil.', apiKey = '') => {
   if (!apiKey) return 'Falta la clave API. El administrador debe configurarla en el panel de Seguridad.';
   
-  // Usamos el modelo 2.5-flash que es el correcto y actual
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
+  // Usamos el 1.5-flash que tiene un límite gratis de 1500 consultas diarias
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
   
   // 1. Limpiamos cualquier mensaje de error previo para que no viaje a la nube
   let cleanHistory = chatHistory.filter(msg => !msg.text.includes('Error') && !msg.text.includes('problema conectándome'));

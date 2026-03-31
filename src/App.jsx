@@ -123,10 +123,17 @@ const callGemini = async (chatHistory, systemInstruction = 'Eres un asistente ú
   
   const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
   
-  // Transformamos el historial de nuestro chat al formato exacto que pide Google
-  const formattedContents = chatHistory.map(msg => ({
-    role: msg.role === 'assistant' ? 'model' : 'user', // Gemini llama "model" a la IA
-    parts: [{ text: msg.text || 'Hola' }] // Evita errores si hay mensajes vacíos
+  // 🔥 ARREGLO: Google exige que el historial empiece con el usuario.
+  // Escondemos el saludo inicial de la IA para que no tire error.
+  let historyToSend = chatHistory;
+  if (historyToSend.length > 0 && historyToSend[0].role === 'assistant') {
+    historyToSend = historyToSend.slice(1);
+  }
+
+  // Transformamos el historial limpio al formato exacto que pide Google
+  const formattedContents = historyToSend.map(msg => ({
+    role: msg.role === 'assistant' ? 'model' : 'user',
+    parts: [{ text: msg.text || 'Hola' }]
   }));
 
   const payload = {
@@ -152,7 +159,6 @@ const callGemini = async (chatHistory, systemInstruction = 'Eres un asistente ú
     return 'Tuve un problema conectándome con la cocina virtual. ¿Podemos intentar de nuevo?';
   }
 }
-
 // ==========================================
 // COMPONENTE PRINCIPAL BLINDADO
 // ==========================================

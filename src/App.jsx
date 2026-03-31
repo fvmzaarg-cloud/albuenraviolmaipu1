@@ -121,6 +121,7 @@ const hashPassword = async password => {
 const callGemini = async (chatHistory, systemInstruction = 'Eres un asistente útil.', apiKey = '') => {
   if (!apiKey) return 'El Chef IA está durmiendo la siesta. El administrador debe configurar la clave en el panel de seguridad.';
   
+  // Usamos el modelo 2.5 Flash que es el actual y más rápido
   const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
   
   // 🔥 ARREGLO: Google exige que el historial empiece con el usuario.
@@ -159,6 +160,7 @@ const callGemini = async (chatHistory, systemInstruction = 'Eres un asistente ú
     return 'Tuve un problema conectándome con la cocina virtual. ¿Podemos intentar de nuevo?';
   }
 }
+
 // ==========================================
 // COMPONENTE PRINCIPAL BLINDADO
 // ==========================================

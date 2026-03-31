@@ -117,19 +117,20 @@ const hashPassword = async password => {
   return hashArray.map(b => b.toString(16).padStart(2, '0')).join('')
 }
 
-// ACÁ LE DECIMOS QUE USE LA CLAVE DE LA BASE DE DATOS
-const callGemini = async (prompt, systemInstruction = 'Eres un asistente útil.', apiKey = '') => {
+// ACÁ LE DECIMOS QUE USE LA CLAVE DE LA BASE DE DATOS Y LEA EL HISTORIAL COMPLETO
+const callGemini = async (chatHistory, systemInstruction = 'Eres un asistente útil.', apiKey = '') => {
   if (!apiKey) return 'El Chef IA está durmiendo la siesta. El administrador debe configurar la clave en el panel de seguridad.';
   
   const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
   
+  // Transformamos el historial de nuestro chat al formato exacto que pide Google
+  const formattedContents = chatHistory.map(msg => ({
+    role: msg.role === 'assistant' ? 'model' : 'user', // Gemini llama "model" a la IA
+    parts: [{ text: msg.text || 'Hola' }] // Evita errores si hay mensajes vacíos
+  }));
+
   const payload = {
-    contents: [
-      {
-        role: "user",
-        parts: [{ text: prompt }]
-      }
-    ],
+    contents: formattedContents,
     systemInstruction: {
       role: "system",
       parts: [{ text: systemInstruction }]
@@ -148,7 +149,7 @@ const callGemini = async (prompt, systemInstruction = 'Eres un asistente útil.'
     return data.candidates?.[0]?.content?.parts?.[0]?.text || 'Sin respuesta.';
   } catch (error) {
     console.error("❌ Falló la conexión:", error);
-    return 'Tuve un problema conectándome con el Chef Virtual.';
+    return 'Tuve un problema conectándome con la cocina virtual. ¿Podemos intentar de nuevo?';
   }
 }
 
@@ -639,8 +640,9 @@ function ProductCard({ product, onAdd, storeOpen, cartItem, updateQuantity }) {
 
 function ChefAssistant({ db, onClose }) {
   const [query, setQuery] = useState('')
+  // Le damos un saludo inicial para que arranque la charla
   const [chat, setChat] = useState([
-    { role: 'assistant'},
+    { role: 'assistant', text: '¡Hola! Soy el Chef Virtual de Al Buen Raviol. ¿En qué te puedo ayudar hoy?'},
   ])
   const [isLoading, setIsLoading] = useState(false)
   const messagesEndRef = useRef(null)
@@ -653,7 +655,10 @@ function ChefAssistant({ db, onClose }) {
     if (!query.trim()) return
     const userMsg = query
     setQuery('')
-    setChat(prev => [...prev, { role: 'user', text: userMsg }])
+    
+    // Guardamos el historial nuevo INCLUYENDO lo que acaba de escribir el usuario
+    const newHistory = [...chat, { role: 'user', text: userMsg }]
+    setChat(newHistory)
     setIsLoading(true)
 
     const menuContext = db.products
@@ -664,8 +669,9 @@ function ChefAssistant({ db, onClose }) {
     const customRules = db.manualStatus?.chefPrompt || 'Regla de porciones: 2 planchas rinden para 3 personas.';
     const sysPrompt = `Eres el Chef Experto de 'Al Buen Raviol', fábrica de pastas en Mendoza. Menú: ${menuContext}. Habla amigable y argentino (usa 'vos'). Recomienda SOLO productos del menú. \nREGLAS ESTRICTAS DEL LOCAL: ${customRules}. Mantén tus respuestas breves y concisas.`
 
-    // ACÁ LE MANDAMOS LA CLAVE DESDE LA BASE DE DATOS
-    const response = await callGemini(userMsg, sysPrompt, db.adminAuth?.geminiKey)
+    // 🔥 ACÁ ESTÁ LA MAGIA: Le pasamos "newHistory" (todo el chat) en vez de solo el último mensaje
+    const response = await callGemini(newHistory, sysPrompt, db.adminAuth?.geminiKey)
+    
     setChat(prev => [...prev, { role: 'assistant', text: response }])
     setIsLoading(false)
   }
@@ -721,7 +727,6 @@ function ChefAssistant({ db, onClose }) {
     </div>
   )
 }
-
 function ClientCart({ cart, updateQuantity, setRoute, cartTotal }) {
   return (
     <div className="flex flex-col h-full bg-white relative">

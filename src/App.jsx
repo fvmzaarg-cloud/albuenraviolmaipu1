@@ -887,14 +887,15 @@ function ClientCheckout({ cart, cartTotal, db, setDb, setRoute, clearCart }) {
     const newOrder = {
       id: Math.random().toString(36).substr(2, 9),
       date: new Date().toISOString(),
-      customer: formData,
+      // 🔥 ACÁ LA MAGIA: Guardamos las coordenadas exactas de forma invisible
+      customer: { ...formData, coords: deliveryCoords }, 
       type: orderType,
       items: cart,
       subtotal: cartTotal,
       shippingCost,
       total: finalTotal,
       status: 'Recibido',
-      paymentDetails: paymentString, // 🔥 ACÁ GUARDAMOS EL PAGO PARA EL TICKET
+      paymentDetails: paymentString, 
     }
     setDb(prev => ({ ...prev, orders: [newOrder, ...prev.orders] }))
 
@@ -2068,10 +2069,23 @@ function AdminPedidos({ db, setDb }) {
                   <p><strong>Tel:</strong> {order.customer.phone}</p>
                   <p><strong>Tipo:</strong> {order.type.toUpperCase()}</p>
                   {order.type === 'delivery' && (
-                    <p>
-                      <strong>Dir:</strong> {order.customer.address}{' '}
-                      <span className="text-xs text-gray-500">({order.distance ? order.distance.toFixed(1) : 0} km)</span>
-                    </p>
+                    <div className="flex flex-col gap-1 mt-1">
+                      <p>
+                        <strong>Dir:</strong> {order.customer.address}{' '}
+                        <span className="text-xs text-gray-500">({order.distance ? order.distance.toFixed(1) : 0} km)</span>
+                      </p>
+                      {/* 🔥 EL BOTÓN SALVAVIDAS: Abre la coordenada exacta */}
+                      {order.customer.coords && (
+                        <a 
+                          href={`https://maps.google.com/?q=${order.customer.coords.lat},${order.customer.coords.lng}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1 text-xs text-blue-700 bg-blue-100 px-3 py-1.5 rounded-lg font-bold hover:bg-blue-200 self-start mt-1 transition-colors border border-blue-200"
+                        >
+                          📍 Abrir ubicación exacta del cliente
+                        </a>
+                      )}
+                    </div>
                   )}
                   {order.customer.notes && (
                     <p className="text-red-600 font-bold mt-1">📝 Nota: {order.customer.notes}</p>

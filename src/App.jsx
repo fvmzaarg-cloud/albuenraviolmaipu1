@@ -1313,7 +1313,7 @@ function MapPicker({ address, shopLocation, onAddressChange, onLocationSelect, i
       </div>
       {/* 🔥 2. Le clavamos este cartelito rojo para que no borre la calle */}
       <p className="text-[11px] text-[#c82a2a] font-bold mt-1 leading-tight">
-        ⚠️ IMPORTANTE: No borres el nombre de la calle. Si vivís en un barrio, poné la Manzana y Casa en las "Aclaraciones" arriba.
+        ⚠️ IMPORTANTE: No borres el nombre de la calle. Si vivís en un barrio, poné la Manzana y Casa en las "ACLARACIONES" arriba.
       </p>
       <p className="text-xs text-gray-500 mb-1 mt-1">Puedes arrastrar el pin rojo para más exactitud.</p>
       <div ref={mapRef} className="w-full h-48 rounded-lg border border-gray-200 bg-gray-100 relative z-0">

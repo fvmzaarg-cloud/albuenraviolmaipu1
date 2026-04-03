@@ -1004,7 +1004,7 @@ function ClientCheckout({ cart, cartTotal, db, setDb, setRoute, clearCart }) {
               }`}
             />
             <textarea
-              placeholder="Aclaraciones (Ej: Timbre 2, sin queso, etc.) - Opcional"
+              placeholder="ACLARACIONES (Ej: Manzana/Casa, Porton, Timbre, sin queso, etc.) - Opcional"
               value={formData.notes}
               onChange={e => setFormData({ ...formData, notes: e.target.value })}
               className="w-full bg-gray-50 border border-gray-200 rounded-lg px-4 py-3 text-sm outline-none transition-all focus:ring-2 focus:ring-red-500 resize-none h-20"
@@ -1287,7 +1287,8 @@ function MapPicker({ address, shopLocation, onAddressChange, onLocationSelect, i
           <input
             ref={inputRef}
             type="text"
-            placeholder="Ingresá tu dirección..."
+            // 🔥 1. Le cambiamos el texto fantasma para que sepa qué poner
+            placeholder="Tu calle y número (Ej: Palma 123)"
             value={address || ''}
             onChange={e => onAddressChange(e.target.value)}
             className={`w-full bg-white rounded-lg pl-10 pr-4 py-3 text-sm z-20 relative transition-all ${
@@ -1310,7 +1311,11 @@ function MapPicker({ address, shopLocation, onAddressChange, onLocationSelect, i
           <MapPin size={22} className={isLocating ? 'animate-pulse' : ''} />
         </button>
       </div>
-      <p className="text-xs text-gray-500 mb-1">Puedes arrastrar el pin rojo para más exactitud.</p>
+      {/* 🔥 2. Le clavamos este cartelito rojo para que no borre la calle */}
+      <p className="text-[11px] text-[#c82a2a] font-bold mt-1 leading-tight">
+        ⚠️ IMPORTANTE: No borres el nombre de la calle. Si vivís en un barrio, poné la Manzana y Casa en las "Aclaraciones" arriba.
+      </p>
+      <p className="text-xs text-gray-500 mb-1 mt-1">Puedes arrastrar el pin rojo para más exactitud.</p>
       <div ref={mapRef} className="w-full h-48 rounded-lg border border-gray-200 bg-gray-100 relative z-0">
         {!mapLoaded && (
           <div className="absolute inset-0 flex items-center justify-center text-gray-400 text-sm">

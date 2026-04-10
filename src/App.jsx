@@ -2645,7 +2645,10 @@ function AdminEnvios({ db, setDb }) {
         <p className="text-xs text-gray-500">Arrastra el pin para establecer desde dónde se calcula el envío.</p>
         <AdminLocationPicker
           location={config.shopLocation}
-          onChange={newCoords => setConfig({ ...config, shopLocation: newCoords })}
+          onChange={newCoords => setConfig({ ...config, shopLocation: newCoords }/>
+{/* 👇 PEGÁ ESTO JUSTO ACÁ ABAJO 👇 */}
+<AdminBackup db={db} setDb={setDb} />
+            )}
         />
       </div>
       <div className="bg-white p-4 rounded-xl border border-gray-200 space-y-4">

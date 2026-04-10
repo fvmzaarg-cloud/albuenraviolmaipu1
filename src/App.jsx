@@ -1438,7 +1438,15 @@ function AdminApp({ db, setDb, switchMode }) {
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-4 hide-scrollbar">{renderView()}</div>
+      <div className="flex-1 overflow-y-auto p-4 hide-scrollbar">
+        {/* 👇 ACÁ ESTÁ INTEGRADO EL RESPALDO 👇 */}
+        {(adminRoute === 'dashboard' || adminRoute === 'seguridad') && (
+          <AdminBackup db={db} setDb={setDb} />
+        )}
+        {/* 👆 FIN DEL RESPALDO 👆 */}
+        
+        {renderView()}
+      </div>
 
       <div className="bg-white border-t border-gray-200 flex justify-around p-2 pb-6 shrink-0 text-xs shadow-[0_-4px_10px_rgba(0,0,0,0.05)]">
         <NavBtn Icon={LayoutDashboard} label="Panel" active={adminRoute === 'dashboard'} onClick={() => setAdminRoute('dashboard')} />
@@ -1478,7 +1486,6 @@ function AdminApp({ db, setDb, switchMode }) {
     </div>
   )
 }
-
 function NavBtn({ Icon, label, active, onClick }) {
   return (
     <button

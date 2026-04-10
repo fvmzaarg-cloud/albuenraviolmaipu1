@@ -2735,3 +2735,63 @@ function AdminLocationPicker({ location, onChange }) {
     </div>
   )
 }
+
+function AdminBackup({ db, setDb }) {
+  const exportarBackup = () => {
+    // Exportamos la base de datos completa (productos, horarios, IA, etc.)
+    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(db));
+    const downloadAnchorNode = document.createElement('a');
+    downloadAnchorNode.setAttribute("href", dataStr);
+    downloadAnchorNode.setAttribute("download", "backup_maestro_al_buen_raviol.json");
+    document.body.appendChild(downloadAnchorNode);
+    downloadAnchorNode.click();
+    downloadAnchorNode.remove();
+  };
+
+  const importarBackup = (evento) => {
+    const archivo = evento.target.files[0];
+    if (!archivo) return;
+    const lector = new FileReader();
+    lector.onload = function(e) {
+      try {
+        const contenido = JSON.parse(e.target.result);
+        setDb(contenido); // ¡Esto actualiza el sistema y lo guarda en Firebase al instante!
+        alert("¡El sistema fue restaurado con éxito! Ya tenés todo tu menú de vuelta.");
+      } catch (error) {
+        alert("Error al leer el archivo. Asegurate de que sea el archivo .json correcto.");
+      }
+    };
+    lector.readAsText(archivo);
+  };
+
+  return (
+    <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-200 mt-6 mb-6">
+      <h3 className="font-bold text-gray-800 mb-2 flex items-center gap-2">
+        <Package size={20} className="text-[#c82a2a]"/> Copia de Seguridad
+      </h3>
+      <p className="text-xs text-gray-500 mb-4">
+        Descargá todo tu catálogo de pastas frescas, precios y configuraciones a tu computadora. Si se borra algo, podés restaurarlo desde acá.
+      </p>
+      <div className="flex flex-col gap-3">
+        <button 
+          onClick={exportarBackup}
+          className="bg-[#2e7d32] text-white p-3 rounded-lg font-bold flex justify-center items-center gap-2 active:scale-95 transition-transform"
+        >
+          <ArrowDown size={18} /> Descargar Archivo Maestro
+        </button>
+        
+        <div className="relative">
+          <input 
+            type="file" 
+            accept=".json" 
+            onChange={importarBackup} 
+            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+          />
+          <button className="w-full bg-[#c82a2a] text-white p-3 rounded-lg font-bold flex justify-center items-center gap-2">
+            <ArrowUp size={18} /> Restaurar desde Archivo
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}

@@ -711,7 +711,15 @@ function ChefAssistant({ db, onClose }) {
       <div className="bg-white w-full max-w-md rounded-2xl shadow-2xl flex flex-col h-[80vh] sm:h-[600px] overflow-hidden">
         <div className="bg-[#cc292b] p-4 flex justify-between items-center text-white shrink-0">
           <div className="flex items-center gap-2">
-            <Sparkles size={20} className="text-[#fbb03b]" />
+            
+            {/* 👇 ACÁ PUSIMOS LA FOTO DEL PLATO DE PASTAS FRESCAS 👇 */}
+            <img 
+              src="https://i.postimg.cc/vB77k5rp/chef.png" 
+              alt="Perfil Chef IA"
+              className="w-9 h-9 rounded-full object-cover border-2 border-white shadow-sm" 
+            />
+            {/* 👆 ----------------------------------------------- 👆 */}
+
             <h3 className="font-bold text-lg">Chef IA</h3>
           </div>
           <button onClick={onClose} className="p-1.5 hover:bg-red-800 rounded-full">
@@ -732,6 +740,10 @@ function ChefAssistant({ db, onClose }) {
               </div>
             </div>
           ))}
+        </div>
+      </div>
+    </div>
+  )
           {isLoading && <div className="text-gray-500 text-sm pl-2">El Chef está pensando...</div>}
           <div ref={messagesEndRef} />
         </div>

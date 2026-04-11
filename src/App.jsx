@@ -15,6 +15,8 @@ const GOOGLE_MAPS_API_KEY = "AIzaSyBmiPXxoPbC5Y-cVaemlJnha8qLn4wCR9Q";
 const SHOP_PHONE = '5492613426085'
 const SHOP_ADDRESS = 'Centro Comercial Plaza Michelo, Palma y Maza, Maipú, Mendoza'
 const SHOP_LOGO = 'https://i.postimg.cc/TYHsxqMV/Copia_de_Logo_al_buen_raviol_(2).png'
+// 👇 AGREGAMOS ESTA LÍNEA 👇
+const CHEF_AVATAR = 'https://i.postimg.cc/vB77k5rp/chef.png'
 
 // --- DATOS POR DEFECTO ---
 const INITIAL_CATEGORIES = [
@@ -714,7 +716,7 @@ function ChefAssistant({ db, onClose }) {
             
             {/* 👇 ACÁ PUSIMOS LA FOTO DEL CHEF 👇 */}
             <img 
-              src="https://i.postimg.cc/vB77k5rp/chef.png" 
+              src={CHEF_AVATAR}
               alt="Perfil Chef IA"
               className="w-9 h-9 rounded-full object-cover border-2 border-white shadow-sm" 
             />

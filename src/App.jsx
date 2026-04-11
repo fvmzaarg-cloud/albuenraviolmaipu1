@@ -377,7 +377,7 @@ function ClientApp({ db, setDb, switchMode }) {
           badge={cartItemsCount}
         />
         <ClientNavBtn
-          Icon={Sparkles}
+          Icon={'https://i.postimg.cc/vB77k5rp/chef.png'}
           label="Chef IA"
           active={showAssistant}
           onClick={() => setShowAssistant(true)}

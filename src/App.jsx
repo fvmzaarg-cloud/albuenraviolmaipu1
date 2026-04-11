@@ -1888,7 +1888,11 @@ function AdminDashboard({ db, setDb, setRoute }) {
       </div>
 
       <div className="mt-6">
-        <h3 className="font-bold text-gray-700 mb-3 flex items-center gap-2"><Sparkles size={20} className="text-[#fbb03b]"/> Entrenar al Chef IA</h3>
+        <h3 className="font-bold text-gray-700 mb-3 flex items-center gap-2"><img 
+  src={CHEF_AVATAR} 
+  alt="Perfil Chef IA"
+  className="w-9 h-9 rounded-full object-cover border-2 border-white shadow-sm" 
+/> Entrenar al Chef IA</h3>
         <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 border-l-4 border-l-[#fbb03b]">
           <label className="block text-xs font-bold text-gray-600 mb-2">Instrucciones y Reglas (Ej: Porciones, Trato, Promos):</label>
           <textarea 

@@ -712,7 +712,7 @@ function ChefAssistant({ db, onClose }) {
         <div className="bg-[#cc292b] p-4 flex justify-between items-center text-white shrink-0">
           <div className="flex items-center gap-2">
             
-            {/* 👇 ACÁ PUSIMOS LA FOTO DEL PLATO DE PASTAS FRESCAS 👇 */}
+            {/* 👇 ACÁ PUSIMOS LA FOTO DEL CHEF 👇 */}
             <img 
               src="https://i.postimg.cc/vB77k5rp/chef.png" 
               alt="Perfil Chef IA"

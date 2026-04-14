@@ -1787,9 +1787,11 @@ function AdminSeguridad({ db, setDb }) {
         {/* LA ZONA DEL CHEF IA */}
         <div className="pt-4 border-t border-gray-200 mt-4">
           <h3 className="text-sm font-bold text-[#c82a2a] flex items-center gap-2 mb-2">
-            <Sparkles size={16} /> Clave API del Chef IA
-          </h3>
-          <p className="text-xs text-gray-500 mb-2">
+          <img 
+  src="https://i.postimg.cc/vB77k5rp/chef.png" 
+  alt="Perfil Chef IA"
+  className="w-9 h-9 rounded-full object-cover border-2 border-white shadow-sm" 
+/>
             Pegá acá tu clave de Gemini. Al guardarla en esta base de datos, Google no la bloqueará.
           </p>
           <input

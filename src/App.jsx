@@ -698,23 +698,23 @@ function ChefAssistant({ db, onClose }) {
   return (
     <div className="fixed inset-0 bg-black/60 z-50 flex items-end sm:items-center justify-center animate-fadeIn p-4 sm:p-0">
       <div className="bg-white w-full max-w-md rounded-2xl shadow-2xl flex flex-col h-[80vh] sm:h-[600px] overflow-hidden">
+        
+        {/* ENCABEZADO */}
         <div className="bg-[#cc292b] p-4 flex justify-between items-center text-white shrink-0">
           <div className="flex items-center gap-2">
-            
-            {/* 👇 ACÁ PUSIMOS LA FOTO DEL CHEF 👇 */}
             <img 
               src={CHEF_AVATAR}
               alt="Perfil Chef IA"
               className="w-9 h-9 rounded-full object-cover border-2 border-white shadow-sm" 
             />
-            {/* 👆 ----------------------------------------------- 👆 */}
-
             <h3 className="font-bold text-lg">Chef IA</h3>
           </div>
-          <button onClick={onClose} className="p-1.5 hover:bg-red-800 rounded-full">
+          <button onClick={onClose} className="p-1.5 hover:bg-red-800 rounded-full transition-colors">
             <X size={20} />
           </button>
         </div>
+
+        {/* ZONA DE MENSAJES */}
         <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-red-50/30">
           {chat.map((msg, i) => (
             <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
@@ -729,13 +729,12 @@ function ChefAssistant({ db, onClose }) {
               </div>
             </div>
           ))}
-        </div>
-      </div>
-    </div>
-  )
+          {/* El texto de "pensando" y el scroll ahora están adentro de la caja correcta */}
           {isLoading && <div className="text-gray-500 text-sm pl-2">El Chef está pensando...</div>}
           <div ref={messagesEndRef} />
         </div>
+
+        {/* ZONA DE ESCRITURA (INPUT) */}
         <div className="p-3 bg-white border-t border-gray-100 flex gap-2 shrink-0">
           <input
             type="text"
@@ -749,11 +748,12 @@ function ChefAssistant({ db, onClose }) {
           <button
             onClick={handleSend}
             disabled={isLoading || !query.trim()}
-            className="bg-[#cc292b] text-white p-3 rounded-xl disabled:bg-red-300 hover:bg-red-800"
+            className="bg-[#cc292b] text-white p-3 rounded-xl disabled:bg-red-300 hover:bg-red-800 transition-colors"
           >
             <Send size={18} />
           </button>
         </div>
+
       </div>
     </div>
   )

@@ -376,6 +376,11 @@ function ClientApp({ db, setDb, switchMode }) {
           onClick={() => setRoute('cart')}
           badge={cartItemsCount}
         />
+        <ClientNavBtn 
+        Icon="https://i.postimg.cc/vB77k5rp/chef.png" 
+        label="Chef IA" 
+        onClick={() => { /* Acá va la función que abre tu chat */ }} 
+      />
         <ClientNavBtn
           Icon={'https://i.postimg.cc/vB77k5rp/chef.png'}
           label="Chef IA"

@@ -722,7 +722,7 @@ function ChefAssistant({ db, onClose }) {
       <div className="bg-white w-full max-w-md rounded-2xl shadow-2xl flex flex-col h-[80vh] sm:h-[600px] overflow-hidden">
         <div className="bg-[#cc292b] p-4 flex justify-between items-center text-white shrink-0">
           <div className="flex items-center gap-2">
-            <Sparkles size={20} className="text-[#fbb03b]" />
+          <img src={CHEF_ICON} alt="Chef" className="w-5 h-5 object-contain" />
             <h3 className="font-bold text-lg">Chef IA</h3>
           </div>
           <button onClick={onClose} className="p-1.5 hover:bg-red-800 rounded-full">

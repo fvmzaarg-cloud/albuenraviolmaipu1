@@ -376,11 +376,6 @@ function ClientApp({ db, setDb, switchMode }) {
           onClick={() => setRoute('cart')}
           badge={cartItemsCount}
         />
-        <ClientNavBtn 
-        Icon="https://i.postimg.cc/vB77k5rp/chef.png" 
-        label="Chef IA" 
-        onClick={() => { /* Acá va la función que abre tu chat */ }} 
-      />
         <ClientNavBtn
           Icon={'https://i.postimg.cc/vB77k5rp/chef.png'}
           label="Chef IA"
@@ -481,6 +476,24 @@ function ClientHome({ db, addToCart, switchMode, cartItemsCount, cartTotal, setR
 
   return (
     <div ref={scrollRef} onScroll={handleScroll} className="h-full overflow-y-auto pb-32 relative hide-scrollbar">
+      <div className="relative bg-[#cc292b] pt-8 pb-8 flex flex-col items-center justify-center shrink-0 shadow-inner min-h-[12rem]">
+        {SHOP_LOGO ? (
+          <img
+            src={SHOP_LOGO}
+            alt="Al Buen Raviol Logo"
+            className="w-full h-full object-contain max-h-40 px-4 drop-shadow-md"
+          />
+        ) : (
+          <h1 className="text-4xl font-serif font-black text-white text-center">Al Buen Raviol</h1>
+        )}
+        <button
+          onClick={switchMode}
+          className="absolute top-4 right-4 p-2 text-white/80 hover:text-white transition-all z-20"
+        >
+          <Settings size={20} />
+        </button>
+      </div>
+
       {storeStatus.isForcedClosed ? (
         <div className="bg-red-50 border-b border-red-200 px-4 py-3 shadow-sm flex items-center justify-center shrink-0">
           <span className="font-bold text-red-600 tracking-wide text-sm flex items-center gap-2">
@@ -659,6 +672,7 @@ function ProductCard({ product, onAdd, storeOpen, cartItem, updateQuantity }) {
 
 function ChefAssistant({ db, onClose }) {
   const [query, setQuery] = useState('')
+  // Le damos un saludo inicial para que arranque la charla
   const [chat, setChat] = useState([
     { role: 'assistant', text: '¡Hola! Soy el Chef Virtual de Al Buen Raviol. ¿En qué te puedo ayudar hoy?'},
   ])
@@ -674,6 +688,7 @@ function ChefAssistant({ db, onClose }) {
     const userMsg = query
     setQuery('')
     
+    // Guardamos el historial nuevo INCLUYENDO lo que acaba de escribir el usuario
     const newHistory = [...chat, { role: 'user', text: userMsg }]
     setChat(newHistory)
     setIsLoading(true)
@@ -686,6 +701,7 @@ function ChefAssistant({ db, onClose }) {
     const customRules = db.manualStatus?.chefPrompt || 'Regla de porciones: 2 planchas rinden para 3 personas.';
     const sysPrompt = `Eres el Chef Experto de 'Al Buen Raviol', fábrica de pastas en Mendoza. Menú: ${menuContext}. Habla amigable y argentino (usa 'vos'). Recomienda SOLO productos del menú. \nREGLAS ESTRICTAS DEL LOCAL: ${customRules}. Mantén tus respuestas breves y concisas.`
 
+    // 🔥 ACÁ ESTÁ LA MAGIA: Le pasamos "newHistory" (todo el chat) en vez de solo el último mensaje
     const response = await callGemini(newHistory, sysPrompt, db.adminAuth?.geminiKey)
     
     setChat(prev => [...prev, { role: 'assistant', text: response }])
@@ -695,23 +711,23 @@ function ChefAssistant({ db, onClose }) {
   return (
     <div className="fixed inset-0 bg-black/60 z-50 flex items-end sm:items-center justify-center animate-fadeIn p-4 sm:p-0">
       <div className="bg-white w-full max-w-md rounded-2xl shadow-2xl flex flex-col h-[80vh] sm:h-[600px] overflow-hidden">
-        
-        {/* ENCABEZADO */}
         <div className="bg-[#cc292b] p-4 flex justify-between items-center text-white shrink-0">
           <div className="flex items-center gap-2">
+            
+            {/* 👇 ACÁ PUSIMOS LA FOTO DEL CHEF 👇 */}
             <img 
               src={CHEF_AVATAR}
               alt="Perfil Chef IA"
               className="w-9 h-9 rounded-full object-cover border-2 border-white shadow-sm" 
             />
+            {/* 👆 ----------------------------------------------- 👆 */}
+
             <h3 className="font-bold text-lg">Chef IA</h3>
           </div>
-          <button onClick={onClose} className="p-1.5 hover:bg-red-800 rounded-full transition-colors">
+          <button onClick={onClose} className="p-1.5 hover:bg-red-800 rounded-full">
             <X size={20} />
           </button>
         </div>
-
-        {/* ZONA DE MENSAJES */}
         <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-red-50/30">
           {chat.map((msg, i) => (
             <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
@@ -726,11 +742,13 @@ function ChefAssistant({ db, onClose }) {
               </div>
             </div>
           ))}
+        </div>
+      </div>
+    </div>
+  )
           {isLoading && <div className="text-gray-500 text-sm pl-2">El Chef está pensando...</div>}
           <div ref={messagesEndRef} />
         </div>
-
-        {/* ZONA DE ESCRITURA */}
         <div className="p-3 bg-white border-t border-gray-100 flex gap-2 shrink-0">
           <input
             type="text"
@@ -744,12 +762,11 @@ function ChefAssistant({ db, onClose }) {
           <button
             onClick={handleSend}
             disabled={isLoading || !query.trim()}
-            className="bg-[#cc292b] text-white p-3 rounded-xl disabled:bg-red-300 hover:bg-red-800 transition-colors"
+            className="bg-[#cc292b] text-white p-3 rounded-xl disabled:bg-red-300 hover:bg-red-800"
           >
             <Send size={18} />
           </button>
         </div>
-
       </div>
     </div>
   )
@@ -1770,11 +1787,9 @@ function AdminSeguridad({ db, setDb }) {
         {/* LA ZONA DEL CHEF IA */}
         <div className="pt-4 border-t border-gray-200 mt-4">
           <h3 className="text-sm font-bold text-[#c82a2a] flex items-center gap-2 mb-2">
-          <img 
-  src="https://i.postimg.cc/vB77k5rp/chef.png" 
-  alt="Perfil Chef IA"
-  className="w-9 h-9 rounded-full object-cover border-2 border-white shadow-sm" 
-/>
+            <Sparkles size={16} /> Clave API del Chef IA
+          </h3>
+          <p className="text-xs text-gray-500 mb-2">
             Pegá acá tu clave de Gemini. Al guardarla en esta base de datos, Google no la bloqueará.
           </p>
           <input
@@ -1873,11 +1888,7 @@ function AdminDashboard({ db, setDb, setRoute }) {
       </div>
 
       <div className="mt-6">
-        <h3 className="font-bold text-gray-700 mb-3 flex items-center gap-2"><img 
-  src={CHEF_AVATAR} 
-  alt="Perfil Chef IA"
-  className="w-9 h-9 rounded-full object-cover border-2 border-white shadow-sm" 
-/> Entrenar al Chef IA</h3>
+        <h3 className="font-bold text-gray-700 mb-3 flex items-center gap-2"><Sparkles size={20} className="text-[#fbb03b]"/> Entrenar al Chef IA</h3>
         <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 border-l-4 border-l-[#fbb03b]">
           <label className="block text-xs font-bold text-gray-600 mb-2">Instrucciones y Reglas (Ej: Porciones, Trato, Promos):</label>
           <textarea 

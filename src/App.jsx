@@ -476,23 +476,22 @@ function ClientHome({ db, addToCart, switchMode, cartItemsCount, cartTotal, setR
 
   return (
     <div ref={scrollRef} onScroll={handleScroll} className="h-full overflow-y-auto pb-32 relative hide-scrollbar">
-      <div className="relative bg-[#cc292b] pt-8 pb-8 flex flex-col items-center justify-center shrink-0 shadow-inner min-h-[12rem]">
-        {SHOP_LOGO ? (
-          <img
-            src={SHOP_LOGO}
-            alt="Al Buen Raviol Logo"
-            className="w-full h-full object-contain max-h-40 px-4 drop-shadow-md"
-          />
-        ) : (
-          <h1 className="text-4xl font-serif font-black text-white text-center">Al Buen Raviol</h1>
-        )}
-        <button
-          onClick={switchMode}
-          className="absolute top-4 right-4 p-2 text-white/80 hover:text-white transition-all z-20"
-        >
-          <Settings size={20} />
-        </button>
-      </div>
+      <div className="bg-[#cc292b] p-4 flex justify-between items-center text-white shrink-0">
+  <div className="flex items-center gap-3">
+    
+    {/* FOTO DEL CHEF IA */}
+    <img 
+      src="https://i.postimg.cc/vB77k5rp/chef.png" 
+      alt="Chef IA"
+      className="w-10 h-10 rounded-full object-cover border-2 border-white shadow-md" 
+    />
+    
+    <h3 className="font-bold text-lg">Chef IA</h3>
+  </div>
+  <button onClick={onClose} className="p-1.5 hover:bg-red-800 rounded-full transition-colors">
+    <X size={20} />
+  </button>
+</div>
 
       {storeStatus.isForcedClosed ? (
         <div className="bg-red-50 border-b border-red-200 px-4 py-3 shadow-sm flex items-center justify-center shrink-0">

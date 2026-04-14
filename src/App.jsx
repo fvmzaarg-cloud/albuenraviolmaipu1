@@ -15,7 +15,6 @@ const GOOGLE_MAPS_API_KEY = "AIzaSyBmiPXxoPbC5Y-cVaemlJnha8qLn4wCR9Q";
 const SHOP_PHONE = '5492613426085'
 const SHOP_ADDRESS = 'Centro Comercial Plaza Michelo, Palma y Maza, Maipú, Mendoza'
 const SHOP_LOGO = 'https://i.postimg.cc/TYHsxqMV/Copia_de_Logo_al_buen_raviol_(2).png'
-const CHEF_ICON = 'https://i.postimg.cc/vB77k5rp/chef.png'
 
 // --- DATOS POR DEFECTO ---
 const INITIAL_CATEGORIES = [
@@ -376,7 +375,7 @@ function ClientApp({ db, setDb, switchMode }) {
           badge={cartItemsCount}
         />
         <ClientNavBtn
-          Icon={CHEF_ICON}
+          Icon={Sparkles}
           label="Chef IA"
           active={showAssistant}
           onClick={() => setShowAssistant(true)}
@@ -388,7 +387,7 @@ function ClientApp({ db, setDb, switchMode }) {
   )
 }
 
-function ClientNavBtn({ Icon, iconSrc, label, active, onClick, badge }) {
+function ClientNavBtn({ Icon, label, active, onClick, badge }) {
   return (
     <button
       onClick={onClick}
@@ -396,20 +395,10 @@ function ClientNavBtn({ Icon, iconSrc, label, active, onClick, badge }) {
         active ? 'text-[#c82a2a]' : 'text-gray-500 hover:text-gray-800'
       }`}
     >
-      {iconSrc ? (
-        <img
-          src={iconSrc}
-          alt={label}
-          className="w-[22px] h-[22px] object-contain"
-        />
-      ) : (
-        Icon && <Icon size={22} />
-      )}
-
+      <Icon size={22} />
       <span className="font-medium" style={{ fontSize: '0.65rem' }}>
         {label}
       </span>
-
       {badge > 0 && (
         <span className="absolute top-1 right-2 bg-[#c82a2a] text-white text-[10px] font-bold w-4 h-4 flex items-center justify-center rounded-full border border-white">
           {badge}
@@ -418,6 +407,7 @@ function ClientNavBtn({ Icon, iconSrc, label, active, onClick, badge }) {
     </button>
   )
 }
+
 function ClientHome({ db, addToCart, switchMode, cartItemsCount, cartTotal, setRoute, cart, updateQuantity }) {
   const [activeCategory, setActiveCategory] = useState(null)
   const [storeStatus, setStoreStatus] = useState({ isOpen: false, isForcedClosed: false, isTimeClosed: false, nextOpen: '', customMessage: '' })
@@ -721,7 +711,7 @@ function ChefAssistant({ db, onClose }) {
       <div className="bg-white w-full max-w-md rounded-2xl shadow-2xl flex flex-col h-[80vh] sm:h-[600px] overflow-hidden">
         <div className="bg-[#cc292b] p-4 flex justify-between items-center text-white shrink-0">
           <div className="flex items-center gap-2">
-          <img src={CHEF_ICON} alt="Chef" className="w-5 h-5 object-contain" />
+            <Sparkles size={20} className="text-[#fbb03b]" />
             <h3 className="font-bold text-lg">Chef IA</h3>
           </div>
           <button onClick={onClose} className="p-1.5 hover:bg-red-800 rounded-full">

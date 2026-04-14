@@ -403,7 +403,7 @@ function ClientNavBtn({ Icon, iconSrc, label, active, onClick, badge }) {
           className="w-[22px] h-[22px] object-contain"
         />
       ) : (
-        <Icon size={22} />
+        Icon && <Icon size={22} />
       )}
 
       <span className="font-medium" style={{ fontSize: '0.65rem' }}>

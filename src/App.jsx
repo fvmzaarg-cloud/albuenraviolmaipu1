@@ -659,7 +659,6 @@ function ProductCard({ product, onAdd, storeOpen, cartItem, updateQuantity }) {
 
 function ChefAssistant({ db, onClose }) {
   const [query, setQuery] = useState('')
-  // Le damos un saludo inicial para que arranque la charla
   const [chat, setChat] = useState([
     { role: 'assistant', text: '¡Hola! Soy el Chef Virtual de Al Buen Raviol. ¿En qué te puedo ayudar hoy?'},
   ])
@@ -675,7 +674,6 @@ function ChefAssistant({ db, onClose }) {
     const userMsg = query
     setQuery('')
     
-    // Guardamos el historial nuevo INCLUYENDO lo que acaba de escribir el usuario
     const newHistory = [...chat, { role: 'user', text: userMsg }]
     setChat(newHistory)
     setIsLoading(true)
@@ -688,7 +686,6 @@ function ChefAssistant({ db, onClose }) {
     const customRules = db.manualStatus?.chefPrompt || 'Regla de porciones: 2 planchas rinden para 3 personas.';
     const sysPrompt = `Eres el Chef Experto de 'Al Buen Raviol', fábrica de pastas en Mendoza. Menú: ${menuContext}. Habla amigable y argentino (usa 'vos'). Recomienda SOLO productos del menú. \nREGLAS ESTRICTAS DEL LOCAL: ${customRules}. Mantén tus respuestas breves y concisas.`
 
-    // 🔥 ACÁ ESTÁ LA MAGIA: Le pasamos "newHistory" (todo el chat) en vez de solo el último mensaje
     const response = await callGemini(newHistory, sysPrompt, db.adminAuth?.geminiKey)
     
     setChat(prev => [...prev, { role: 'assistant', text: response }])
@@ -729,12 +726,11 @@ function ChefAssistant({ db, onClose }) {
               </div>
             </div>
           ))}
-          {/* El texto de "pensando" y el scroll ahora están adentro de la caja correcta */}
           {isLoading && <div className="text-gray-500 text-sm pl-2">El Chef está pensando...</div>}
           <div ref={messagesEndRef} />
         </div>
 
-        {/* ZONA DE ESCRITURA (INPUT) */}
+        {/* ZONA DE ESCRITURA */}
         <div className="p-3 bg-white border-t border-gray-100 flex gap-2 shrink-0">
           <input
             type="text"

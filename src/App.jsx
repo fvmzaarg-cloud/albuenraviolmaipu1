@@ -2792,7 +2792,7 @@ function AdminBackup({ db, setDb }) {
   return (
     <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-200 mt-6 mb-6">
       <h3 className="font-bold text-gray-800 mb-2 flex items-center gap-2">
-        <Package size={20} className="text-[#c82a2a]"/> 
+        <Package size={20} className="text-[#c82a2a]"/> Copia de Seguridad
       </h3>
       <p className="text-xs text-gray-500 mb-4">
         Descargá todo tu catálogo de pastas frescas, precios y configuraciones a tu computadora. Si se borra algo, podés restaurarlo desde acá.

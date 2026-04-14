@@ -418,7 +418,6 @@ function ClientNavBtn({ Icon, iconSrc, label, active, onClick, badge }) {
     </button>
   )
 }
-
 function ClientHome({ db, addToCart, switchMode, cartItemsCount, cartTotal, setRoute, cart, updateQuantity }) {
   const [activeCategory, setActiveCategory] = useState(null)
   const [storeStatus, setStoreStatus] = useState({ isOpen: false, isForcedClosed: false, isTimeClosed: false, nextOpen: '', customMessage: '' })

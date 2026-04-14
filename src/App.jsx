@@ -15,6 +15,7 @@ const GOOGLE_MAPS_API_KEY = "AIzaSyBmiPXxoPbC5Y-cVaemlJnha8qLn4wCR9Q";
 const SHOP_PHONE = '5492613426085'
 const SHOP_ADDRESS = 'Centro Comercial Plaza Michelo, Palma y Maza, Maipú, Mendoza'
 const SHOP_LOGO = 'https://i.postimg.cc/TYHsxqMV/Copia_de_Logo_al_buen_raviol_(2).png'
+const CHEF_ICON = 'https://i.postimg.cc/vB77k5rp/chef.png'
 
 // --- DATOS POR DEFECTO ---
 const INITIAL_CATEGORIES = [
@@ -375,7 +376,7 @@ function ClientApp({ db, setDb, switchMode }) {
           badge={cartItemsCount}
         />
         <ClientNavBtn
-          Icon={Sparkles}
+          Icon={CHEF_ICON}
           label="Chef IA"
           active={showAssistant}
           onClick={() => setShowAssistant(true)}
@@ -387,7 +388,7 @@ function ClientApp({ db, setDb, switchMode }) {
   )
 }
 
-function ClientNavBtn({ Icon, label, active, onClick, badge }) {
+function ClientNavBtn({ Icon, iconSrc, label, active, onClick, badge }) {
   return (
     <button
       onClick={onClick}
@@ -395,10 +396,20 @@ function ClientNavBtn({ Icon, label, active, onClick, badge }) {
         active ? 'text-[#c82a2a]' : 'text-gray-500 hover:text-gray-800'
       }`}
     >
-      <Icon size={22} />
+      {iconSrc ? (
+        <img
+          src={iconSrc}
+          alt={label}
+          className="w-[22px] h-[22px] object-contain"
+        />
+      ) : (
+        <Icon size={22} />
+      )}
+
       <span className="font-medium" style={{ fontSize: '0.65rem' }}>
         {label}
       </span>
+
       {badge > 0 && (
         <span className="absolute top-1 right-2 bg-[#c82a2a] text-white text-[10px] font-bold w-4 h-4 flex items-center justify-center rounded-full border border-white">
           {badge}

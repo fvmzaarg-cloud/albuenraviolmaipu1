@@ -15,8 +15,6 @@ const GOOGLE_MAPS_API_KEY = "AIzaSyBmiPXxoPbC5Y-cVaemlJnha8qLn4wCR9Q";
 const SHOP_PHONE = '5492613426085'
 const SHOP_ADDRESS = 'Centro Comercial Plaza Michelo, Palma y Maza, Maipú, Mendoza'
 const SHOP_LOGO = 'https://i.postimg.cc/TYHsxqMV/Copia_de_Logo_al_buen_raviol_(2).png'
-// 👇 AGREGAMOS ESTA LÍNEA 👇
-const CHEF_AVATAR = 'https://i.postimg.cc/vB77k5rp/chef.png'
 
 // --- DATOS POR DEFECTO ---
 const INITIAL_CATEGORIES = [
@@ -377,7 +375,7 @@ function ClientApp({ db, setDb, switchMode }) {
           badge={cartItemsCount}
         />
         <ClientNavBtn
-          Icon={'https://i.postimg.cc/vB77k5rp/chef.png'}
+          Icon={Sparkles}
           label="Chef IA"
           active={showAssistant}
           onClick={() => setShowAssistant(true)}
@@ -713,15 +711,7 @@ function ChefAssistant({ db, onClose }) {
       <div className="bg-white w-full max-w-md rounded-2xl shadow-2xl flex flex-col h-[80vh] sm:h-[600px] overflow-hidden">
         <div className="bg-[#cc292b] p-4 flex justify-between items-center text-white shrink-0">
           <div className="flex items-center gap-2">
-            
-            {/* 👇 ACÁ PUSIMOS LA FOTO DEL CHEF 👇 */}
-            <img 
-              src={CHEF_AVATAR}
-              alt="Perfil Chef IA"
-              className="w-9 h-9 rounded-full object-cover border-2 border-white shadow-sm" 
-            />
-            {/* 👆 ----------------------------------------------- 👆 */}
-
+            <Sparkles size={20} className="text-[#fbb03b]" />
             <h3 className="font-bold text-lg">Chef IA</h3>
           </div>
           <button onClick={onClose} className="p-1.5 hover:bg-red-800 rounded-full">
@@ -742,10 +732,6 @@ function ChefAssistant({ db, onClose }) {
               </div>
             </div>
           ))}
-        </div>
-      </div>
-    </div>
-  )
           {isLoading && <div className="text-gray-500 text-sm pl-2">El Chef está pensando...</div>}
           <div ref={messagesEndRef} />
         </div>

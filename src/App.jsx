@@ -13,7 +13,7 @@ const GOOGLE_MAPS_API_KEY = "AIzaSyBmiPXxoPbC5Y-cVaemlJnha8qLn4wCR9Q";
 
 // --- CONFIGURACIÓN DEL LOCAL ---
 const SHOP_PHONE = '5492613426085'
-const SHOP_ADDRESS = 'Centro Comercial Plaza Michelo, Palma y Maza, Maipú, Mendoz'
+const SHOP_ADDRESS = 'Centro Comercial Plaza Michelo, Palma y Maza, Maipú, Mendoza'
 const SHOP_LOGO = 'https://i.postimg.cc/TYHsxqMV/Copia_de_Logo_al_buen_raviol_(2).png'
 
 // --- DATOS POR DEFECTO ---

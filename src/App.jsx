@@ -1927,7 +1927,7 @@ function AdminPedidos({ db, setDb }) {
     texto += `*Dirección:* ${cliente.address || 'Falta dirección'}\n`;
     
     if (cliente.coords) {
-      const mapUrl = `https://maps.google.com/?q=$$${cliente.coords.lat},${cliente.coords.lng}`;
+      const mapUrl = `https://www.google.com/maps/search/?api=1&query=${cliente.coords.lat},${cliente.coords.lng}`;
       texto += `*Ubicación GPS:* ${mapUrl}\n`;
     }
     texto += `\n*Detalle del pedido:*\n`;
@@ -2091,19 +2091,19 @@ function AdminPedidos({ db, setDb }) {
                   <span className="font-black text-gray-900">{formatCurrency(order.total || 0)}</span>
                 </div>
 
-                {/* EL MAPA Y BOTÓN DE DELIVERY INYECTADOS */}
-                {order.type === 'delivery' && customer?.coords && (
+               {/* EL MAPA Y BOTÓN DE DELIVERY INYECTADOS */}
+               {order.type === 'delivery' && customer?.coords && (
                   <div className="mt-4 p-3 bg-blue-50 border border-blue-100 rounded-lg text-sm">
                     <span className="font-bold text-blue-800 flex items-center gap-1 mb-1">
                       📍 Ubicación GPS:
                     </span>
                     <a 
-                      href={`https://maps.google.com/?q=$$${customer.coords.lat},${customer.coords.lng}`} 
+                      href={`https://www.google.com/maps/search/?api=1&query=${customer.coords.lat},${customer.coords.lng}`} 
                       target="_blank" 
                       rel="noreferrer" 
-                      className="text-blue-600 underline break-all font-medium"
+                      className="text-blue-600 underline font-bold flex items-center gap-1"
                     >
-                      {`https://maps.google.com/?q=$$${customer.coords.lat},${customer.coords.lng}`}
+                      Abrir en Google Maps
                     </a>
                   </div>
                 )}

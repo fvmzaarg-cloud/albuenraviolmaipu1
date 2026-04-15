@@ -696,8 +696,6 @@ function ChefAssistant({ db, onClose }) {
       <div className="bg-white w-full max-w-md rounded-2xl shadow-2xl flex flex-col h-[80vh] sm:h-[600px] overflow-hidden">
         <div className="bg-[#cc292b] p-4 flex justify-between items-center text-white shrink-0">
           <div className="flex items-center gap-2">
-          <div className="bg-[#cc292b] p-4 flex justify-between items-center text-white shrink-0">
-          <div className="flex items-center gap-2">
             {/* 👇 ACÁ VA LA FOTO EN EL ENCABEZADO 👇 */}
             <img 
               src="https://i.postimg.cc/vB77k5rp/chef.png" 

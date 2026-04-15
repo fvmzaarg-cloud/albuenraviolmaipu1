@@ -700,7 +700,7 @@ function ChefAssistant({ db, onClose }) {
             <img 
               src="https://i.postimg.cc/vB77k5rp/chef.png" 
               alt="Chef IA" 
-              className="w-15 h-15 object-contain drop-shadow-md"
+              className="w-14 h-14 object-contain drop-shadow-md"
             />
             <h3 className="font-bold text-lg">Chef IA</h3>
           </div>
@@ -717,7 +717,7 @@ function ChefAssistant({ db, onClose }) {
                 <img 
                   src="https://i.postimg.cc/vB77k5rp/chef.png" 
                   alt="Chef" 
-                  className="w-13 h-13 object-contain drop-shadow-md"
+                  className="w-12 h-12 object-contain drop-shadow-md"
                 />
               )}
 

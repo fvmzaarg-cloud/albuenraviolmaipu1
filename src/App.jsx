@@ -710,12 +710,6 @@ function ChefAssistant({ db, onClose }) {
             <X size={20} />
           </button>
         </div>
-            <h3 className="font-bold text-lg">Chef IA</h3>
-          </div>
-          <button onClick={onClose} className="p-1.5 hover:bg-red-800 rounded-full">
-            <X size={20} />
-          </button>
-        </div>
         <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-red-50/30">
         {chat.map((msg, i) => (
             <div key={i} className={`flex gap-2 ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>

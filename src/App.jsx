@@ -117,21 +117,17 @@ const hashPassword = async password => {
   return hashArray.map(b => b.toString(16).padStart(2, '0')).join('')
 }
 
-// ACÁ LE DECIMOS QUE USE LA CLAVE DE LA BASE DE DATOS Y LEA EL HISTORIAL COMPLETO
 const callGemini = async (chatHistory, systemInstruction = 'Eres un asistente útil.', apiKey = '') => {
   if (!apiKey) return 'Falta la clave API. El administrador debe configurarla en el panel de Seguridad.';
   
 const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
   
-  // 1. Limpiamos cualquier mensaje de error previo para que no viaje a la nube
   let cleanHistory = chatHistory.filter(msg => !msg.text.includes('Error') && !msg.text.includes('problema conectándome'));
 
-  // 2. Google EXIGE que la charla empiece con el usuario
   while (cleanHistory.length > 0 && cleanHistory[0].role !== 'user') {
     cleanHistory.shift();
   }
 
-  // 3. Google EXIGE turnos alternados estrictamente (Usuario -> IA -> Usuario)
   let formattedContents = [];
   for (let msg of cleanHistory) {
     let mappedRole = msg.role === 'assistant' ? 'model' : 'user';
@@ -148,12 +144,10 @@ const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-
     }
   }
 
-  // Si nos quedamos sin mensajes, mandamos un salvavidas
   if (formattedContents.length === 0) {
     formattedContents.push({ role: 'user', parts: [{ text: 'Hola' }] });
   }
 
-  // 🔥 ARREGLO CRÍTICO: system_instruction con guion bajo y sin mezclar roles
   const payload = {
     contents: formattedContents,
     system_instruction: {
@@ -170,7 +164,6 @@ const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-
     
     const data = await response.json();
     
-    // 🔥 MODO CHISMOSO: Si Google lo rebota, mostramos el motivo exacto en el chat
     if (!response.ok) {
       console.error("❌ Rechazo de Google:", data);
       return `Error de Google: ${data.error?.message || 'Desconocido'}.`;
@@ -216,10 +209,8 @@ export default function App() {
         docRef,
         docSnap => {
           if (docSnap.exists()) {
-            // 🔥 CANDADO: Le ponemos la etiqueta secreta indicando que son DATOS REALES
             setDbState({ ...docSnap.data(), _isCloudSecured: true })
           } else {
-            // Si la base de datos está realmente vacía por primera vez, la creamos y la validamos
             const initialData = {
               categories: INITIAL_CATEGORIES,
               products: INITIAL_PRODUCTS,
@@ -247,7 +238,6 @@ export default function App() {
 
   const loadFallback = () => {
     if (!dbState) {
-      // 🛑 DATOS DE EMERGENCIA: Se cargan SIN la etiqueta secreta. El candado queda cerrado.
       setDbState({
         categories: INITIAL_CATEGORIES,
         products: INITIAL_PRODUCTS,
@@ -265,10 +255,9 @@ export default function App() {
     setDbState(prev => {
       const newState = typeof updater === 'function' ? updater(prev) : updater
       
-      // 🛡️ CANDADO MAESTRO EN ACCIÓN: Solo guarda en Firebase si los datos tienen la etiqueta de seguridad
       if (firestoreDb && user && prev._isCloudSecured) {
         const dataToSave = { ...newState }
-        delete dataToSave._isCloudSecured // Le sacamos la etiqueta antes de subirlo para que no ensucie la base de datos
+        delete dataToSave._isCloudSecured 
         const docRef = doc(firestoreDb, 'artifacts', appId, 'public', 'data', 'store_data', 'main')
         setDoc(docRef, dataToSave).catch(console.error)
       } else if (!prev._isCloudSecured) {
@@ -463,14 +452,13 @@ function ClientHome({ db, addToCart, switchMode, cartItemsCount, cartTotal, setR
     scrollRef.current?.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
-  // 🔥 ACÁ ESTÁ EL ARREGLO: Agregamos el sort() para que el cliente vea el orden que elegiste.
   const featuredProducts = db.products
     .filter(p => p.featured && p.active)
-    .sort((a, b) => (a.order || 0) - (b.order || 0)); // Ordena recomendados
+    .sort((a, b) => (a.order || 0) - (b.order || 0)); 
 
   const filteredProducts = activeCategory
-    ? db.products.filter(p => p.categoryId === activeCategory && p.active).sort((a, b) => (a.order || 0) - (b.order || 0)) // Ordena por categoría
-    : db.products.filter(p => p.active).sort((a, b) => (a.order || 0) - (b.order || 0)); // Ordena si se ven "Todos"
+    ? db.products.filter(p => p.categoryId === activeCategory && p.active).sort((a, b) => (a.order || 0) - (b.order || 0)) 
+    : db.products.filter(p => p.active).sort((a, b) => (a.order || 0) - (b.order || 0)); 
 
   return (
     <div ref={scrollRef} onScroll={handleScroll} className="h-full overflow-y-auto pb-32 relative hide-scrollbar">
@@ -670,7 +658,6 @@ function ProductCard({ product, onAdd, storeOpen, cartItem, updateQuantity }) {
 
 function ChefAssistant({ db, onClose }) {
   const [query, setQuery] = useState('')
-  // Le damos un saludo inicial para que arranque la charla
   const [chat, setChat] = useState([
     { role: 'assistant', text: '¡Hola! Soy el Chef Virtual de Al Buen Raviol. ¿En qué te puedo ayudar hoy?'},
   ])
@@ -686,7 +673,6 @@ function ChefAssistant({ db, onClose }) {
     const userMsg = query
     setQuery('')
     
-    // Guardamos el historial nuevo INCLUYENDO lo que acaba de escribir el usuario
     const newHistory = [...chat, { role: 'user', text: userMsg }]
     setChat(newHistory)
     setIsLoading(true)
@@ -699,7 +685,6 @@ function ChefAssistant({ db, onClose }) {
     const customRules = db.manualStatus?.chefPrompt || 'Regla de porciones: 2 planchas rinden para 3 personas.';
     const sysPrompt = `Eres el Chef Experto de 'Al Buen Raviol', fábrica de pastas en Mendoza. Menú: ${menuContext}. Habla amigable y argentino (usa 'vos'). Recomienda SOLO productos del menú. \nREGLAS ESTRICTAS DEL LOCAL: ${customRules}. Mantén tus respuestas breves y concisas.`
 
-    // 🔥 ACÁ ESTÁ LA MAGIA: Le pasamos "newHistory" (todo el chat) en vez de solo el último mensaje
     const response = await callGemini(newHistory, sysPrompt, db.adminAuth?.geminiKey)
     
     setChat(prev => [...prev, { role: 'assistant', text: response }])
@@ -904,7 +889,7 @@ function ClientCheckout({ cart, cartTotal, db, setDb, setRoute, clearCart }) {
     }\n*Tipo:* ${orderType === 'retiro' ? '🏪 Retiro por local' : '🛵 Delivery'}\n`
     if (orderType === 'delivery') {
       text += `*Dirección:* ${formData.address}\n`
-      if (deliveryCoords) text += `*Mapa:* https://maps.google.com/?q=${deliveryCoords.lat},${deliveryCoords.lng}\n`
+      if (deliveryCoords) text += `*Mapa:* https://maps.google.com/?q=$${deliveryCoords.lat},${deliveryCoords.lng}\n`
     }
     
     if (formData.notes.trim()) {
@@ -1219,7 +1204,7 @@ function MapPicker({ address, shopLocation, onAddressChange, onLocationSelect, i
       zoom: 13,
       disableDefaultUI: true,
       zoomControl: true,
-      gestureHandling: 'cooperative', // <-- ESTA ES LA SOLUCIÓN
+      gestureHandling: 'cooperative', 
     })
     const marker = new google.maps.Marker({ position: shopLocation, map: map, draggable: true })
 
@@ -1287,7 +1272,6 @@ function MapPicker({ address, shopLocation, onAddressChange, onLocationSelect, i
           <input
             ref={inputRef}
             type="text"
-            // 🔥 1. Le cambiamos el texto fantasma para que sepa qué poner
             placeholder="Tu calle y número (Ej: Palma 123)"
             value={address || ''}
             onChange={e => onAddressChange(e.target.value)}
@@ -1311,7 +1295,6 @@ function MapPicker({ address, shopLocation, onAddressChange, onLocationSelect, i
           <MapPin size={22} className={isLocating ? 'animate-pulse' : ''} />
         </button>
       </div>
-      {/* 🔥 2. Le clavamos este cartelito rojo para que no borre la calle */}
       <p className="text-[11px] text-[#c82a2a] font-bold mt-1 leading-tight">
         ⚠️ IMPORTANTE: No borres el nombre de la calle. Si vivís en un barrio, poné la Manzana y Casa en las "ACLARACIONES" arriba.
       </p>
@@ -1439,11 +1422,9 @@ function AdminApp({ db, setDb, switchMode }) {
       </div>
 
       <div className="flex-1 overflow-y-auto p-4 hide-scrollbar">
-        {/* 👇 ACÁ ESTÁ INTEGRADO EL RESPALDO 👇 */}
         {(adminRoute === 'dashboard' || adminRoute === 'seguridad') && (
           <AdminBackup db={db} setDb={setDb} />
         )}
-        {/* 👆 FIN DEL RESPALDO 👆 */}
         
         {renderView()}
       </div>
@@ -1706,7 +1687,6 @@ function AdminSeguridad({ db, setDb }) {
   const [email, setEmail] = useState(db.adminAuth.email)
   const [newPass, setNewPass] = useState('')
   const [newRecovery, setNewRecovery] = useState('')
-  // EL NUEVO ESTADO PARA LA CLAVE DE GEMINI
   const [geminiKey, setGeminiKey] = useState(db.adminAuth.geminiKey || '')
   
   const [saved, setSaved] = useState(false)
@@ -1770,7 +1750,6 @@ function AdminSeguridad({ db, setDb }) {
           />
         </div>
         
-        {/* LA ZONA DEL CHEF IA */}
         <div className="pt-4 border-t border-gray-200 mt-4">
           <h3 className="text-sm font-bold text-[#c82a2a] flex items-center gap-2 mb-2">
             <Sparkles size={16} /> Clave API del Chef IA
@@ -1920,10 +1899,39 @@ function AdminPedidos({ db, setDb }) {
     Cancelado: 'bg-red-100 text-red-800',
   }
 
-  // 🔥 PANTALLA EXCLUSIVA DE IMPRESIÓN
+  // 👇 FUNCIÓN MAGICA PARA REENVIAR AL CADETE 👇
+  const reenviarACadete = (pedido) => {
+    // ⚠️ ATENCIÓN FRANCO: PONÉ EL NÚMERO DE TU CADETE ACÁ ABAJO ⚠️
+    const numeroCadete = "5492610000000"; 
+
+    let texto = `🛵 *NUEVO ENVÍO - Al Buen Raviol*\n\n`;
+    texto += `*Cliente:* ${pedido.customer?.name || 'Sin nombre'} (${pedido.customer?.phone || 'Sin teléfono'})\n`;
+    texto += `*Dirección:* ${pedido.customer?.address || 'Falta dirección'}\n`;
+    
+    if (pedido.customer?.coords) {
+      const mapUrl = `https://maps.google.com/?q=$${pedido.customer.coords.lat},${pedido.customer.coords.lng}`;
+      texto += `*Ubicación GPS:* ${mapUrl}\n`;
+    }
+    texto += `\n*Detalle del pedido:*\n`;
+    
+    if (pedido.items) {
+      pedido.items.forEach(item => {
+        const unitLabel = item.product.unitType === 'peso' ? 'kg' : 'u';
+        texto += `- ${item.quantity} ${unitLabel} x ${item.product.name}\n`;
+      });
+    }
+    
+    texto += `\n*Total a cobrar:* ${formatCurrency(pedido.total)}\n`;
+    if (pedido.customer?.notes) {
+      texto += `*Notas:* ${pedido.customer.notes}`;
+    }
+
+    const url = `https://wa.me/${numeroCadete}?text=${encodeURIComponent(texto)}`;
+    window.open(url, '_blank');
+  };
+
   if (ticketToPrint) {
     const order = ticketToPrint;
-    // Calculamos el subtotal de los productos
     const subtotal = order.items.reduce((acc, i) => acc + (i.product.price * i.quantity), 0);
 
     return (
@@ -2009,7 +2017,6 @@ function AdminPedidos({ db, setDb }) {
           
           <div style={{ borderTop: '2px dashed #000', margin: '8px 0' }}></div>
           
-          {/* 👇 FILA DEL SUBTOTAL 👇 */}
           <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', marginBottom: '2px' }}>
             <span>Subtotal:</span>
             <span>{formatCurrency(subtotal)}</span>
@@ -2035,7 +2042,6 @@ function AdminPedidos({ db, setDb }) {
     );
   }
 
-  // 📋 LISTA NORMAL DE PEDIDOS
   return (
     <div className="space-y-4 animate-fadeIn">
       <h2 className="text-xl font-bold text-gray-800">Gestión de Pedidos</h2>
@@ -2086,17 +2092,6 @@ function AdminPedidos({ db, setDb }) {
                         <strong>Dir:</strong> {order.customer.address}{' '}
                         <span className="text-xs text-gray-500">({order.distance ? order.distance.toFixed(1) : 0} km)</span>
                       </p>
-                      {/* 🔥 EL BOTÓN SALVAVIDAS: Abre la coordenada exacta */}
-                      {order.customer.coords && (
-                        <a 
-                          href={`https://maps.google.com/?q=${order.customer.coords.lat},${order.customer.coords.lng}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="inline-flex items-center gap-1 text-xs text-blue-700 bg-blue-100 px-3 py-1.5 rounded-lg font-bold hover:bg-blue-200 self-start mt-1 transition-colors border border-blue-200"
-                        >
-                          📍 Abrir ubicación exacta del cliente
-                        </a>
-                      )}
                     </div>
                   )}
                   {order.customer.notes && (
@@ -2114,7 +2109,6 @@ function AdminPedidos({ db, setDb }) {
                     </div>
                   ))}
                   
-                  {/* 👇 FILA DEL SUBTOTAL EN LA TARJETA 👇 */}
                   <div className="flex justify-between text-gray-600 pt-1 border-t border-gray-100 mt-2 font-bold">
                     <span>Subtotal</span>
                     <span>{formatCurrency(subtotal)}</span>
@@ -2132,6 +2126,34 @@ function AdminPedidos({ db, setDb }) {
                   <span className="text-sm font-bold text-gray-500">Total:</span>
                   <span className="font-black text-gray-900">{formatCurrency(order.total)}</span>
                 </div>
+
+                {/* 👇 MAPA Y BOTÓN DE DELIVERY INYECTADOS ACÁ 👇 */}
+                {order.type === 'delivery' && order.customer?.coords && (
+                  <div className="mt-4 p-3 bg-blue-50 border border-blue-100 rounded-lg text-sm">
+                    <span className="font-bold text-blue-800 flex items-center gap-1 mb-1">
+                      📍 Ubicación GPS del cliente:
+                    </span>
+                    <a 
+                      href={`https://maps.google.com/?q=$${order.customer.coords.lat},${order.customer.coords.lng}`} 
+                      target="_blank" 
+                      rel="noreferrer" 
+                      className="text-blue-600 underline break-all font-medium"
+                    >
+                      {`https://maps.google.com/?q=$${order.customer.coords.lat},${order.customer.coords.lng}`}
+                    </a>
+                  </div>
+                )}
+
+                {order.type === 'delivery' && (
+                  <button 
+                    onClick={() => reenviarACadete(order)}
+                    className="mt-4 w-full bg-[#25D366] hover:bg-[#20b858] text-white p-3 rounded-xl font-bold flex justify-center items-center gap-2 transition-colors shadow-sm active:scale-[0.98]"
+                  >
+                    <Truck size={20} /> Enviar a Delivery por WhatsApp
+                  </button>
+                )}
+                {/* 👆 FIN DEL MAPA Y BOTON 👆 */}
+
               </div>
             );
           })}
@@ -2146,7 +2168,6 @@ function AdminCatalogo({ db, setDb }) {
   const [formData, setFormData] = useState(null)
   const [isGeneratingDesc, setIsGeneratingDesc] = useState(false)
   
-  // 🔥 ESTADO NUEVO PARA CONTROLAR QUÉ CATEGORÍAS ESTÁN DESPLEGADAS
   const [expandedCats, setExpandedCats] = useState({})
 
   const toggleCat = (catId) => {
@@ -2173,7 +2194,6 @@ function AdminCatalogo({ db, setDb }) {
   }
 
   const saveProduct = () => {
-    // Si es nuevo, le ponemos como orden el final de su categoría
     let newOrder = 0;
     if (editingId === 'new') {
       const catProds = db.products.filter(p => p.categoryId === formData.categoryId);
@@ -2210,13 +2230,11 @@ function AdminCatalogo({ db, setDb }) {
     setIsGeneratingDesc(false)
   }
 
-  // 🔥 MOTOR MEJORADO PARA MOVER PRODUCTOS (A PRUEBA DE ERRORES)
   const moveProduct = (productId, direction) => {
     setDb(prev => {
       const productToMove = prev.products.find(p => p.id === productId);
       if (!productToMove) return prev;
 
-      // 1. Agarramos todos los de esa categoría y los forzamos a tener un orden numérico limpio (0, 1, 2, 3...)
       let catProducts = prev.products
         .filter(p => p.categoryId === productToMove.categoryId)
         .sort((a, b) => (a.order || 0) - (b.order || 0))
@@ -2224,7 +2242,6 @@ function AdminCatalogo({ db, setDb }) {
 
       const index = catProducts.findIndex(p => p.id === productId);
 
-      // 2. Intercambiamos los números de orden
       if (direction === -1 && index > 0) {
         catProducts[index].order = index - 1;
         catProducts[index - 1].order = index;
@@ -2232,10 +2249,9 @@ function AdminCatalogo({ db, setDb }) {
         catProducts[index].order = index + 1;
         catProducts[index + 1].order = index;
       } else {
-        return prev; // No se puede mover más
+        return prev; 
       }
 
-      // 3. Devolvemos la lista general actualizada
       const newProducts = prev.products.map(p => {
         const updatedP = catProducts.find(cp => cp.id === p.id);
         return updatedP ? updatedP : p;
@@ -2245,7 +2261,6 @@ function AdminCatalogo({ db, setDb }) {
     });
   };
 
-  // PANTALLA DE EDICIÓN
   if (editingId) {
     return (
       <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-200 animate-fadeIn">
@@ -2348,7 +2363,6 @@ function AdminCatalogo({ db, setDb }) {
     )
   }
 
-  // PANTALLA DEL CATÁLOGO (CATEGORÍAS PLEGABLES)
   return (
     <div className="space-y-4 animate-fadeIn pb-10">
       <div className="flex justify-between items-center">
@@ -2366,18 +2380,15 @@ function AdminCatalogo({ db, setDb }) {
           .slice()
           .sort((a, b) => (a.order || 0) - (b.order || 0))
           .map(cat => {
-            // Filtramos y ordenamos los productos de ESTA categoría
             const catProducts = db.products
               .filter(p => p.categoryId === cat.id)
               .sort((a, b) => (a.order || 0) - (b.order || 0));
 
-            // Por defecto están abiertas (true), a menos que las toquemos
             const isExpanded = expandedCats[cat.id] !== false;
 
             return (
               <div key={cat.id} className="border border-gray-200 rounded-xl bg-white overflow-hidden shadow-sm">
                 
-                {/* CABECERA PLEGABLE */}
                 <div 
                   className="bg-gray-50 p-3 flex justify-between items-center cursor-pointer hover:bg-gray-100 transition-colors"
                   onClick={() => toggleCat(cat.id)}
@@ -2393,7 +2404,6 @@ function AdminCatalogo({ db, setDb }) {
                   </span>
                 </div>
                 
-                {/* LISTA DE PRODUCTOS (Solo se ve si está expandido) */}
                 {isExpanded && (
                   <div className="p-3 space-y-2 border-t border-gray-100 bg-gray-50/50">
                     {catProducts.length === 0 ? (
@@ -2406,7 +2416,6 @@ function AdminCatalogo({ db, setDb }) {
                             !p.active ? 'opacity-50 grayscale' : ''
                           }`}
                         >
-                          {/* BOTONES PARA MOVER ARRIBA/ABAJO */}
                           <div className="flex flex-col items-center justify-center mr-1 border-r pr-2 border-gray-50">
                             <button 
                               onClick={() => moveProduct(p.id, -1)} 
@@ -2464,7 +2473,6 @@ function AdminCatalogo({ db, setDb }) {
 }
 
 function AdminCategorias({ db, setDb }) {
-  // ACÁ ESTABA EL ERROR TONTO, YA ESTÁ CORREGIDO:
   const [newCatName, setNewCatName] = useState('')
 
   const handleAdd = () => {
@@ -2745,7 +2753,6 @@ function AdminLocationPicker({ location, onChange }) {
 
 function AdminBackup({ db, setDb }) {
   const exportarBackup = () => {
-    // Exportamos la base de datos completa (productos, horarios, IA, etc.)
     const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(db));
     const downloadAnchorNode = document.createElement('a');
     downloadAnchorNode.setAttribute("href", dataStr);
@@ -2762,7 +2769,7 @@ function AdminBackup({ db, setDb }) {
     lector.onload = function(e) {
       try {
         const contenido = JSON.parse(e.target.result);
-        setDb(contenido); // ¡Esto actualiza el sistema y lo guarda en Firebase al instante!
+        setDb(contenido); 
         alert("¡El sistema fue restaurado con éxito! Ya tenés todo tu menú de vuelta.");
       } catch (error) {
         alert("Error al leer el archivo. Asegurate de que sea el archivo .json correcto.");

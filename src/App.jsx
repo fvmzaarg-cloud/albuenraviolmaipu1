@@ -1902,7 +1902,7 @@ function AdminPedidos({ db, setDb }) {
   // 👇 FUNCIÓN MAGICA PARA REENVIAR AL CADETE 👇
   const reenviarACadete = (pedido) => {
     // ⚠️ ATENCIÓN FRANCO: PONÉ EL NÚMERO DE TU CADETE ACÁ ABAJO ⚠️
-    const numeroCadete = "5492610000000"; 
+    const numeroCadete = "5492613426085"; 
 
     let texto = `🛵 *NUEVO ENVÍO - Al Buen Raviol*\n\n`;
     texto += `*Cliente:* ${pedido.customer?.name || 'Sin nombre'} (${pedido.customer?.phone || 'Sin teléfono'})\n`;

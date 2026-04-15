@@ -696,7 +696,20 @@ function ChefAssistant({ db, onClose }) {
       <div className="bg-white w-full max-w-md rounded-2xl shadow-2xl flex flex-col h-[80vh] sm:h-[600px] overflow-hidden">
         <div className="bg-[#cc292b] p-4 flex justify-between items-center text-white shrink-0">
           <div className="flex items-center gap-2">
-            <Sparkles size={20} className="text-[#fbb03b]" />
+          <div className="bg-[#cc292b] p-4 flex justify-between items-center text-white shrink-0">
+          <div className="flex items-center gap-2">
+            {/* 👇 ACÁ VA LA FOTO EN EL ENCABEZADO 👇 */}
+            <img 
+              src="https://i.postimg.cc/vB77k5rp/chef.png" 
+              alt="Chef IA" 
+              className="w-8 h-8 rounded-full border-2 border-[#fbb03b] bg-white object-cover shadow-sm"
+            />
+            <h3 className="font-bold text-lg">Chef IA</h3>
+          </div>
+          <button onClick={onClose} className="p-1.5 hover:bg-red-800 rounded-full">
+            <X size={20} />
+          </button>
+        </div>
             <h3 className="font-bold text-lg">Chef IA</h3>
           </div>
           <button onClick={onClose} className="p-1.5 hover:bg-red-800 rounded-full">
@@ -704,8 +717,18 @@ function ChefAssistant({ db, onClose }) {
           </button>
         </div>
         <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-red-50/30">
-          {chat.map((msg, i) => (
-            <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+        {chat.map((msg, i) => (
+            <div key={i} className={`flex gap-2 ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+              
+              {/* 👇 ACÁ APARECE LA FOTO AL LADO DE CADA RESPUESTA DEL CHEF 👇 */}
+              {msg.role === 'assistant' && (
+                <img 
+                  src="https://i.postimg.cc/vB77k5rp/chef.png" 
+                  alt="Chef" 
+                  className="w-7 h-7 rounded-full object-cover border border-gray-200 bg-white shadow-sm self-end mb-1" 
+                />
+              )}
+
               <div
                 className={`max-w-[85%] rounded-2xl px-4 py-3 text-sm shadow-sm ${
                   msg.role === 'user'

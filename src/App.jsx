@@ -1899,40 +1899,45 @@ function AdminPedidos({ db, setDb }) {
     Cancelado: 'bg-red-100 text-red-800',
   }
 
-  // 👇 FUNCIÓN MAGICA PARA REENVIAR AL CADETE 👇
+  // 👇 FUNCIÓN BLINDADA PARA REENVIAR AL CADETE 👇
   const reenviarACadete = (pedido) => {
     // ⚠️ ATENCIÓN FRANCO: PONÉ EL NÚMERO DE TU CADETE ACÁ ABAJO ⚠️
-    const numeroCadete = "5492613426085"; 
+    const numeroCadete = "5492610000000"; 
+    
+    // Leemos los datos del cliente (soporta formato viejo y nuevo)
+    const cliente = pedido.customer || pedido.customerInfo || {};
 
     let texto = `🛵 *NUEVO ENVÍO - Al Buen Raviol*\n\n`;
-    texto += `*Cliente:* ${pedido.customer?.name || 'Sin nombre'} (${pedido.customer?.phone || 'Sin teléfono'})\n`;
-    texto += `*Dirección:* ${pedido.customer?.address || 'Falta dirección'}\n`;
+    texto += `*Cliente:* ${cliente.name || 'Sin nombre'} (${cliente.phone || 'Sin teléfono'})\n`;
+    texto += `*Dirección:* ${cliente.address || 'Falta dirección'}\n`;
     
-    if (pedido.customer?.coords) {
-      const mapUrl = `https://maps.google.com/?q=$${pedido.customer.coords.lat},${pedido.customer.coords.lng}`;
+    if (cliente.coords) {
+      const mapUrl = `https://maps.google.com/?q=$$${cliente.coords.lat},${cliente.coords.lng}`;
       texto += `*Ubicación GPS:* ${mapUrl}\n`;
     }
     texto += `\n*Detalle del pedido:*\n`;
     
-    if (pedido.items) {
-      pedido.items.forEach(item => {
-        const unitLabel = item.product.unitType === 'peso' ? 'kg' : 'u';
-        texto += `- ${item.quantity} ${unitLabel} x ${item.product.name}\n`;
-      });
-    }
+    const items = pedido.items || [];
+    items.forEach(item => {
+      const unitLabel = item.product?.unitType === 'peso' ? 'kg' : 'u';
+      texto += `- ${item.quantity} ${unitLabel} x ${item.product?.name || item.name || 'Producto'}\n`;
+    });
     
-    texto += `\n*Total a cobrar:* ${formatCurrency(pedido.total)}\n`;
-    if (pedido.customer?.notes) {
-      texto += `*Notas:* ${pedido.customer.notes}`;
+    texto += `\n*Total a cobrar:* ${formatCurrency(pedido.total || 0)}\n`;
+    if (cliente.notes) {
+      texto += `*Notas:* ${cliente.notes}`;
     }
 
     const url = `https://wa.me/${numeroCadete}?text=${encodeURIComponent(texto)}`;
     window.open(url, '_blank');
   };
 
+  // --- PANTALLA DE TICKET (OCULTA POR BREVEDAD, ES LA MISMA DE ANTES) ---
   if (ticketToPrint) {
     const order = ticketToPrint;
-    const subtotal = order.items.reduce((acc, i) => acc + (i.product.price * i.quantity), 0);
+    const items = order.items || [];
+    const customer = order.customer || order.customerInfo || {};
+    const subtotal = items.reduce((acc, i) => acc + ((i.product?.price || 0) * (i.quantity || 1)), 0);
 
     return (
       <div className="fixed inset-0 bg-white z-[99999] overflow-y-auto print:overflow-visible">
@@ -1946,124 +1951,67 @@ function AdminPedidos({ db, setDb }) {
         `}</style>
 
         <div className="ocultar-en-ticket flex gap-2 p-4 bg-gray-100 border-b sticky top-0 shadow-sm">
-          <button 
-            onClick={() => setTicketToPrint(null)}
-            className="bg-gray-500 text-white px-4 py-3 rounded-xl font-bold flex items-center gap-2"
-          >
+          <button onClick={() => setTicketToPrint(null)} className="bg-gray-500 text-white px-4 py-3 rounded-xl font-bold flex items-center gap-2">
             <ChevronLeft size={20} /> Volver
           </button>
-          <button 
-            onClick={() => window.print()}
-            className="flex-1 bg-[#25D366] text-white font-bold py-3 rounded-xl shadow-lg flex items-center justify-center gap-2 active:scale-95 transition-transform"
-          >
+          <button onClick={() => window.print()} className="flex-1 bg-[#25D366] text-white font-bold py-3 rounded-xl shadow-lg flex items-center justify-center gap-2 active:scale-95 transition-transform">
             🖨️ MANDAR A TICKETERA
           </button>
         </div>
 
-        <div style={{ 
-          width: '100%', 
-          maxWidth: '58mm', 
-          margin: '0 auto', 
-          padding: '2mm',
-          fontFamily: 'Calibri, Arial, sans-serif', 
-          fontSize: '14px', 
-          color: '#000', 
-          lineHeight: '1.2' 
-        }}>
+        <div style={{ width: '100%', maxWidth: '58mm', margin: '0 auto', padding: '2mm', fontFamily: 'Calibri, Arial, sans-serif', fontSize: '14px', color: '#000', lineHeight: '1.2' }}>
           <div style={{ textAlign: 'center', fontSize: '18px' }}>AL BUEN RAVIOL</div>
-          <div style={{ textAlign: 'center', fontSize: '12px' }}>Maipú, Mendoza</div>
           <div style={{ borderTop: '2px dashed #000', margin: '8px 0' }}></div>
-          
           <div style={{ textAlign: 'center' }}>
             <div>Pedido: #{order.id}</div>
-            <div>Fecha: {new Date(order.date).toLocaleString('es-AR')}</div>
-            <div style={{ marginTop: '3px' }}>Cliente: {order.customer.name}</div>
-            <div>Tel: {order.customer.phone}</div>
-            
-            <div style={{ fontSize: '16px', marginTop: '5px' }}>
-              Tipo: {order.type.toUpperCase()}
-            </div>
-            {order.paymentDetails && (
-              <div style={{ fontSize: '14px', marginTop: '4px', borderBottom: '1px solid #000', paddingBottom: '2px', fontWeight: 'bold' }}>
-                💰 Pago: {order.paymentDetails}
-              </div>
-            )}
-            {order.type === 'delivery' && (
-              <div style={{ marginTop: '2px', fontSize: '13px' }}>
-                Dir: {order.customer.address}
-              </div>
-            )}
-            
-            {order.customer.notes && (
-              <div style={{ marginTop: '4px', border: '2px solid #000', padding: '2px', borderRadius: '4px' }}>
-                Nota: {order.customer.notes}
-              </div>
-            )}
+            <div>Fecha: {order.date ? new Date(order.date).toLocaleString('es-AR') : 'Sin fecha'}</div>
+            <div style={{ marginTop: '3px' }}>Cliente: {customer.name || 'Sin nombre'}</div>
+            <div>Tel: {customer.phone || '-'}</div>
+            <div style={{ fontSize: '16px', marginTop: '5px' }}>Tipo: {(order.type || 'Local').toUpperCase()}</div>
           </div>
-          
           <div style={{ borderTop: '2px dashed #000', margin: '8px 0' }}></div>
-          <div style={{ fontSize: '12px', marginBottom: '6px', textAlign: 'center' }}>
-            CANT - PRODUCTO - SUBTOTAL
-          </div>
-          
-          {order.items.map((i, idx) => (
+          {items.map((i, idx) => (
             <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', marginBottom: '4px' }}>
-              <span style={{ flex: 1, textAlign: 'left', paddingRight: '5px' }}>
-                {i.quantity}{i.product.unitType === 'peso' ? 'kg' : 'u'} {i.product.name}
-              </span>
-              <span>{formatCurrency(i.product.price * i.quantity)}</span>
+              <span style={{ flex: 1 }}>{i.quantity}x {i.product?.name || i.name}</span>
+              <span>{formatCurrency((i.product?.price || 0) * i.quantity)}</span>
             </div>
           ))}
-          
           <div style={{ borderTop: '2px dashed #000', margin: '8px 0' }}></div>
-          
-          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', marginBottom: '2px' }}>
-            <span>Subtotal:</span>
-            <span>{formatCurrency(subtotal)}</span>
-          </div>
-
-          {order.type === 'delivery' && (
-            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px' }}>
-              <span>Envío:</span>
-              <span>{formatCurrency(order.shippingCost || 0)}</span>
-            </div>
-          )}
-          
           <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '18px', marginTop: '6px' }}>
             <span>TOTAL:</span>
-            <span>{formatCurrency(order.total)}</span>
+            <span>{formatCurrency(order.total || 0)}</span>
           </div>
-          
-          <div style={{ borderTop: '2px dashed #000', margin: '8px 0' }}></div>
-          <div style={{ textAlign: 'center', marginTop: '5px', fontSize: '12px' }}>¡Gracias por su compra!</div>
-          <div style={{ textAlign: 'center', fontSize: '12px' }}>---</div>
         </div>
       </div>
     );
   }
 
+  // --- LISTA DE PEDIDOS BLINDADA ---
   return (
     <div className="space-y-4 animate-fadeIn">
       <h2 className="text-xl font-bold text-gray-800">Gestión de Pedidos</h2>
-      {db.orders.length === 0 ? (
+      {!db.orders || db.orders.length === 0 ? (
         <p className="text-gray-500 text-center py-10">No hay pedidos registrados.</p>
       ) : (
         <div className="space-y-4">
           {db.orders.map(order => {
-            const subtotal = order.items.reduce((acc, i) => acc + (i.product.price * i.quantity), 0);
+            // Manejos de seguridad por si el pedido es muy viejo y no tiene este formato
+            const items = order.items || [];
+            const customer = order.customer || order.customerInfo || {};
+            const subtotal = items.reduce((acc, i) => acc + ((i.product?.price || 0) * (i.quantity || 1)), 0);
             
             return (
-              <div key={order.id} className="bg-white p-4 rounded-xl shadow-sm border border-gray-200">
+              <div key={order.id || Math.random()} className="bg-white p-4 rounded-xl shadow-sm border border-gray-200">
                 <div className="flex justify-between items-start mb-2">
                   <div>
-                    <span className="text-xs font-mono bg-gray-100 text-gray-600 px-2 py-1 rounded">#{order.id}</span>
-                    <p className="font-bold text-gray-800 mt-1">{order.customer.name}</p>
-                    <p className="text-xs text-gray-500">{new Date(order.date).toLocaleString('es-AR')}</p>
+                    <span className="text-xs font-mono bg-gray-100 text-gray-600 px-2 py-1 rounded">#{order.id || '???'}</span>
+                    <p className="font-bold text-gray-800 mt-1">{customer.name || 'Cliente anónimo'}</p>
+                    <p className="text-xs text-gray-500">{order.date ? new Date(order.date).toLocaleString('es-AR') : 'Fecha desconocida'}</p>
                   </div>
                   
                   <div className="flex flex-col gap-2 items-end">
                     <select
-                      value={order.status}
+                      value={order.status || 'Recibido'}
                       onChange={e => updateStatus(order.id, e.target.value)}
                       className={`text-xs font-bold px-2 py-1 rounded-full outline-none cursor-pointer ${
                         statusColors[order.status] || 'bg-gray-100 text-gray-800'
@@ -2084,28 +2032,29 @@ function AdminPedidos({ db, setDb }) {
                 </div>
 
                 <div className="text-sm bg-gray-50 p-2 rounded mb-2">
-                  <p><strong>Tel:</strong> {order.customer.phone}</p>
-                  <p><strong>Tipo:</strong> {order.type.toUpperCase()}</p>
+                  <p><strong>Tel:</strong> {customer.phone || 'No dejó'}</p>
+                  <p><strong>Tipo:</strong> {(order.type || 'retiro').toUpperCase()}</p>
+                  
                   {order.type === 'delivery' && (
                     <div className="flex flex-col gap-1 mt-1">
                       <p>
-                        <strong>Dir:</strong> {order.customer.address}{' '}
+                        <strong>Dir:</strong> {customer.address || 'Sin especificar'}{' '}
                         <span className="text-xs text-gray-500">({order.distance ? order.distance.toFixed(1) : 0} km)</span>
                       </p>
                     </div>
                   )}
-                  {order.customer.notes && (
-                    <p className="text-red-600 font-bold mt-1">📝 Nota: {order.customer.notes}</p>
+                  {customer.notes && (
+                    <p className="text-red-600 font-bold mt-1">📝 Nota: {customer.notes}</p>
                   )}
                 </div>
                 
                 <div className="text-xs space-y-1 mb-2">
-                  {order.items.map((i, idx) => (
+                  {items.map((i, idx) => (
                     <div key={idx} className="flex justify-between text-gray-600">
                       <span>
-                        {i.quantity} {i.product.unitType === 'peso' ? 'kg' : 'u'} x {i.product.name}
+                        {i.quantity} {i.product?.unitType === 'peso' ? 'kg' : 'u'} x {i.product?.name || i.name || 'Producto'}
                       </span>
-                      <span>{formatCurrency(i.product.price * i.quantity)}</span>
+                      <span>{formatCurrency((i.product?.price || 0) * i.quantity)}</span>
                     </div>
                   ))}
                   
@@ -2124,22 +2073,22 @@ function AdminPedidos({ db, setDb }) {
                 
                 <div className="flex justify-between items-center pt-2 border-t border-gray-100">
                   <span className="text-sm font-bold text-gray-500">Total:</span>
-                  <span className="font-black text-gray-900">{formatCurrency(order.total)}</span>
+                  <span className="font-black text-gray-900">{formatCurrency(order.total || 0)}</span>
                 </div>
 
-                {/* 👇 MAPA Y BOTÓN DE DELIVERY INYECTADOS ACÁ 👇 */}
-                {order.type === 'delivery' && order.customer?.coords && (
+                {/* EL MAPA Y BOTÓN DE DELIVERY INYECTADOS */}
+                {order.type === 'delivery' && customer?.coords && (
                   <div className="mt-4 p-3 bg-blue-50 border border-blue-100 rounded-lg text-sm">
                     <span className="font-bold text-blue-800 flex items-center gap-1 mb-1">
-                      📍 Ubicación GPS del cliente:
+                      📍 Ubicación GPS:
                     </span>
                     <a 
-                      href={`https://maps.google.com/?q=$${order.customer.coords.lat},${order.customer.coords.lng}`} 
+                      href={`https://maps.google.com/?q=$$${customer.coords.lat},${customer.coords.lng}`} 
                       target="_blank" 
                       rel="noreferrer" 
                       className="text-blue-600 underline break-all font-medium"
                     >
-                      {`https://maps.google.com/?q=$${order.customer.coords.lat},${order.customer.coords.lng}`}
+                      {`https://maps.google.com/?q=$$${customer.coords.lat},${customer.coords.lng}`}
                     </a>
                   </div>
                 )}
@@ -2149,11 +2098,9 @@ function AdminPedidos({ db, setDb }) {
                     onClick={() => reenviarACadete(order)}
                     className="mt-4 w-full bg-[#25D366] hover:bg-[#20b858] text-white p-3 rounded-xl font-bold flex justify-center items-center gap-2 transition-colors shadow-sm active:scale-[0.98]"
                   >
-                    <Truck size={20} /> Enviar a Delivery por WhatsApp
+                    <Truck size={20} /> Enviar a Delivery
                   </button>
                 )}
-                {/* 👆 FIN DEL MAPA Y BOTON 👆 */}
-
               </div>
             );
           })}

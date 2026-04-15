@@ -1902,7 +1902,7 @@ function AdminPedidos({ db, setDb }) {
   // 👇 FUNCIÓN BLINDADA PARA REENVIAR AL CADETE 👇
   const reenviarACadete = (pedido) => {
     // ⚠️ ATENCIÓN FRANCO: PONÉ EL NÚMERO DE TU CADETE ACÁ ABAJO ⚠️
-    const numeroCadete = "5492610000000"; 
+    const numeroCadete = "5492613426085"; 
     
     // Leemos los datos del cliente (soporta formato viejo y nuevo)
     const cliente = pedido.customer || pedido.customerInfo || {};

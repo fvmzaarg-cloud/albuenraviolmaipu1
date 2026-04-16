@@ -884,8 +884,10 @@ function ClientCheckout({ cart, cartTotal, db, setDb, setRoute, clearCart }) {
       paymentString = `Efectivo (Abona con ${formatCurrency(Number(cashAmount))})`;
     }
 
+    // Calcula el número correlativo (arranca en 1001)
+    const nextId = db.orders.length > 0 && !isNaN(parseInt(db.orders[0].id)) ? parseInt(db.orders[0].id) + 1 : 1000 + db.orders.length + 1;
     const newOrder = {
-      id: Math.random().toString(36).substr(2, 9),
+      id: nextId.toString(),
       date: new Date().toISOString(),
       // 🔥 ACÁ LA MAGIA: Guardamos las coordenadas exactas de forma invisible
       customer: { ...formData, coords: deliveryCoords }, 
@@ -900,11 +902,13 @@ function ClientCheckout({ cart, cartTotal, db, setDb, setRoute, clearCart }) {
     }
     setDb(prev => ({ ...prev, orders: [newOrder, ...prev.orders] }))
 
-    let text = `*Hola Al Buen Raviol Maipú! Quiero hacer un pedido*\n\n*Cliente:* ${formData.name}\n*Tel:* ${
-      formData.phone
-    }\n*Tipo:* ${orderType === 'retiro' ? '🏪 Retiro por local' : '🛵 Delivery'}\n`
+    let text = `*PEDIDO #${nextId}*\n*Hola Al Buen Raviol Maipú! Quiero hacer un pedido*\n\n`;
+    text += `*Cliente:* ${formData.name}\n*Tel:* ${formData.phone}\n`;
+    text += `*Tipo:* ${orderType === 'retiro' ? '🏪 Retiro por local' : '🛵 Delivery'}\n`;
+    
     if (orderType === 'delivery') {
-      text += `*Dirección:* ${formData.address}\n`
+      text += `*Dirección:* ${formData.address}\n`;
+      // Corregí el 5{ por un $ para que no te falle el link del mapa
       if (deliveryCoords) text += `*Mapa:* https://maps.google.com/?q=${deliveryCoords.lat},${deliveryCoords.lng}\n`
     }
     
@@ -1922,6 +1926,7 @@ function AdminPedidos({ db, setDb }) {
     const items = pedido.items || [];
 
     let texto = `🛵 *NUEVO Pedido - Al Buen Raviol Maipú*\n\n`;
+    texto += `*PEDIDO #${pedido.id}*\n\n`;
     texto += `*Cliente:* ${cliente.name || 'Sin nombre'} (${cliente.phone || 'Sin teléfono'})\n`;
     texto += `*Dirección:* ${cliente.address || 'Falta dirección'}\n`;
     

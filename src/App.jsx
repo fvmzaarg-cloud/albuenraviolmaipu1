@@ -902,7 +902,7 @@ function ClientCheckout({ cart, cartTotal, db, setDb, setRoute, clearCart }) {
     }
     setDb(prev => ({ ...prev, orders: [newOrder, ...prev.orders] }))
 
-    let text = `*PEDIDO #${nextId}*\n*Hola Al Buen Raviol Maipú! Quiero hacer un pedido*\n\n`;
+    let text = `       *PEDIDO #${nextId} *\n\n*Hola Al Buen Raviol Maipú! Quiero hacer un pedido*\n\n`;
     text += `*Cliente:* ${formData.name}\n*Tel:* ${formData.phone}\n`;
     text += `*Tipo:* ${orderType === 'retiro' ? '🏪 Retiro por local' : '🛵 Delivery'}\n`;
     
@@ -1925,8 +1925,8 @@ function AdminPedidos({ db, setDb }) {
     const cliente = pedido.customer || pedido.customerInfo || {};
     const items = pedido.items || [];
 
-    let texto = `🛵 *NUEVO Pedido - Al Buen Raviol Maipú*\n\n`;
-    texto += `*PEDIDO #${pedido.id}*\n\n`;
+    let texto = `🛵 *NUEVO ENVÍO - Al Buen Raviol*\n`;
+    texto += `       *📦 PEDIDO #${pedido.id} 📦*\n\n`;
     texto += `*Cliente:* ${cliente.name || 'Sin nombre'} (${cliente.phone || 'Sin teléfono'})\n`;
     texto += `*Dirección:* ${cliente.address || 'Falta dirección'}\n`;
     
@@ -2000,6 +2000,7 @@ if (ticketToPrint) {
         <div style={{ textAlign: 'center', fontSize: '18px', fontWeight: 'bold' }}>AL BUEN RAVIOL MAIPÚ</div>
         <div style={{ borderTop: '2px dashed #000', margin: '8px 0' }}></div>    
         <div style={{ textAlign: 'center' }}>
+        <div style={{ fontSize: '28px', fontWeight: '900', margin: '4px 0', padding: '4px 0', borderTop: '2px solid #000', borderBottom: '2px solid #000' }}>
           <div>Pedido: #{order.id}</div>
           <div>Fecha: {order.date ? new Date(order.date).toLocaleString('es-AR') : 'Sin fecha'}</div>
           <div style={{ marginTop: '3px' }}>Cliente: {customer.name || 'Sin nombre'}</div>

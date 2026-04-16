@@ -2096,26 +2096,41 @@ if (ticketToPrint) {
                   </div>
                   
                   <div className="flex flex-col gap-2 items-end">
-                    <select
-                      value={order.status || 'Recibido'}
-                      onChange={e => updateStatus(order.id, e.target.value)}
-                      className={`text-xs font-bold px-2 py-1 rounded-full outline-none cursor-pointer ${
-                        statusColors[order.status] || 'bg-gray-100 text-gray-800'
-                      }`}
-                    >
-                      <option value="Recibido">Recibido</option>
-                      <option value="Entregado">Entregado</option>
-                      <option value="Cancelado">Cancelado</option>
-                    </select>
+                    <div className="flex items-center gap-2">
+                      <select
+                        value={order.status || 'Recibido'}
+                        onChange={e => updateStatus(order.id, e.target.value)}
+                        className={`text-xs font-bold px-2 py-1 rounded-full outline-none cursor-pointer ${
+                          statusColors[order.status] || 'bg-gray-100 text-gray-800'
+                        }`}
+                      >
+                        <option value="Recibido">Recibido</option>
+                        <option value="Entregado">Entregado</option>
+                        <option value="Cancelado">Cancelado</option>
+                      </select>
+                      
+                      {/* 👇 TU CRUZ PARA BORRAR EL PEDIDO INDIVIDUAL 👇 */}
+                      <button
+                        onClick={() => {
+                          const confirmar = window.confirm(`⚠️ ¿Confirmás que querés borrar definitivamente el pedido #${order.id}?`);
+                          if (confirmar) {
+                            setDb(prev => ({ ...prev, orders: prev.orders.filter(o => o.id !== order.id) }));
+                          }
+                        }}
+                        className="p-1 text-red-500 bg-red-50 hover:bg-red-500 hover:text-white rounded transition-colors shadow-sm"
+                        title="Borrar pedido"
+                      >
+                        <X size={16} />
+                      </button>
+                    </div>
                     
                     <button 
                       onClick={() => setTicketToPrint(order)}
-                      className="text-xs font-bold text-gray-600 bg-gray-100 hover:bg-gray-200 px-2 py-1 rounded flex items-center gap-1 transition-colors"
+                      className="text-xs font-bold text-gray-600 bg-gray-100 hover:bg-gray-200 px-2 py-1 rounded flex items-center gap-1 transition-colors w-full justify-center"
                     >
                       🖨️ Imprimir
                     </button>
                   </div>
-                </div>
 
                 <div className="text-sm bg-gray-50 p-2 rounded mb-2">
                   <p><strong>Tel:</strong> {customer.phone || 'No dejó'}</p>

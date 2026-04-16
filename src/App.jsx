@@ -1925,7 +1925,7 @@ function AdminPedidos({ db, setDb }) {
     const cliente = pedido.customer || pedido.customerInfo || {};
     const items = pedido.items || [];
 
-    let texto = `🛵 *NUEVO ENVÍO - Al Buen Raviol*\n`;
+    let texto = `🛵 *NUEVO PEDIDO - Al Buen Raviol Maipú*\n`;
     texto += `       *📦 PEDIDO #${pedido.id} 📦*\n\n`;
     texto += `*Cliente:* ${cliente.name || 'Sin nombre'} (${cliente.phone || 'Sin teléfono'})\n`;
     texto += `*Dirección:* ${cliente.address || 'Falta dirección'}\n`;

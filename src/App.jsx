@@ -1977,12 +1977,7 @@ if (ticketToPrint) {
 
       <div style={{ width: '100%', maxWidth: '58mm', margin: '0 auto', padding: '2mm', fontFamily: 'Calibri, Arial, sans-serif', fontSize: '14px', color: '#000', lineHeight: '1.2' }}>
         <div style={{ textAlign: 'center', fontSize: '18px', fontWeight: 'bold' }}>AL BUEN RAVIOL MAIPÚ</div>
-        <div style={{ borderTop: '2px dashed #000', margin: '8px 0' }}></div>
-        {/* 👇 LA DIRECCIÓN DEL LOCAL ABAJO DEL NOMBRE 👇 */}
-        <div style={{ textAlign: 'center', fontSize: '11px', fontWeight: 'normal', marginTop: '2px', textTransform: 'uppercase' }}>
-            {Palma y Maza, local 11, Centro comercial Plaza Michelo}
-          </div>
-        
+        <div style={{ borderTop: '2px dashed #000', margin: '8px 0' }}></div>    
         <div style={{ textAlign: 'center' }}>
           <div>Pedido: #{order.id}</div>
           <div>Fecha: {order.date ? new Date(order.date).toLocaleString('es-AR') : 'Sin fecha'}</div>

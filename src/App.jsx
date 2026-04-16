@@ -1931,7 +1931,7 @@ function AdminPedidos({ db, setDb }) {
     
     // ✅ Enlace de Google Maps corregido
     if (cliente.coords) {
-      const mapUrl = `http://googleusercontent.com/maps.google.com/?q=${cliente.coords.lat},${cliente.coords.lng}`;
+      const mapUrl = `http://maps.google.com/?q=${cliente.coords.lat},${cliente.coords.lng}`;
       texto += `*Ubicación GPS:* ${mapUrl}\n`;
     }
 
@@ -2172,7 +2172,7 @@ if (ticketToPrint) {
                       📍 Ubicación GPS:
                     </span>
                     <a 
-                      href={`http://googleusercontent.com/maps.google.com/?q=${customer.coords.lat},${customer.coords.lng}`} 
+                      href={`http://maps.google.com/?q=${customer.coords.lat},${customer.coords.lng}`} 
                       target="_blank" 
                       rel="noreferrer" 
                       className="text-blue-600 underline font-bold flex items-center gap-1"

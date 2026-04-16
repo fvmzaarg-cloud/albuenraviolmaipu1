@@ -893,6 +893,7 @@ function ClientCheckout({ cart, cartTotal, db, setDb, setRoute, clearCart }) {
       items: cart,
       subtotal: cartTotal,
       shippingCost,
+      distance: shippingDistance, // 👈 ¡ESTA ES LA LÍNEA MÁGICA QUE FALTABA!
       total: finalTotal,
       status: 'Recibido',
       paymentDetails: paymentString, 

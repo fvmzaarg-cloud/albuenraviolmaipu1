@@ -1917,10 +1917,7 @@ function AdminPedidos({ db, setDb }) {
 
   // 👇 FUNCIÓN BLINDADA PARA REENVIAR AL CADETE 👇
   const reenviarACadete = (pedido) => {
-    // ⚠️ ATENCIÓN FRANCO: PONÉ EL NÚMERO DE TU CADETE ACÁ ABAJO ⚠️
-    const numeroCadete = "5492613426085"; 
-    
-    // Leemos los datos del cliente (soporta formato viejo y nuevo)
+  // Leemos los datos del cliente (soporta formato viejo y nuevo)
     const cliente = pedido.customer || pedido.customerInfo || {};
 
     let texto = `🛵 *NUEVO ENVÍO - Al Buen Raviol*\n\n`;
@@ -1944,7 +1941,8 @@ function AdminPedidos({ db, setDb }) {
       texto += `*Notas:* ${cliente.notes}`;
     }
 
-    const url = `https://wa.me/${numeroCadete}?text=${encodeURIComponent(texto)}`;
+// 🔥 EL TRUCO: Al no poner un número, WhatsApp te pregunta a quién (o a qué grupo) enviarlo
+    const url = `https://api.whatsapp.com/send?text=${encodeURIComponent(texto)}`;
     window.open(url, '_blank');
   };
 

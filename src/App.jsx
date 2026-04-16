@@ -1947,60 +1947,105 @@ function AdminPedidos({ db, setDb }) {
     window.open(url, '_blank');
   };
 
-  // --- PANTALLA DE TICKET (OCULTA POR BREVEDAD, ES LA MISMA DE ANTES) ---
-  if (ticketToPrint) {
-    const order = ticketToPrint;
-    const items = order.items || [];
-    const customer = order.customer || order.customerInfo || {};
-    const subtotal = items.reduce((acc, i) => acc + ((i.product?.price || 0) * (i.quantity || 1)), 0);
+// --- PANTALLA DE TICKET COMPLETO ---
+if (ticketToPrint) {
+  const order = ticketToPrint;
+  const items = order.items || [];
+  const customer = order.customer || order.customerInfo || {};
+  // Calculamos el subtotal sumando los productos
+  const subtotal = items.reduce((acc, i) => acc + ((i.product?.price || 0) * (i.quantity || 1)), 0);
 
-    return (
-      <div className="fixed inset-0 bg-white z-[99999] overflow-y-auto print:overflow-visible">
-        <style>{`
-          @media print {
-            @page { margin: 0; size: 58mm auto; }
-            body { margin: 0; padding: 0; background: white; }
-            * { font-weight: 900 !important; color: #000 !important; }
-            .ocultar-en-ticket { display: none !important; }
-          }
-        `}</style>
+  return (
+    <div className="fixed inset-0 bg-white z-[99999] overflow-y-auto print:overflow-visible">
+      <style>{`
+        @media print {
+          @page { margin: 0; size: 58mm auto; }
+          body { margin: 0; padding: 0; background: white; }
+          * { font-weight: 900 !important; color: #000 !important; }
+          .ocultar-en-ticket { display: none !important; }
+        }
+      `}</style>
 
-        <div className="ocultar-en-ticket flex gap-2 p-4 bg-gray-100 border-b sticky top-0 shadow-sm">
-          <button onClick={() => setTicketToPrint(null)} className="bg-gray-500 text-white px-4 py-3 rounded-xl font-bold flex items-center gap-2">
-            <ChevronLeft size={20} /> Volver
-          </button>
-          <button onClick={() => window.print()} className="flex-1 bg-[#25D366] text-white font-bold py-3 rounded-xl shadow-lg flex items-center justify-center gap-2 active:scale-95 transition-transform">
-            🖨️ MANDAR A TICKETERA
-          </button>
+      <div className="ocultar-en-ticket flex gap-2 p-4 bg-gray-100 border-b sticky top-0 shadow-sm">
+        <button onClick={() => setTicketToPrint(null)} className="bg-gray-500 text-white px-4 py-3 rounded-xl font-bold flex items-center gap-2">
+          <ChevronLeft size={20} /> Volver
+        </button>
+        <button onClick={() => window.print()} className="flex-1 bg-[#25D366] text-white font-bold py-3 rounded-xl shadow-lg flex items-center justify-center gap-2 active:scale-95 transition-transform">
+          🖨️ MANDAR A TICKETERA
+        </button>
+      </div>
+
+      <div style={{ width: '100%', maxWidth: '58mm', margin: '0 auto', padding: '2mm', fontFamily: 'Calibri, Arial, sans-serif', fontSize: '14px', color: '#000', lineHeight: '1.2' }}>
+        <div style={{ textAlign: 'center', fontSize: '18px', fontWeight: 'bold' }}>AL BUEN RAVIOL</div>
+        <div style={{ borderTop: '2px dashed #000', margin: '8px 0' }}></div>
+        
+        <div style={{ textAlign: 'center' }}>
+          <div>Pedido: #{order.id}</div>
+          <div>Fecha: {order.date ? new Date(order.date).toLocaleString('es-AR') : 'Sin fecha'}</div>
+          <div style={{ marginTop: '3px' }}>Cliente: {customer.name || 'Sin nombre'}</div>
+          <div>Tel: {customer.phone || '-'}</div>
+          <div style={{ fontSize: '16px', marginTop: '5px', fontWeight: 'bold' }}>
+            Tipo: {(order.type || 'Local').toUpperCase()}
+          </div>
+          {/* Si es delivery, mostramos la dirección en el encabezado */}
+          {order.type === 'delivery' && customer.address && (
+            <div style={{ marginTop: '3px' }}>Dir: {customer.address}</div>
+          )}
+        </div>
+        
+        <div style={{ borderTop: '2px dashed #000', margin: '8px 0' }}></div>
+        
+        {/* LISTA DE PRODUCTOS */}
+        {items.map((i, idx) => (
+          <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', marginBottom: '4px' }}>
+            <span style={{ flex: 1, paddingRight: '5px' }}>
+              {i.quantity} {i.product?.unitType === 'peso' ? 'kg' : 'u'} x {i.product?.name || i.name}
+            </span>
+            <span>{formatCurrency((i.product?.price || 0) * i.quantity)}</span>
+          </div>
+        ))}
+        
+        <div style={{ borderTop: '2px dashed #000', margin: '8px 0' }}></div>
+        
+        {/* SUBTOTAL Y ENVÍO */}
+        <div style={{ fontSize: '14px', marginBottom: '6px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '2px' }}>
+            <span>Subtotal:</span>
+            <span>{formatCurrency(subtotal)}</span>
+          </div>
+          {order.type === 'delivery' && (
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '2px' }}>
+              <span>Envío:</span>
+              <span>{formatCurrency(order.shippingCost || 0)}</span>
+            </div>
+          )}
         </div>
 
-        <div style={{ width: '100%', maxWidth: '58mm', margin: '0 auto', padding: '2mm', fontFamily: 'Calibri, Arial, sans-serif', fontSize: '14px', color: '#000', lineHeight: '1.2' }}>
-          <div style={{ textAlign: 'center', fontSize: '18px' }}>AL BUEN RAVIOL</div>
-          <div style={{ borderTop: '2px dashed #000', margin: '8px 0' }}></div>
-          <div style={{ textAlign: 'center' }}>
-            <div>Pedido: #{order.id}</div>
-            <div>Fecha: {order.date ? new Date(order.date).toLocaleString('es-AR') : 'Sin fecha'}</div>
-            <div style={{ marginTop: '3px' }}>Cliente: {customer.name || 'Sin nombre'}</div>
-            <div>Tel: {customer.phone || '-'}</div>
-            <div style={{ fontSize: '16px', marginTop: '5px' }}>Tipo: {(order.type || 'Local').toUpperCase()}</div>
-          </div>
-          <div style={{ borderTop: '2px dashed #000', margin: '8px 0' }}></div>
-          {items.map((i, idx) => (
-            <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', marginBottom: '4px' }}>
-              <span style={{ flex: 1 }}>{i.quantity}x {i.product?.name || i.name}</span>
-              <span>{formatCurrency((i.product?.price || 0) * i.quantity)}</span>
+        <div style={{ borderTop: '2px dashed #000', margin: '8px 0' }}></div>
+        
+        {/* TOTAL */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '18px', marginTop: '6px', fontWeight: 'bold' }}>
+          <span>TOTAL:</span>
+          <span>{formatCurrency(order.total || 0)}</span>
+        </div>
+
+        {/* NOTAS DEL CLIENTE (Si existen) */}
+        {customer.notes && (
+          <>
+            <div style={{ borderTop: '2px dashed #000', margin: '8px 0' }}></div>
+            <div style={{ fontSize: '14px', textAlign: 'left', fontWeight: 'bold' }}>
+              NOTA: {customer.notes}
             </div>
-          ))}
-          <div style={{ borderTop: '2px dashed #000', margin: '8px 0' }}></div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '18px', marginTop: '6px' }}>
-            <span>TOTAL:</span>
-            <span>{formatCurrency(order.total || 0)}</span>
-          </div>
+          </>
+        )}
+        
+        <div style={{ textAlign: 'center', marginTop: '15px', fontSize: '12px' }}>
+          ¡Gracias por su compra!
         </div>
       </div>
-    );
-  }
-
+    </div>
+  );
+}
   // --- LISTA DE PEDIDOS BLINDADA ---
   return (
     <div className="space-y-4 animate-fadeIn">

@@ -1921,22 +1921,20 @@ function AdminPedidos({ db, setDb }) {
 
   // 👇 FUNCIÓN BLINDADA PARA REENVIAR AL CADETE 👇
   const reenviarACadete = (pedido) => {
-    // Leemos los datos del cliente
     const cliente = pedido.customer || pedido.customerInfo || {};
     const items = pedido.items || [];
 
-    let texto = `🛵 *NUEVO PEDIDO - Al Buen Raviol Maipú*\n`;
+    let texto = `🛵 *NUEVO ENVÍO - Al Buen Raviol*\n`;
     texto += `       *📦 PEDIDO #${pedido.id} 📦*\n\n`;
     texto += `*Cliente:* ${cliente.name || 'Sin nombre'} (${cliente.phone || 'Sin teléfono'})\n`;
     texto += `*Dirección:* ${cliente.address || 'Falta dirección'}\n`;
     
-    // Enlace de Google Maps corregido
+    // ✅ Enlace de Google Maps corregido
     if (cliente.coords) {
-      const mapUrl = `https://www.google.com/maps?q=${cliente.coords.lat},${cliente.coords.lng}`;
+      const mapUrl = `http://googleusercontent.com/maps.google.com/?q=${cliente.coords.lat},${cliente.coords.lng}`;
       texto += `*Ubicación GPS:* ${mapUrl}\n`;
     }
 
-    // Aclaraciones (timbre, casa, etc.)
     if (cliente.notes) {
       texto += `*Aclaraciones:* ${cliente.notes}\n`;
     }
@@ -1947,7 +1945,6 @@ function AdminPedidos({ db, setDb }) {
       texto += `- ${item.quantity} ${unitLabel} x ${item.product?.name || item.name || 'Producto'}\n`;
     });
     
-    // --- DESGLOSE DE DINERO ---
     const subtotal = pedido.subtotal || items.reduce((acc, i) => acc + ((i.product?.price || 0) * (i.quantity || 1)), 0);
 
     texto += `\n*Subtotal:* ${formatCurrency(subtotal)}\n`;
@@ -1958,12 +1955,10 @@ function AdminPedidos({ db, setDb }) {
 
     texto += `*TOTAL A COBRAR:* ${formatCurrency(pedido.total || 0)}\n`;
     
-    // Detalle de pago (si es efectivo y con cuánto abona)
     if (pedido.paymentDetails) {
       texto += `*Pago:* ${pedido.paymentDetails}\n`;
     }
 
-    // Abre la lista de chats para elegir el grupo
     const url = `https://api.whatsapp.com/send?text=${encodeURIComponent(texto)}`;
     window.open(url, '_blank');
   };
@@ -1973,7 +1968,6 @@ if (ticketToPrint) {
   const order = ticketToPrint;
   const items = order.items || [];
   const customer = order.customer || order.customerInfo || {};
-  // Calculamos el subtotal sumando los productos
   const subtotal = items.reduce((acc, i) => acc + ((i.product?.price || 0) * (i.quantity || 1)), 0);
 
   return (
@@ -1999,21 +1993,18 @@ if (ticketToPrint) {
       <div style={{ width: '100%', maxWidth: '58mm', margin: '0 auto', padding: '2mm', fontFamily: 'Calibri, Arial, sans-serif', fontSize: '14px', color: '#000', lineHeight: '1.2' }}>
         <div style={{ textAlign: 'center', fontSize: '18px', fontWeight: 'bold' }}>AL BUEN RAVIOL MAIPÚ</div>
         <div style={{ borderTop: '2px dashed #000', margin: '8px 0' }}></div>    
+        
+        {/* ✅ TICKET CORREGIDO: Letra gigante solo para el número */}
         <div style={{ textAlign: 'center' }}>
-          
-          {/* 👇 SOLO EL NÚMERO VA GIGANTE 👇 */}
           <div style={{ fontSize: '28px', fontWeight: '900', margin: '4px 0', padding: '4px 0', borderTop: '2px solid #000', borderBottom: '2px solid #000' }}>
-            Pedido: #{order.id}
+            #{order.id}
           </div>
-          
-          {/* 👇 EL RESTO DEL ENCABEZADO VUELVE A TAMAÑO NORMAL 👇 */}
           <div>Fecha: {order.date ? new Date(order.date).toLocaleString('es-AR') : 'Sin fecha'}</div>
           <div style={{ marginTop: '3px' }}>Cliente: {customer.name || 'Sin nombre'}</div>
           <div>Tel: {customer.phone || '-'}</div>
           <div style={{ fontSize: '16px', marginTop: '5px', fontWeight: 'bold' }}>
             Tipo: {(order.type || 'Local').toUpperCase()}
           </div>
-          {/* Si es delivery, mostramos la dirección en el encabezado */}
           {order.type === 'delivery' && customer.address && (
             <div style={{ marginTop: '3px' }}>Dir: {customer.address}</div>
           )}
@@ -2021,7 +2012,6 @@ if (ticketToPrint) {
         
         <div style={{ borderTop: '2px dashed #000', margin: '8px 0' }}></div>
         
-        {/* LISTA DE PRODUCTOS */}
         {items.map((i, idx) => (
           <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', marginBottom: '4px' }}>
             <span style={{ flex: 1, paddingRight: '5px' }}>
@@ -2033,7 +2023,6 @@ if (ticketToPrint) {
         
         <div style={{ borderTop: '2px dashed #000', margin: '8px 0' }}></div>
         
-        {/* SUBTOTAL Y ENVÍO */}
         <div style={{ fontSize: '14px', marginBottom: '6px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '2px' }}>
             <span>Subtotal:</span>
@@ -2049,13 +2038,11 @@ if (ticketToPrint) {
 
         <div style={{ borderTop: '2px dashed #000', margin: '8px 0' }}></div>
         
-        {/* TOTAL */}
         <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '18px', marginTop: '6px', fontWeight: 'bold' }}>
           <span>TOTAL:</span>
           <span>{formatCurrency(order.total || 0)}</span>
         </div>
 
-        {/* NOTAS DEL CLIENTE (Si existen) */}
         {customer.notes && (
           <>
             <div style={{ borderTop: '2px dashed #000', margin: '8px 0' }}></div>
@@ -2072,6 +2059,7 @@ if (ticketToPrint) {
     </div>
   );
 }
+
   // --- LISTA DE PEDIDOS BLINDADA ---
   return (
     <div className="space-y-4 animate-fadeIn">
@@ -2081,7 +2069,6 @@ if (ticketToPrint) {
       ) : (
         <div className="space-y-4">
           {db.orders.map(order => {
-            // Manejos de seguridad por si el pedido es muy viejo y no tiene este formato
             const items = order.items || [];
             const customer = order.customer || order.customerInfo || {};
             const subtotal = items.reduce((acc, i) => acc + ((i.product?.price || 0) * (i.quantity || 1)), 0);
@@ -2109,7 +2096,7 @@ if (ticketToPrint) {
                         <option value="Cancelado">Cancelado</option>
                       </select>
                       
-                      {/* 👇 TU CRUZ PARA BORRAR EL PEDIDO INDIVIDUAL 👇 */}
+                      {/* 👇 CRUZ PARA BORRAR EL PEDIDO INDIVIDUAL 👇 */}
                       <button
                         onClick={() => {
                           const confirmar = window.confirm(`⚠️ ¿Confirmás que querés borrar definitivamente el pedido #${order.id}?`);
@@ -2131,6 +2118,7 @@ if (ticketToPrint) {
                       🖨️ Imprimir
                     </button>
                   </div>
+                </div> {/* ✅ DIV DE CIERRE AGREGADO */}
 
                 <div className="text-sm bg-gray-50 p-2 rounded mb-2">
                   <p><strong>Tel:</strong> {customer.phone || 'No dejó'}</p>
@@ -2177,14 +2165,14 @@ if (ticketToPrint) {
                   <span className="font-black text-gray-900">{formatCurrency(order.total || 0)}</span>
                 </div>
 
-               {/* EL MAPA Y BOTÓN DE DELIVERY INYECTADOS */}
+               {/* ✅ MAPA CORREGIDO */}
                {order.type === 'delivery' && customer?.coords && (
                   <div className="mt-4 p-3 bg-blue-50 border border-blue-100 rounded-lg text-sm">
                     <span className="font-bold text-blue-800 flex items-center gap-1 mb-1">
                       📍 Ubicación GPS:
                     </span>
                     <a 
-                      href={`https://www.google.com/maps/search/?api=1&query=${customer.coords.lat},${customer.coords.lng}`} 
+                      href={`http://googleusercontent.com/maps.google.com/?q=${customer.coords.lat},${customer.coords.lng}`} 
                       target="_blank" 
                       rel="noreferrer" 
                       className="text-blue-600 underline font-bold flex items-center gap-1"

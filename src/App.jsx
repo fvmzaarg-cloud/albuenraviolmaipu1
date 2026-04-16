@@ -2000,8 +2000,13 @@ if (ticketToPrint) {
         <div style={{ textAlign: 'center', fontSize: '18px', fontWeight: 'bold' }}>AL BUEN RAVIOL MAIPÚ</div>
         <div style={{ borderTop: '2px dashed #000', margin: '8px 0' }}></div>    
         <div style={{ textAlign: 'center' }}>
-        <div style={{ fontSize: '28px', fontWeight: '900', margin: '4px 0', padding: '4px 0', borderTop: '2px solid #000', borderBottom: '2px solid #000' }}>
-          <div>Pedido: #{order.id}</div>
+          
+          {/* 👇 SOLO EL NÚMERO VA GIGANTE 👇 */}
+          <div style={{ fontSize: '28px', fontWeight: '900', margin: '4px 0', padding: '4px 0', borderTop: '2px solid #000', borderBottom: '2px solid #000' }}>
+            Pedido: #{order.id}
+          </div>
+          
+          {/* 👇 EL RESTO DEL ENCABEZADO VUELVE A TAMAÑO NORMAL 👇 */}
           <div>Fecha: {order.date ? new Date(order.date).toLocaleString('es-AR') : 'Sin fecha'}</div>
           <div style={{ marginTop: '3px' }}>Cliente: {customer.name || 'Sin nombre'}</div>
           <div>Tel: {customer.phone || '-'}</div>

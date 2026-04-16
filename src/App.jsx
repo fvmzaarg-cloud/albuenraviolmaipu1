@@ -1917,31 +1917,48 @@ function AdminPedidos({ db, setDb }) {
 
   // 👇 FUNCIÓN BLINDADA PARA REENVIAR AL CADETE 👇
   const reenviarACadete = (pedido) => {
-  // Leemos los datos del cliente (soporta formato viejo y nuevo)
+    // Leemos los datos del cliente
     const cliente = pedido.customer || pedido.customerInfo || {};
+    const items = pedido.items || [];
 
     let texto = `🛵 *NUEVO ENVÍO - Al Buen Raviol*\n\n`;
     texto += `*Cliente:* ${cliente.name || 'Sin nombre'} (${cliente.phone || 'Sin teléfono'})\n`;
     texto += `*Dirección:* ${cliente.address || 'Falta dirección'}\n`;
     
+    // Enlace de Google Maps corregido
     if (cliente.coords) {
-      const mapUrl = `https://www.google.com/maps/search/?api=1&query=${cliente.coords.lat},${cliente.coords.lng}`;
+      const mapUrl = `https://www.google.com/maps?q=${cliente.coords.lat},${cliente.coords.lng}`;
       texto += `*Ubicación GPS:* ${mapUrl}\n`;
     }
-    texto += `\n*Detalle del pedido:*\n`;
+
+    // Aclaraciones (timbre, casa, etc.)
+    if (cliente.notes) {
+      texto += `*Aclaraciones:* ${cliente.notes}\n`;
+    }
     
-    const items = pedido.items || [];
+    texto += `\n*Detalle del pedido:*\n`;
     items.forEach(item => {
       const unitLabel = item.product?.unitType === 'peso' ? 'kg' : 'u';
       texto += `- ${item.quantity} ${unitLabel} x ${item.product?.name || item.name || 'Producto'}\n`;
     });
     
-    texto += `\n*Total a cobrar:* ${formatCurrency(pedido.total || 0)}\n`;
-    if (cliente.notes) {
-      texto += `*Notas:* ${cliente.notes}`;
+    // --- DESGLOSE DE DINERO ---
+    const subtotal = pedido.subtotal || items.reduce((acc, i) => acc + ((i.product?.price || 0) * (i.quantity || 1)), 0);
+
+    texto += `\n*Subtotal:* ${formatCurrency(subtotal)}\n`;
+    
+    if (pedido.type === 'delivery') {
+      texto += `*Envío:* ${formatCurrency(pedido.shippingCost || 0)}\n`;
     }
 
-// 🔥 EL TRUCO: Al no poner un número, WhatsApp te pregunta a quién (o a qué grupo) enviarlo
+    texto += `*TOTAL A COBRAR:* ${formatCurrency(pedido.total || 0)}\n`;
+    
+    // Detalle de pago (si es efectivo y con cuánto abona)
+    if (pedido.paymentDetails) {
+      texto += `*Pago:* ${pedido.paymentDetails}\n`;
+    }
+
+    // Abre la lista de chats para elegir el grupo
     const url = `https://api.whatsapp.com/send?text=${encodeURIComponent(texto)}`;
     window.open(url, '_blank');
   };

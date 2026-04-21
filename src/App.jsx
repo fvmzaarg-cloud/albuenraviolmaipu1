@@ -1804,11 +1804,40 @@ function AdminSeguridad({ db, setDb }) {
 }
 
 function AdminDashboard({ db, setDb, setRoute }) {
-  const today = new Date().toISOString().split('T')[0]
-  const todaysOrders = db.orders.filter(o => o.date.startsWith(today))
-  const totalSales = todaysOrders.reduce((acc, o) => acc + (o.status !== 'Cancelado' ? o.total : 0), 0)
+  // 👇 1. ESTADO PARA LA FECHA (Por defecto, hoy) 👇
+  const hoy = new Date().toISOString().split('T')[0];
+  const [fechaSeleccionada, setFechaSeleccionada] = useState(hoy);
 
-  const manualStatus = db.manualStatus || INITIAL_MANUAL_STATUS
+  // 👇 2. FILTRAMOS LOS PEDIDOS POR LA FECHA ELEGIDA 👇
+  const pedidosDelDia = db.orders.filter(o => o.date && o.date.startsWith(fechaSeleccionada));
+
+  // 👇 3. CALCULAMOS LOS TOTALES Y EL DESGLOSE 👇
+  let ventasTotales = 0;
+  let ventasEfectivo = 0;
+  let ventasTransferencia = 0;
+  let ventasLocal = 0;
+  let cantidadPedidosExitosos = 0;
+
+  pedidosDelDia.forEach(o => {
+    if (o.status !== 'Cancelado') {
+      ventasTotales += o.total || 0;
+      cantidadPedidosExitosos++;
+
+      // Leemos el texto que guardamos en paymentDetails para saber cómo pagó
+      const pago = (o.paymentDetails || '').toLowerCase();
+      
+      if (pago.includes('transferencia')) {
+        ventasTransferencia += o.total || 0;
+      } else if (pago.includes('local')) {
+        ventasLocal += o.total || 0;
+      } else if (pago.includes('efectivo')) {
+        ventasEfectivo += o.total || 0;
+      }
+    }
+  });
+
+  // --- LÓGICA DEL ESTADO DEL LOCAL ---
+  const manualStatus = db.manualStatus || INITIAL_MANUAL_STATUS;
 
   const handleToggleClose = () => {
     setDb(prev => ({
@@ -1822,7 +1851,6 @@ function AdminDashboard({ db, setDb, setRoute }) {
       manualStatus: { ...prev.manualStatus, message: e.target.value }
     }))
   }
-  
   const handlePromptChange = (e) => {
     setDb(prev => ({
       ...prev,
@@ -1832,18 +1860,58 @@ function AdminDashboard({ db, setDb, setRoute }) {
 
   return (
     <div className="space-y-4 animate-fadeIn pb-10">
-      <h2 className="text-xl font-bold text-gray-800">Resumen de Hoy</h2>
+      
+      {/* 👇 ENCABEZADO CON SELECTOR DE FECHA 👇 */}
+      <div className="flex justify-between items-center mb-2">
+        <h2 className="text-xl font-bold text-gray-800">Resumen de Ventas</h2>
+        <input
+          type="date"
+          value={fechaSeleccionada}
+          onChange={e => setFechaSeleccionada(e.target.value)}
+          className="text-sm border border-gray-300 rounded-lg px-2 py-1.5 bg-white outline-none focus:ring-2 focus:ring-[#c82a2a] text-gray-700 font-bold shadow-sm"
+        />
+      </div>
+
       <div className="grid grid-cols-2 gap-4">
         <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
-          <p className="text-xs text-gray-500 font-bold uppercase">Ventas Hoy</p>
-          <p className="text-2xl font-black text-gray-900 mt-1">{formatCurrency(totalSales)}</p>
+          <p className="text-xs text-gray-500 font-bold uppercase">Total Facturado</p>
+          <p className="text-2xl font-black text-green-600 mt-1">{formatCurrency(ventasTotales)}</p>
         </div>
         <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
-          <p className="text-xs text-gray-500 font-bold uppercase">Pedidos Hoy</p>
-          <p className="text-2xl font-black text-blue-600 mt-1">{todaysOrders.length}</p>
+          <p className="text-xs text-gray-500 font-bold uppercase">Pedidos Exitosos</p>
+          <p className="text-2xl font-black text-blue-600 mt-1">{cantidadPedidosExitosos}</p>
         </div>
       </div>
 
+      {/* 👇 NUEVO BLOQUE: DESGLOSE DE PAGOS 👇 */}
+      {cantidadPedidosExitosos > 0 && (
+        <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 mt-4 space-y-3">
+          <h3 className="text-xs text-gray-500 font-bold uppercase mb-2 border-b pb-2">Desglose por medio de pago</h3>
+          
+          <div className="flex justify-between items-center text-sm">
+            <span className="flex items-center gap-2 text-gray-700 font-medium">
+              🏦 Transferencias
+            </span>
+            <span className="font-bold">{formatCurrency(ventasTransferencia)}</span>
+          </div>
+          
+          <div className="flex justify-between items-center text-sm">
+            <span className="flex items-center gap-2 text-gray-700 font-medium">
+              🛵 Efectivo (Delivery)
+            </span>
+            <span className="font-bold">{formatCurrency(ventasEfectivo)}</span>
+          </div>
+          
+          <div className="flex justify-between items-center text-sm">
+            <span className="flex items-center gap-2 text-gray-700 font-medium">
+              🏪 Pago en Local (Retiros)
+            </span>
+            <span className="font-bold">{formatCurrency(ventasLocal)}</span>
+          </div>
+        </div>
+      )}
+
+      {/* --- RESTO DEL PANEL (ESTADO OPERATIVO Y CHEF IA) --- */}
       <div className="mt-6">
         <h3 className="font-bold text-gray-700 mb-3 flex items-center gap-2"><Store size={20} /> Estado Operativo</h3>
         <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 border-l-4 border-l-[#c82a2a] space-y-4">
@@ -1906,7 +1974,6 @@ function AdminDashboard({ db, setDb, setRoute }) {
     </div>
   )
 }
-
 function AdminPedidos({ db, setDb }) {
   const [ticketToPrint, setTicketToPrint] = useState(null)
 

@@ -2191,6 +2191,11 @@ if (ticketToPrint) {
                   <p><strong>Tel:</strong> {customer.phone || 'No dejó'}</p>
                   <p><strong>Tipo:</strong> {(order.type || 'retiro').toUpperCase()}</p>
                   
+                  {/* 👇 ACÁ AGREGAMOS EL MÉTODO DE PAGO 👇 */}
+                  <p className="text-blue-700 font-bold mt-1">
+                    💳 Pago: {order.paymentDetails || 'No especificado'}
+                  </p>
+                  
                   {order.type === 'delivery' && (
                     <div className="flex flex-col gap-1 mt-1">
                       <p>
@@ -2203,7 +2208,6 @@ if (ticketToPrint) {
                     <p className="text-red-600 font-bold mt-1">📝 Nota: {customer.notes}</p>
                   )}
                 </div>
-                
                 <div className="text-xs space-y-1 mb-2">
                   {items.map((i, idx) => (
                     <div key={idx} className="flex justify-between text-gray-600">

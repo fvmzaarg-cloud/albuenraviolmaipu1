@@ -14,8 +14,8 @@ const GOOGLE_MAPS_API_KEY = "AIzaSyBmiPXxoPbC5Y-cVaemlJnha8qLn4wCR9Q";
 // --- CONFIGURACIÓN DEL LOCAL ---
 const SHOP_PHONE = '5492613426085'
 const SHOP_ADDRESS = 'Centro Comercial Plaza Michelo, Palma y Maza, Maipú, Mendoza'
-const SHOP_LOGO = 'https://i.postimg.cc/TYHsxqMV/Copia_de_Logo_al_buen_raviol_(2).png'
-const CHEF_AVATAR = 'https://i.postimg.cc/vB77k5rp/chef.png'
+const SHOP_LOGO = '[https://i.postimg.cc/TYHsxqMV/Copia_de_Logo_al_buen_raviol_(2).png](https://i.postimg.cc/TYHsxqMV/Copia_de_Logo_al_buen_raviol_(2).png)'
+const CHEF_AVATAR = '[https://i.postimg.cc/vB77k5rp/chef.png](https://i.postimg.cc/vB77k5rp/chef.png)'
 
 // --- DATOS POR DEFECTO ---
 const INITIAL_CATEGORIES = [
@@ -27,10 +27,10 @@ const INITIAL_CATEGORIES = [
 ]
 
 const INITIAL_PRODUCTS = [
-  { id: 1, name: 'Ravioles de Carne y Verdura', description: 'Clásicos ravioles caseros rellenos de carne premium y espinaca fresca.', price: 4500, categoryId: 1, featured: true, active: true, unitType: 'unidad', image: 'https://images.unsplash.com/photo-1551183053-bf91a1d81141?auto=format&fit=crop&q=80&w=400' },
-  { id: 2, name: 'Ravioles de Ricota', description: 'Suaves ravioles de ricota magra y nuez.', price: 4500, categoryId: 1, featured: false, active: true, unitType: 'unidad', image: 'https://images.unsplash.com/photo-1551183053-bf91a1d81141?auto=format&fit=crop&q=80&w=400' },
-  { id: 3, name: 'Sorrentinos de Jamón y Queso', description: 'Abundante relleno de jamón cocido y muzzarella.', price: 5200, categoryId: 2, featured: true, active: true, unitType: 'unidad', image: 'https://images.unsplash.com/photo-1621996311239-53cbdf018245?auto=format&fit=crop&q=80&w=400' },
-  { id: 4, name: 'Tallarines al Huevo', description: 'Fideos frescos cortados a cuchillo.', price: 3000, categoryId: 3, featured: false, active: true, unitType: 'peso', image: 'https://images.unsplash.com/photo-1612874742237-6526221588e3?auto=format&fit=crop&q=80&w=400' },
+  { id: 1, name: 'Ravioles de Carne y Verdura', description: 'Clásicos ravioles caseros rellenos de carne premium y espinaca fresca.', price: 4500, categoryId: 1, featured: true, active: true, unitType: 'unidad', image: '[https://images.unsplash.com/photo-1551183053-bf91a1d81141?auto=format&fit=crop&q=80&w=400](https://images.unsplash.com/photo-1551183053-bf91a1d81141?auto=format&fit=crop&q=80&w=400)' },
+  { id: 2, name: 'Ravioles de Ricota', description: 'Suaves ravioles de ricota magra y nuez.', price: 4500, categoryId: 1, featured: false, active: true, unitType: 'unidad', image: '[https://images.unsplash.com/photo-1551183053-bf91a1d81141?auto=format&fit=crop&q=80&w=400](https://images.unsplash.com/photo-1551183053-bf91a1d81141?auto=format&fit=crop&q=80&w=400)' },
+  { id: 3, name: 'Sorrentinos de Jamón y Queso', description: 'Abundante relleno de jamón cocido y muzzarella.', price: 5200, categoryId: 2, featured: true, active: true, unitType: 'unidad', image: '[https://images.unsplash.com/photo-1621996311239-53cbdf018245?auto=format&fit=crop&q=80&w=400](https://images.unsplash.com/photo-1621996311239-53cbdf018245?auto=format&fit=crop&q=80&w=400)' },
+  { id: 4, name: 'Tallarines al Huevo', description: 'Fideos frescos cortados a cuchillo.', price: 3000, categoryId: 3, featured: false, active: true, unitType: 'peso', image: '[https://images.unsplash.com/photo-1612874742237-6526221588e3?auto=format&fit=crop&q=80&w=400](https://images.unsplash.com/photo-1612874742237-6526221588e3?auto=format&fit=crop&q=80&w=400)' },
 ]
 
 const INITIAL_SHIPPING_CONFIG = {
@@ -377,7 +377,6 @@ function ClientApp({ db, setDb, switchMode }) {
   )
 }
 
-// ✅ SE CORRIGIÓ EL BOTÓN DE NAVEGACIÓN PARA QUE ACEPTE IMÁGENES COMO ICONOS
 function ClientNavBtn({ Icon, label, active, onClick, badge }) {
   return (
     <button
@@ -701,7 +700,6 @@ function ChefAssistant({ db, onClose }) {
     setIsLoading(false)
   }
 
-  // ✅ SE CORRIGIÓ EL DIV FLOTANTE EN EL CHAT DE LA IA
   return (
     <div className="fixed inset-0 bg-black/60 z-50 flex items-end sm:items-center justify-center animate-fadeIn p-4 sm:p-0">
       <div className="bg-white w-full max-w-md rounded-2xl shadow-2xl flex flex-col h-[80vh] sm:h-[600px] overflow-hidden">
@@ -1520,7 +1518,7 @@ function AdminApp({ db, setDb, switchMode }) {
         if (!parlante) {
           parlante = document.createElement('audio');
           parlante.id = 'parlante-invencible';
-          parlante.src = 'https://cdnjs.cloudflare.com/ajax/libs/ion-sound/3.0.7/sounds/bell_ring.mp3';
+          parlante.src = '[https://cdnjs.cloudflare.com/ajax/libs/ion-sound/3.0.7/sounds/bell_ring.mp3](https://cdnjs.cloudflare.com/ajax/libs/ion-sound/3.0.7/sounds/bell_ring.mp3)';
           document.body.appendChild(parlante);
         }
         parlante.currentTime = 0;
@@ -1572,7 +1570,7 @@ function AdminApp({ db, setDb, switchMode }) {
               if (!parlante) {
                 parlante = document.createElement('audio');
                 parlante.id = 'parlante-invencible';
-                parlante.src = 'https://cdnjs.cloudflare.com/ajax/libs/ion-sound/3.0.7/sounds/bell_ring.mp3';
+                parlante.src = '[https://cdnjs.cloudflare.com/ajax/libs/ion-sound/3.0.7/sounds/bell_ring.mp3](https://cdnjs.cloudflare.com/ajax/libs/ion-sound/3.0.7/sounds/bell_ring.mp3)';
                 document.body.appendChild(parlante);
               }
               parlante.currentTime = 0;
@@ -2795,7 +2793,7 @@ function AdminCatalogo({ db, setDb }) {
 }
 
 function AdminCategorias({ db, setDb }) {
-  const [newCatName, setNewCatName] = useState('')
+  const [newCatName, useState] = React.useState('')
 
   const handleAdd = () => {
     if (!newCatName.trim()) return
@@ -3131,4 +3129,3 @@ function AdminBackup({ db, setDb }) {
     </div>
   )
 }
-```eof

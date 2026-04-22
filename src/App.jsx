@@ -3,7 +3,7 @@ import {
   Home, ShoppingCart, User, MapPin, Search, Plus, Minus, ChevronLeft,
   Trash2, Clock, CheckCircle, XCircle, Package, LayoutDashboard,
   ListOrdered, Settings, Store, MenuSquare, Truck, LogOut, Sparkles,
-  Send, X, ArrowUp, ArrowDown, KeyRound, Calculator, Banknote, CreditCard
+  Send, X, ArrowUp, ArrowDown, KeyRound,
 } from 'lucide-react'
 import { initializeApp } from 'firebase/app'
 import { getAuth, signInAnonymously, onAuthStateChanged } from 'firebase/auth'
@@ -14,8 +14,7 @@ const GOOGLE_MAPS_API_KEY = "AIzaSyBmiPXxoPbC5Y-cVaemlJnha8qLn4wCR9Q";
 // --- CONFIGURACIÓN DEL LOCAL ---
 const SHOP_PHONE = '5492613426085'
 const SHOP_ADDRESS = 'Centro Comercial Plaza Michelo, Palma y Maza, Maipú, Mendoza'
-const SHOP_LOGO = '[https://i.postimg.cc/TYHsxqMV/Copia_de_Logo_al_buen_raviol_(2).png](https://i.postimg.cc/TYHsxqMV/Copia_de_Logo_al_buen_raviol_(2).png)'
-const CHEF_AVATAR = '[https://i.postimg.cc/vB77k5rp/chef.png](https://i.postimg.cc/vB77k5rp/chef.png)'
+const SHOP_LOGO = 'https://i.postimg.cc/TYHsxqMV/Copia_de_Logo_al_buen_raviol_(2).png'
 
 // --- DATOS POR DEFECTO ---
 const INITIAL_CATEGORIES = [
@@ -27,10 +26,10 @@ const INITIAL_CATEGORIES = [
 ]
 
 const INITIAL_PRODUCTS = [
-  { id: 1, name: 'Ravioles de Carne y Verdura', description: 'Clásicos ravioles caseros rellenos de carne premium y espinaca fresca.', price: 4500, categoryId: 1, featured: true, active: true, unitType: 'unidad', image: '[https://images.unsplash.com/photo-1551183053-bf91a1d81141?auto=format&fit=crop&q=80&w=400](https://images.unsplash.com/photo-1551183053-bf91a1d81141?auto=format&fit=crop&q=80&w=400)' },
-  { id: 2, name: 'Ravioles de Ricota', description: 'Suaves ravioles de ricota magra y nuez.', price: 4500, categoryId: 1, featured: false, active: true, unitType: 'unidad', image: '[https://images.unsplash.com/photo-1551183053-bf91a1d81141?auto=format&fit=crop&q=80&w=400](https://images.unsplash.com/photo-1551183053-bf91a1d81141?auto=format&fit=crop&q=80&w=400)' },
-  { id: 3, name: 'Sorrentinos de Jamón y Queso', description: 'Abundante relleno de jamón cocido y muzzarella.', price: 5200, categoryId: 2, featured: true, active: true, unitType: 'unidad', image: '[https://images.unsplash.com/photo-1621996311239-53cbdf018245?auto=format&fit=crop&q=80&w=400](https://images.unsplash.com/photo-1621996311239-53cbdf018245?auto=format&fit=crop&q=80&w=400)' },
-  { id: 4, name: 'Tallarines al Huevo', description: 'Fideos frescos cortados a cuchillo.', price: 3000, categoryId: 3, featured: false, active: true, unitType: 'peso', image: '[https://images.unsplash.com/photo-1612874742237-6526221588e3?auto=format&fit=crop&q=80&w=400](https://images.unsplash.com/photo-1612874742237-6526221588e3?auto=format&fit=crop&q=80&w=400)' },
+  { id: 1, name: 'Ravioles de Carne y Verdura', description: 'Clásicos ravioles caseros rellenos de carne premium y espinaca fresca.', price: 4500, categoryId: 1, featured: true, active: true, unitType: 'unidad', image: 'https://images.unsplash.com/photo-1551183053-bf91a1d81141?auto=format&fit=crop&q=80&w=400' },
+  { id: 2, name: 'Ravioles de Ricota', description: 'Suaves ravioles de ricota magra y nuez.', price: 4500, categoryId: 1, featured: false, active: true, unitType: 'unidad', image: 'https://images.unsplash.com/photo-1551183053-bf91a1d81141?auto=format&fit=crop&q=80&w=400' },
+  { id: 3, name: 'Sorrentinos de Jamón y Queso', description: 'Abundante relleno de jamón cocido y muzzarella.', price: 5200, categoryId: 2, featured: true, active: true, unitType: 'unidad', image: 'https://images.unsplash.com/photo-1621996311239-53cbdf018245?auto=format&fit=crop&q=80&w=400' },
+  { id: 4, name: 'Tallarines al Huevo', description: 'Fideos frescos cortados a cuchillo.', price: 3000, categoryId: 3, featured: false, active: true, unitType: 'peso', image: 'https://images.unsplash.com/photo-1612874742237-6526221588e3?auto=format&fit=crop&q=80&w=400' },
 ]
 
 const INITIAL_SHIPPING_CONFIG = {
@@ -365,7 +364,7 @@ function ClientApp({ db, setDb, switchMode }) {
           badge={cartItemsCount}
         />
         <ClientNavBtn
-          Icon={CHEF_AVATAR}
+          Icon={Sparkles}
           label="Chef IA"
           active={showAssistant}
           onClick={() => setShowAssistant(true)}
@@ -385,15 +384,7 @@ function ClientNavBtn({ Icon, label, active, onClick, badge }) {
         active ? 'text-[#c82a2a]' : 'text-gray-500 hover:text-gray-800'
       }`}
     >
-      {typeof Icon === 'string' ? (
-        <img 
-          src={Icon} 
-          alt={label} 
-          className={`w-6 h-6 rounded-full object-cover ${active ? 'border-2 border-[#c82a2a]' : 'opacity-70 grayscale-[50%]'}`} 
-        />
-      ) : (
-        <Icon size={22} />
-      )}
+      <Icon size={22} />
       <span className="font-medium" style={{ fontSize: '0.65rem' }}>
         {label}
       </span>
@@ -704,27 +695,29 @@ function ChefAssistant({ db, onClose }) {
     <div className="fixed inset-0 bg-black/60 z-50 flex items-end sm:items-center justify-center animate-fadeIn p-4 sm:p-0">
       <div className="bg-white w-full max-w-md rounded-2xl shadow-2xl flex flex-col h-[80vh] sm:h-[600px] overflow-hidden">
         <div className="bg-[#cc292b] p-4 flex justify-between items-center text-white shrink-0">
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
+            {/* 👇 ACÁ VA LA FOTO EN EL ENCABEZADO 👇 */}
             <img 
-              src={CHEF_AVATAR} 
+              src="https://i.postimg.cc/vB77k5rp/chef.png" 
               alt="Chef IA" 
-              className="w-14 h-14 object-contain drop-shadow-md"
+              className="w-24 h-24 object-contain drop-shadow-md"
             />
-            <h3 className="font-bold text-xl">Chef IA</h3>
+            <h3 className="font-bold text-lg">Chef IA</h3>
           </div>
-          <button onClick={onClose} className="p-1.5 hover:bg-red-800 rounded-full transition-colors">
+          <button onClick={onClose} className="p-1.5 hover:bg-red-800 rounded-full">
             <X size={20} />
           </button>
         </div>
         <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-red-50/30">
-          {chat.map((msg, i) => (
+        {chat.map((msg, i) => (
             <div key={i} className={`flex gap-2 ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
               
+              {/* 👇 ACÁ APARECE LA FOTO AL LADO DE CADA RESPUESTA DEL CHEF 👇 */}
               {msg.role === 'assistant' && (
                 <img 
-                  src={CHEF_AVATAR} 
+                  src="https://i.postimg.cc/vB77k5rp/chef.png" 
                   alt="Chef" 
-                  className="w-10 h-10 object-contain drop-shadow-sm self-end mb-1 shrink-0" 
+                  className="w-14 h-14 object-contain drop-shadow-md"
                 />
               )}
 
@@ -755,7 +748,7 @@ function ChefAssistant({ db, onClose }) {
           <button
             onClick={handleSend}
             disabled={isLoading || !query.trim()}
-            className="bg-[#cc292b] text-white p-3 rounded-xl disabled:bg-red-300 hover:bg-red-800 transition-colors"
+            className="bg-[#cc292b] text-white p-3 rounded-xl disabled:bg-red-300 hover:bg-red-800"
           >
             <Send size={18} />
           </button>
@@ -764,7 +757,6 @@ function ChefAssistant({ db, onClose }) {
     </div>
   )
 }
-
 function ClientCart({ cart, updateQuantity, setRoute, cartTotal }) {
   return (
     <div className="flex flex-col h-full bg-white relative">
@@ -863,8 +855,10 @@ function ClientCheckout({ cart, cartTotal, db, setDb, setRoute, clearCart }) {
     if (!formData.name.trim()) errors.push('name')
     if (!formData.phone.trim()) errors.push('phone')
     
+    // Exigimos que existan las coordenadas si es delivery
     if (orderType === 'delivery' && (!formData.address.trim() || !deliveryCoords)) errors.push('address')
     
+    // Solo pedimos calcular el vuelto si es Delivery Y paga en efectivo
     if (paymentMethod === 'efectivo' && orderType === 'delivery') {
       const amount = parseFloat(cashAmount)
       if (isNaN(amount) || amount < finalTotal) errors.push('cashAmount')
@@ -880,6 +874,7 @@ function ClientCheckout({ cart, cartTotal, db, setDb, setRoute, clearCart }) {
       return
     }
 
+    // Preparamos el texto del pago para guardarlo en el ticket
     let paymentString = '';
     if (paymentMethod === 'transferencia') {
       paymentString = 'Transferencia';
@@ -889,29 +884,32 @@ function ClientCheckout({ cart, cartTotal, db, setDb, setRoute, clearCart }) {
       paymentString = `Efectivo (Abona con ${formatCurrency(Number(cashAmount))})`;
     }
 
+    // Calcula el número correlativo (arranca en 1001)
     const nextId = db.orders.length > 0 && !isNaN(parseInt(db.orders[0].id)) ? parseInt(db.orders[0].id) + 1 : 1000 + db.orders.length + 1;
     const newOrder = {
       id: nextId.toString(),
       date: new Date().toISOString(),
+      // 🔥 ACÁ LA MAGIA: Guardamos las coordenadas exactas de forma invisible
       customer: { ...formData, coords: deliveryCoords }, 
       type: orderType,
       items: cart,
       subtotal: cartTotal,
       shippingCost,
-      distance: shippingDistance,
+      distance: shippingDistance, // 👈 ¡ESTA ES LA LÍNEA MÁGICA QUE FALTABA!
       total: finalTotal,
       status: 'Recibido',
       paymentDetails: paymentString, 
     }
     setDb(prev => ({ ...prev, orders: [newOrder, ...prev.orders] }))
 
-    let text = `       *🥟 PEDIDO #${nextId} 🥟*\n\n*Hola Al Buen Raviol Maipú! Quiero hacer un pedido*\n\n`;
+    let text = `       *PEDIDO #${nextId} *\n\n*Hola Al Buen Raviol Maipú! Quiero hacer un pedido*\n\n`;
     text += `*Cliente:* ${formData.name}\n*Tel:* ${formData.phone}\n`;
     text += `*Tipo:* ${orderType === 'retiro' ? '🏪 Retiro por local' : '🛵 Delivery'}\n`;
     
     if (orderType === 'delivery') {
       text += `*Dirección:* ${formData.address}\n`;
-      if (deliveryCoords) text += `*Mapa:* http://googleusercontent.com/maps.google.com/?q=${deliveryCoords.lat},${deliveryCoords.lng}\n`
+      // Corregí el 5{ por un $ para que no te falle el link del mapa
+      if (deliveryCoords) text += `*Mapa:* https://maps.google.com/?q=${deliveryCoords.lat},${deliveryCoords.lng}\n`
     }
     
     if (formData.notes.trim()) {
@@ -929,6 +927,7 @@ function ClientCheckout({ cart, cartTotal, db, setDb, setRoute, clearCart }) {
     if (orderType === 'delivery') text += `*Envío:* ${formatCurrency(shippingCost)}\n`
     text += `*TOTAL A PAGAR: ${formatCurrency(finalTotal)}*\n\n`
 
+    // Armamos el texto del pago según si es retiro o delivery
     if (paymentMethod === 'transferencia') {
       text += `*Método de Pago:* 🏦 Transferencia\n*(El cliente enviará comprobante de transferencia)*\n`
     } else if (orderType === 'retiro') {
@@ -1332,155 +1331,6 @@ function MapPicker({ address, shopLocation, onAddressChange, onLocationSelect, i
 }
 
 // ==========================================
-// MÓDULO PUNTO DE VENTA (CAJA MOSTRADOR)
-// ==========================================
-function AdminCaja({ db, setDb }) {
-  const [cart, setCart] = useState([])
-  const [activeCategory, setActiveCategory] = useState(null)
-
-  const addToCart = product => {
-    const step = product.unitType === 'peso' ? 0.25 : 1
-    setCart(prev => {
-      const existing = prev.find(item => item.product.id === product.id)
-      if (existing)
-        return prev.map(item => (item.product.id === product.id ? { ...item, quantity: item.quantity + step } : item))
-      return [...prev, { product, quantity: step }]
-    })
-  }
-
-  const removeFromCart = productId => {
-    setCart(prev => prev.filter(item => item.product.id !== productId))
-  }
-
-  const cartTotal = cart.reduce((sum, item) => sum + item.product.price * item.quantity, 0)
-
-  const handleCobrar = metodoPago => {
-    if (cart.length === 0) return
-
-    const nextId = db.orders.length > 0 && !isNaN(parseInt(db.orders[0].id)) ? parseInt(db.orders[0].id) + 1 : 1000 + db.orders.length + 1
-
-    const newOrder = {
-      id: nextId.toString(),
-      date: new Date().toISOString(),
-      customer: { name: 'Venta Mostrador', phone: '-', address: '-' },
-      type: 'mostrador',
-      items: cart,
-      subtotal: cartTotal,
-      shippingCost: 0,
-      total: cartTotal,
-      status: 'Entregado', // Se marca entregado para que no moleste en la cocina
-      paymentDetails: metodoPago,
-    }
-
-    setDb(prev => ({ ...prev, orders: [newOrder, ...prev.orders] }))
-    setCart([])
-    alert(`✅ Venta registrada en caja: ${formatCurrency(cartTotal)}`)
-  }
-
-  const filteredProducts = activeCategory
-    ? db.products.filter(p => p.categoryId === activeCategory && p.active)
-    : db.products.filter(p => p.active)
-
-  return (
-    <div className="flex flex-col h-full relative animate-fadeIn">
-      <div className="flex justify-between items-center mb-4">
-        <h2 className="text-xl font-bold text-gray-800 flex items-center gap-2">
-          <Calculator size={24} className="text-[#c82a2a]" /> Punto de Venta
-        </h2>
-        <div className="bg-gray-900 text-green-400 font-mono font-bold px-3 py-1.5 rounded-lg text-lg">
-          {formatCurrency(cartTotal)}
-        </div>
-      </div>
-
-      <div className="flex overflow-x-auto gap-2 hide-scrollbar mb-4 pb-1">
-        <button
-          onClick={() => setActiveCategory(null)}
-          className={`whitespace-nowrap px-4 py-2 rounded-lg text-sm font-bold transition-colors ${
-            activeCategory === null ? 'bg-[#c82a2a] text-white shadow-md' : 'bg-white border border-gray-200 text-gray-600'
-          }`}
-        >
-          Todos
-        </button>
-        {db.categories.map(cat => (
-          <button
-            key={cat.id}
-            onClick={() => setActiveCategory(cat.id)}
-            className={`whitespace-nowrap px-4 py-2 rounded-lg text-sm font-bold transition-colors ${
-              activeCategory === cat.id ? 'bg-[#c82a2a] text-white shadow-md' : 'bg-white border border-gray-200 text-gray-600'
-            }`}
-          >
-            {cat.name}
-          </button>
-        ))}
-      </div>
-
-      <div className="flex-1 overflow-y-auto pb-48 hide-scrollbar">
-        <div className="grid grid-cols-3 gap-3 content-start">
-          {filteredProducts.map(p => (
-            <button
-              key={p.id}
-              onClick={() => addToCart(p)}
-              className="bg-white border border-gray-200 rounded-xl p-2 flex flex-col items-center justify-between h-28 shadow-sm hover:border-[#c82a2a] active:scale-95 transition-all"
-            >
-              <span className="text-[11px] font-bold text-gray-700 leading-tight text-center line-clamp-3">
-                {p.name}
-              </span>
-              <span className="text-sm font-black text-[#c82a2a] mt-2">
-                {formatCurrency(p.price)}
-              </span>
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {cart.length > 0 && (
-        <div className="absolute bottom-[-1rem] left-[-1rem] right-[-1rem] bg-white border-t-4 border-[#c82a2a] shadow-[0_-15px_30px_rgba(0,0,0,0.1)] flex flex-col z-50 rounded-t-2xl">
-          <div className="max-h-40 overflow-y-auto p-4 space-y-2 bg-gray-50 rounded-t-2xl">
-            {cart.map((item, idx) => (
-              <div key={idx} className="flex justify-between items-center text-sm border-b border-gray-200 pb-2">
-                <div className="flex items-center gap-2">
-                  <span className="bg-[#c82a2a] text-white font-bold px-2 py-0.5 rounded text-xs">
-                    {item.quantity} {item.product.unitType === 'peso' ? 'kg' : 'u'}
-                  </span>
-                  <span className="font-bold text-gray-800 line-clamp-1">{item.product.name}</span>
-                </div>
-                <div className="flex items-center gap-3">
-                  <span className="font-black text-gray-800">{formatCurrency(item.product.price * item.quantity)}</span>
-                  <button onClick={() => removeFromCart(item.product.id)} className="text-red-400 p-1">
-                    <X size={18} />
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
-          
-          <div className="p-4 bg-white flex gap-2">
-            <button
-              onClick={() => handleCobrar('Local (Efectivo)')}
-              className="flex-1 bg-green-600 text-white font-bold py-3 rounded-xl flex flex-col items-center justify-center gap-1 shadow-md active:scale-95 transition-transform"
-            >
-              <Banknote size={20} /> <span className="text-xs">Efectivo</span>
-            </button>
-            <button
-              onClick={() => handleCobrar('Local (MP/Tarjeta)')}
-              className="flex-1 bg-blue-600 text-white font-bold py-3 rounded-xl flex flex-col items-center justify-center gap-1 shadow-md active:scale-95 transition-transform"
-            >
-              <CreditCard size={20} /> <span className="text-xs">Tarjeta/MP</span>
-            </button>
-            <button
-              onClick={() => setCart([])}
-              className="w-14 bg-red-50 text-red-600 flex flex-col items-center justify-center rounded-xl font-bold shadow-sm active:scale-95 transition-transform"
-            >
-              <Trash2 size={20} />
-            </button>
-          </div>
-        </div>
-      )}
-    </div>
-  )
-}
-
-// ==========================================
 // ÁREA ADMINISTRADOR
 // ==========================================
 function AdminApp({ db, setDb, switchMode }) {
@@ -1518,7 +1368,7 @@ function AdminApp({ db, setDb, switchMode }) {
         if (!parlante) {
           parlante = document.createElement('audio');
           parlante.id = 'parlante-invencible';
-          parlante.src = '[https://cdnjs.cloudflare.com/ajax/libs/ion-sound/3.0.7/sounds/bell_ring.mp3](https://cdnjs.cloudflare.com/ajax/libs/ion-sound/3.0.7/sounds/bell_ring.mp3)';
+          parlante.src = 'https://cdnjs.cloudflare.com/ajax/libs/ion-sound/3.0.7/sounds/bell_ring.mp3';
           document.body.appendChild(parlante);
         }
         parlante.currentTime = 0;
@@ -1537,7 +1387,6 @@ function AdminApp({ db, setDb, switchMode }) {
   const renderView = () => {
     switch (adminRoute) {
       case 'dashboard': return <AdminDashboard db={db} setDb={setDb} setRoute={setAdminRoute} />
-      case 'caja': return <AdminCaja db={db} setDb={setDb} />
       case 'pedidos': return <AdminPedidos db={db} setDb={setDb} />
       case 'catalogo': return <AdminCatalogo db={db} setDb={setDb} />
       case 'categorias': return <AdminCategorias db={db} setDb={setDb} />
@@ -1570,7 +1419,7 @@ function AdminApp({ db, setDb, switchMode }) {
               if (!parlante) {
                 parlante = document.createElement('audio');
                 parlante.id = 'parlante-invencible';
-                parlante.src = '[https://cdnjs.cloudflare.com/ajax/libs/ion-sound/3.0.7/sounds/bell_ring.mp3](https://cdnjs.cloudflare.com/ajax/libs/ion-sound/3.0.7/sounds/bell_ring.mp3)';
+                parlante.src = 'https://cdnjs.cloudflare.com/ajax/libs/ion-sound/3.0.7/sounds/bell_ring.mp3';
                 document.body.appendChild(parlante);
               }
               parlante.currentTime = 0;
@@ -1600,9 +1449,8 @@ function AdminApp({ db, setDb, switchMode }) {
         {renderView()}
       </div>
 
-      <div className="bg-white border-t border-gray-200 flex justify-between px-2 py-2 pb-6 shrink-0 text-xs shadow-[0_-4px_10px_rgba(0,0,0,0.05)]">
+      <div className="bg-white border-t border-gray-200 flex justify-around p-2 pb-6 shrink-0 text-xs shadow-[0_-4px_10px_rgba(0,0,0,0.05)]">
         <NavBtn Icon={LayoutDashboard} label="Panel" active={adminRoute === 'dashboard'} onClick={() => setAdminRoute('dashboard')} />
-        <NavBtn Icon={Calculator} label="Caja" active={adminRoute === 'caja'} onClick={() => setAdminRoute('caja')} />
         <NavBtn Icon={ListOrdered} label="Pedidos" active={adminRoute === 'pedidos'} onClick={() => setAdminRoute('pedidos')} />
         <NavBtn Icon={MenuSquare} label="Catálogo" active={adminRoute === 'catalogo'} onClick={() => setAdminRoute('catalogo')} />
         <NavBtn Icon={Truck} label="Envíos" active={adminRoute === 'envios'} onClick={() => setAdminRoute('envios')} />
@@ -1956,25 +1804,26 @@ function AdminSeguridad({ db, setDb }) {
 }
 
 function AdminDashboard({ db, setDb, setRoute }) {
-  const today = new Date().toISOString().split('T')[0]
-  const [fechaSeleccionada, setFechaSeleccionada] = useState(today);
+  // 👇 1. ESTADO PARA LA FECHA (Por defecto, hoy) 👇
+  const hoy = new Date().toISOString().split('T')[0];
+  const [fechaSeleccionada, setFechaSeleccionada] = useState(hoy);
 
+  // 👇 2. FILTRAMOS LOS PEDIDOS POR LA FECHA ELEGIDA 👇
   const pedidosDelDia = db.orders.filter(o => o.date && o.date.startsWith(fechaSeleccionada));
 
+  // 👇 3. CALCULAMOS LOS TOTALES Y EL DESGLOSE 👇
   let ventasTotales = 0;
   let ventasEfectivo = 0;
   let ventasTransferencia = 0;
   let ventasLocal = 0;
   let cantidadPedidosExitosos = 0;
 
-  const ventasPorProducto = {};
-  const ventasPorCategoria = {};
-
   pedidosDelDia.forEach(o => {
     if (o.status !== 'Cancelado') {
       ventasTotales += o.total || 0;
       cantidadPedidosExitosos++;
 
+      // Leemos el texto que guardamos en paymentDetails para saber cómo pagó
       const pago = (o.paymentDetails || '').toLowerCase();
       
       if (pago.includes('transferencia')) {
@@ -1984,41 +1833,11 @@ function AdminDashboard({ db, setDb, setRoute }) {
       } else if (pago.includes('efectivo')) {
         ventasEfectivo += o.total || 0;
       }
-
-      const items = o.items || [];
-      items.forEach(item => {
-        const prod = item.product || {};
-        const catId = prod.categoryId || 0;
-        const qty = item.quantity || 0;
-        const subtotalItem = (prod.price || 0) * qty;
-
-        if (!ventasPorProducto[prod.id]) {
-          ventasPorProducto[prod.id] = {
-            nombre: prod.name || item.name || 'Desconocido',
-            cantidad: 0,
-            total: 0,
-            unidad: prod.unitType === 'peso' ? 'kg' : 'u'
-          };
-        }
-        ventasPorProducto[prod.id].cantidad += qty;
-        ventasPorProducto[prod.id].total += subtotalItem;
-
-        if (!ventasPorCategoria[catId]) {
-          const catInfo = db.categories.find(c => c.id === catId);
-          ventasPorCategoria[catId] = {
-            nombre: catInfo ? catInfo.name : 'Sin Categoría',
-            total: 0
-          };
-        }
-        ventasPorCategoria[catId].total += subtotalItem;
-      });
     }
   });
 
-  const productosOrdenados = Object.values(ventasPorProducto).sort((a, b) => b.total - a.total);
-  const categoriasOrdenadas = Object.values(ventasPorCategoria).sort((a, b) => b.total - a.total);
-
-  const manualStatus = db.manualStatus || INITIAL_MANUAL_STATUS
+  // --- LÓGICA DEL ESTADO DEL LOCAL ---
+  const manualStatus = db.manualStatus || INITIAL_MANUAL_STATUS;
 
   const handleToggleClose = () => {
     setDb(prev => ({
@@ -2032,7 +1851,6 @@ function AdminDashboard({ db, setDb, setRoute }) {
       manualStatus: { ...prev.manualStatus, message: e.target.value }
     }))
   }
-  
   const handlePromptChange = (e) => {
     setDb(prev => ({
       ...prev,
@@ -2042,6 +1860,8 @@ function AdminDashboard({ db, setDb, setRoute }) {
 
   return (
     <div className="space-y-4 animate-fadeIn pb-10">
+      
+      {/* 👇 ENCABEZADO CON SELECTOR DE FECHA 👇 */}
       <div className="flex justify-between items-center mb-2">
         <h2 className="text-xl font-bold text-gray-800">Resumen de Ventas</h2>
         <input
@@ -2063,54 +1883,35 @@ function AdminDashboard({ db, setDb, setRoute }) {
         </div>
       </div>
 
+      {/* 👇 NUEVO BLOQUE: DESGLOSE DE PAGOS 👇 */}
       {cantidadPedidosExitosos > 0 && (
-        <>
-          <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 mt-4 space-y-3">
-            <h3 className="text-xs text-gray-500 font-bold uppercase mb-2 border-b pb-2">Desglose de Caja</h3>
-            
-            <div className="flex justify-between items-center text-sm">
-              <span className="flex items-center gap-2 text-gray-700 font-medium">🏦 Transferencias</span>
-              <span className="font-bold">{formatCurrency(ventasTransferencia)}</span>
-            </div>
-            <div className="flex justify-between items-center text-sm">
-              <span className="flex items-center gap-2 text-gray-700 font-medium">🛵 Efectivo (Delivery)</span>
-              <span className="font-bold">{formatCurrency(ventasEfectivo)}</span>
-            </div>
-            <div className="flex justify-between items-center text-sm">
-              <span className="flex items-center gap-2 text-gray-700 font-medium">🏪 Pago en Local (Retiros)</span>
-              <span className="font-bold">{formatCurrency(ventasLocal)}</span>
-            </div>
+        <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 mt-4 space-y-3">
+          <h3 className="text-xs text-gray-500 font-bold uppercase mb-2 border-b pb-2">Desglose por medio de pago</h3>
+          
+          <div className="flex justify-between items-center text-sm">
+            <span className="flex items-center gap-2 text-gray-700 font-medium">
+              🏦 Transferencias
+            </span>
+            <span className="font-bold">{formatCurrency(ventasTransferencia)}</span>
           </div>
-
-          <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 mt-4 space-y-3">
-            <h3 className="text-xs text-gray-500 font-bold uppercase mb-2 border-b pb-2">Ventas por Categoría</h3>
-            {categoriasOrdenadas.map((cat, idx) => (
-              <div key={idx} className="flex justify-between items-center text-sm">
-                <span className="text-gray-700 font-medium">{cat.nombre}</span>
-                <span className="font-bold">{formatCurrency(cat.total)}</span>
-              </div>
-            ))}
+          
+          <div className="flex justify-between items-center text-sm">
+            <span className="flex items-center gap-2 text-gray-700 font-medium">
+              🛵 Efectivo (Delivery)
+            </span>
+            <span className="font-bold">{formatCurrency(ventasEfectivo)}</span>
           </div>
-
-          <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 mt-4 space-y-3">
-            <h3 className="text-xs text-gray-500 font-bold uppercase mb-2 border-b pb-2 flex items-center gap-2">
-              🏆 Ranking de Productos
-            </h3>
-            {productosOrdenados.map((prod, idx) => (
-              <div key={idx} className="flex justify-between items-center text-sm border-b border-gray-50 pb-2 last:border-0 last:pb-0">
-                <div className="flex flex-col">
-                  <span className="text-gray-800 font-bold">{prod.nombre}</span>
-                  <span className="text-xs text-gray-500 font-medium">
-                    Vendidos: {prod.cantidad} {prod.unidad}
-                  </span>
-                </div>
-                <span className="font-black text-[#c82a2a]">{formatCurrency(prod.total)}</span>
-              </div>
-            ))}
+          
+          <div className="flex justify-between items-center text-sm">
+            <span className="flex items-center gap-2 text-gray-700 font-medium">
+              🏪 Pago en Local (Retiros)
+            </span>
+            <span className="font-bold">{formatCurrency(ventasLocal)}</span>
           </div>
-        </>
+        </div>
       )}
 
+      {/* --- RESTO DEL PANEL (ESTADO OPERATIVO Y CHEF IA) --- */}
       <div className="mt-6">
         <h3 className="font-bold text-gray-700 mb-3 flex items-center gap-2"><Store size={20} /> Estado Operativo</h3>
         <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 border-l-4 border-l-[#c82a2a] space-y-4">
@@ -2140,10 +1941,7 @@ function AdminDashboard({ db, setDb, setRoute }) {
       </div>
 
       <div className="mt-6">
-        <h3 className="font-bold text-gray-700 mb-3 flex items-center gap-2">
-          <img src={CHEF_AVATAR} alt="Perfil Chef IA" className="w-9 h-9 rounded-full object-cover border-2 border-white shadow-sm" />
-          Entrenar al Chef IA
-        </h3>
+        <h3 className="font-bold text-gray-700 mb-3 flex items-center gap-2"><Sparkles size={20} className="text-[#fbb03b]"/> Entrenar al Chef IA</h3>
         <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 border-l-4 border-l-[#fbb03b]">
           <label className="block text-xs font-bold text-gray-600 mb-2">Instrucciones y Reglas (Ej: Porciones, Trato, Promos):</label>
           <textarea 
@@ -2176,7 +1974,6 @@ function AdminDashboard({ db, setDb, setRoute }) {
     </div>
   )
 }
-
 function AdminPedidos({ db, setDb }) {
   const [ticketToPrint, setTicketToPrint] = useState(null)
 
@@ -2189,17 +1986,19 @@ function AdminPedidos({ db, setDb }) {
     Cancelado: 'bg-red-100 text-red-800',
   }
 
+  // 👇 FUNCIÓN BLINDADA PARA REENVIAR AL CADETE 👇
   const reenviarACadete = (pedido) => {
     const cliente = pedido.customer || pedido.customerInfo || {};
     const items = pedido.items || [];
 
-    let texto = `🛵 *NUEVO ENVÍO - Al Buen Raviol*\n`;
+    let texto = `🛵 *NUEVO PEDIDO - Al Buen Raviol Maipú*\n`;
     texto += `       *📦 PEDIDO #${pedido.id} 📦*\n\n`;
     texto += `*Cliente:* ${cliente.name || 'Sin nombre'} (${cliente.phone || 'Sin teléfono'})\n`;
     texto += `*Dirección:* ${cliente.address || 'Falta dirección'}\n`;
     
+    // ✅ Enlace de Google Maps corregido
     if (cliente.coords) {
-      const mapUrl = `http://googleusercontent.com/maps.google.com/?q=${cliente.coords.lat},${cliente.coords.lng}`;
+      const mapUrl = `http://maps.google.com/?q=${cliente.coords.lat},${cliente.coords.lng}`;
       texto += `*Ubicación GPS:* ${mapUrl}\n`;
     }
 
@@ -2231,121 +2030,107 @@ function AdminPedidos({ db, setDb }) {
     window.open(url, '_blank');
   };
 
-  if (ticketToPrint) {
-    const order = ticketToPrint;
-    const items = order.items || [];
-    const customer = order.customer || order.customerInfo || {};
-    const subtotal = items.reduce((acc, i) => acc + ((i.product?.price || 0) * (i.quantity || 1)), 0);
-
-    return (
-      <div className="fixed inset-0 bg-white z-[99999] overflow-y-auto print:overflow-visible">
-        <style>{`
-          @media print {
-            @page { margin: 0; size: 58mm auto; }
-            body { margin: 0; padding: 0; background: white; }
-            * { font-weight: 900 !important; color: #000 !important; }
-            .ocultar-en-ticket { display: none !important; }
-          }
-        `}</style>
-
-        <div className="ocultar-en-ticket flex gap-2 p-4 bg-gray-100 border-b sticky top-0 shadow-sm">
-          <button onClick={() => setTicketToPrint(null)} className="bg-gray-500 text-white px-4 py-3 rounded-xl font-bold flex items-center gap-2">
-            <ChevronLeft size={20} /> Volver
-          </button>
-          <button onClick={() => window.print()} className="flex-1 bg-[#25D366] text-white font-bold py-3 rounded-xl shadow-lg flex items-center justify-center gap-2 active:scale-95 transition-transform">
-            🖨️ MANDAR A TICKETERA
-          </button>
-        </div>
-
-        <div style={{ width: '100%', maxWidth: '58mm', margin: '0 auto', padding: '2mm', fontFamily: 'Calibri, Arial, sans-serif', fontSize: '14px', color: '#000', lineHeight: '1.2' }}>
-          <div style={{ textAlign: 'center', fontSize: '18px', fontWeight: 'bold' }}>AL BUEN RAVIOL MAIPÚ</div>
-          <div style={{ borderTop: '2px dashed #000', margin: '8px 0' }}></div>    
-          
-          <div style={{ textAlign: 'center' }}>
-            <div style={{ fontSize: '28px', fontWeight: '900', margin: '4px 0', padding: '4px 0', borderTop: '2px solid #000', borderBottom: '2px solid #000' }}>
-              #{order.id}
-            </div>
-            <div>Fecha: {order.date ? new Date(order.date).toLocaleString('es-AR') : 'Sin fecha'}</div>
-            <div style={{ marginTop: '3px' }}>Cliente: {customer.name || 'Sin nombre'}</div>
-            <div>Tel: {customer.phone || '-'}</div>
-            <div style={{ fontSize: '16px', marginTop: '5px', fontWeight: 'bold' }}>
-              Tipo: {(order.type || 'Local').toUpperCase()}
-            </div>
-            {order.type === 'delivery' && customer.address && (
-              <div style={{ marginTop: '3px' }}>Dir: {customer.address}</div>
-            )}
-          </div>
-          
-          <div style={{ borderTop: '2px dashed #000', margin: '8px 0' }}></div>
-          
-          {items.map((i, idx) => (
-            <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', marginBottom: '4px' }}>
-              <span style={{ flex: 1, paddingRight: '5px' }}>
-                {i.quantity} {i.product?.unitType === 'peso' ? 'kg' : 'u'} x {i.product?.name || i.name}
-              </span>
-              <span>{formatCurrency((i.product?.price || 0) * i.quantity)}</span>
-            </div>
-          ))}
-          
-          <div style={{ borderTop: '2px dashed #000', margin: '8px 0' }}></div>
-          
-          <div style={{ fontSize: '14px', marginBottom: '6px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '2px' }}>
-              <span>Subtotal:</span>
-              <span>{formatCurrency(subtotal)}</span>
-            </div>
-            {order.type === 'delivery' && (
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '2px' }}>
-                <span>Envío:</span>
-                <span>{formatCurrency(order.shippingCost || 0)}</span>
-              </div>
-            )}
-          </div>
-
-          <div style={{ borderTop: '2px dashed #000', margin: '8px 0' }}></div>
-          
-          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '18px', marginTop: '6px', fontWeight: 'bold' }}>
-            <span>TOTAL:</span>
-            <span>{formatCurrency(order.total || 0)}</span>
-          </div>
-
-          {customer.notes && (
-            <>
-              <div style={{ borderTop: '2px dashed #000', margin: '8px 0' }}></div>
-              <div style={{ fontSize: '14px', textAlign: 'left', fontWeight: 'bold' }}>
-                NOTA: {customer.notes}
-              </div>
-            </>
-          )}
-          
-          <div style={{ textAlign: 'center', marginTop: '15px', fontSize: '12px' }}>
-            ¡Gracias por su compra!
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  const borrarTodosLosPedidos = () => {
-    const confirmar = window.confirm('⚠️ ¿Estás totalmente seguro de borrar TODOS los pedidos? Esta acción no se puede deshacer y el contador volverá al #1001.');
-    if (confirmar) {
-      setDb(prev => ({ ...prev, orders: [] }));
-    }
-  };
+// --- PANTALLA DE TICKET COMPLETO ---
+if (ticketToPrint) {
+  const order = ticketToPrint;
+  const items = order.items || [];
+  const customer = order.customer || order.customerInfo || {};
+  const subtotal = items.reduce((acc, i) => acc + ((i.product?.price || 0) * (i.quantity || 1)), 0);
 
   return (
-    <div className="space-y-4 animate-fadeIn">
-      <div className="flex justify-between items-center">
-        <h2 className="text-xl font-bold text-gray-800">Gestión de Pedidos</h2>
-        {db.orders && db.orders.length > 0 && (
-          <button
-            onClick={borrarTodosLosPedidos}
-            className="bg-red-50 text-red-600 hover:bg-red-100 px-3 py-1.5 rounded-lg text-sm font-bold flex gap-2 items-center transition-colors border border-red-200"
-          >
-            <Trash2 size={16} /> Borrar Todo
-          </button>
-        )}
+    <div className="fixed inset-0 bg-white z-[99999] overflow-y-auto print:overflow-visible">
+      <style>{`
+        @media print {
+          @page { margin: 0; size: 58mm auto; }
+          body { margin: 0; padding: 0; background: white; }
+          * { font-weight: 900 !important; color: #000 !important; }
+          .ocultar-en-ticket { display: none !important; }
+        }
+      `}</style>
+
+      <div className="ocultar-en-ticket flex gap-2 p-4 bg-gray-100 border-b sticky top-0 shadow-sm">
+        <button onClick={() => setTicketToPrint(null)} className="bg-gray-500 text-white px-4 py-3 rounded-xl font-bold flex items-center gap-2">
+          <ChevronLeft size={20} /> Volver
+        </button>
+        <button onClick={() => window.print()} className="flex-1 bg-[#25D366] text-white font-bold py-3 rounded-xl shadow-lg flex items-center justify-center gap-2 active:scale-95 transition-transform">
+          🖨️ MANDAR A TICKETERA
+        </button>
       </div>
+
+      <div style={{ width: '100%', maxWidth: '58mm', margin: '0 auto', padding: '2mm', fontFamily: 'Calibri, Arial, sans-serif', fontSize: '14px', color: '#000', lineHeight: '1.2' }}>
+        <div style={{ textAlign: 'center', fontSize: '18px', fontWeight: 'bold' }}>AL BUEN RAVIOL MAIPÚ</div>
+        <div style={{ borderTop: '2px dashed #000', margin: '8px 0' }}></div>    
+        
+        {/* ✅ TICKET CORREGIDO: Letra gigante solo para el número */}
+        <div style={{ textAlign: 'center' }}>
+          <div style={{ fontSize: '28px', fontWeight: '900', margin: '4px 0', padding: '4px 0', borderTop: '2px solid #000', borderBottom: '2px solid #000' }}>
+            #{order.id}
+          </div>
+          <div>Fecha: {order.date ? new Date(order.date).toLocaleString('es-AR') : 'Sin fecha'}</div>
+          <div style={{ marginTop: '3px' }}>Cliente: {customer.name || 'Sin nombre'}</div>
+          <div>Tel: {customer.phone || '-'}</div>
+          <div style={{ fontSize: '16px', marginTop: '5px', fontWeight: 'bold' }}>
+            Tipo: {(order.type || 'Local').toUpperCase()}
+          </div>
+          {order.type === 'delivery' && customer.address && (
+            <div style={{ marginTop: '3px' }}>Dir: {customer.address}</div>
+          )}
+        </div>
+        
+        <div style={{ borderTop: '2px dashed #000', margin: '8px 0' }}></div>
+        
+        {items.map((i, idx) => (
+          <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', marginBottom: '4px' }}>
+            <span style={{ flex: 1, paddingRight: '5px' }}>
+              {i.quantity} {i.product?.unitType === 'peso' ? 'kg' : 'u'} x {i.product?.name || i.name}
+            </span>
+            <span>{formatCurrency((i.product?.price || 0) * i.quantity)}</span>
+          </div>
+        ))}
+        
+        <div style={{ borderTop: '2px dashed #000', margin: '8px 0' }}></div>
+        
+        <div style={{ fontSize: '14px', marginBottom: '6px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '2px' }}>
+            <span>Subtotal:</span>
+            <span>{formatCurrency(subtotal)}</span>
+          </div>
+          {order.type === 'delivery' && (
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '2px' }}>
+              <span>Envío:</span>
+              <span>{formatCurrency(order.shippingCost || 0)}</span>
+            </div>
+          )}
+        </div>
+
+        <div style={{ borderTop: '2px dashed #000', margin: '8px 0' }}></div>
+        
+        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '18px', marginTop: '6px', fontWeight: 'bold' }}>
+          <span>TOTAL:</span>
+          <span>{formatCurrency(order.total || 0)}</span>
+        </div>
+
+        {customer.notes && (
+          <>
+            <div style={{ borderTop: '2px dashed #000', margin: '8px 0' }}></div>
+            <div style={{ fontSize: '14px', textAlign: 'left', fontWeight: 'bold' }}>
+              NOTA: {customer.notes}
+            </div>
+          </>
+        )}
+        
+        <div style={{ textAlign: 'center', marginTop: '15px', fontSize: '12px' }}>
+          ¡Gracias por su compra!
+        </div>
+      </div>
+    </div>
+  );
+}
+
+  // --- LISTA DE PEDIDOS BLINDADA ---
+  return (
+    <div className="space-y-4 animate-fadeIn">
+      <h2 className="text-xl font-bold text-gray-800">Gestión de Pedidos</h2>
       {!db.orders || db.orders.length === 0 ? (
         <p className="text-gray-500 text-center py-10">No hay pedidos registrados.</p>
       ) : (
@@ -2378,6 +2163,7 @@ function AdminPedidos({ db, setDb }) {
                         <option value="Cancelado">Cancelado</option>
                       </select>
                       
+                      {/* 👇 CRUZ PARA BORRAR EL PEDIDO INDIVIDUAL 👇 */}
                       <button
                         onClick={() => {
                           const confirmar = window.confirm(`⚠️ ¿Confirmás que querés borrar definitivamente el pedido #${order.id}?`);
@@ -2399,12 +2185,13 @@ function AdminPedidos({ db, setDb }) {
                       🖨️ Imprimir
                     </button>
                   </div>
-                </div> 
+                </div> {/* ✅ DIV DE CIERRE AGREGADO */}
 
                 <div className="text-sm bg-gray-50 p-2 rounded mb-2">
                   <p><strong>Tel:</strong> {customer.phone || 'No dejó'}</p>
                   <p><strong>Tipo:</strong> {(order.type || 'retiro').toUpperCase()}</p>
                   
+                  {/* 👇 ACÁ AGREGAMOS EL MÉTODO DE PAGO 👇 */}
                   <p className="text-blue-700 font-bold mt-1">
                     💳 Pago: {order.paymentDetails || 'No especificado'}
                   </p>
@@ -2421,7 +2208,6 @@ function AdminPedidos({ db, setDb }) {
                     <p className="text-red-600 font-bold mt-1">📝 Nota: {customer.notes}</p>
                   )}
                 </div>
-                
                 <div className="text-xs space-y-1 mb-2">
                   {items.map((i, idx) => (
                     <div key={idx} className="flex justify-between text-gray-600">
@@ -2450,13 +2236,14 @@ function AdminPedidos({ db, setDb }) {
                   <span className="font-black text-gray-900">{formatCurrency(order.total || 0)}</span>
                 </div>
 
+               {/* ✅ MAPA CORREGIDO */}
                {order.type === 'delivery' && customer?.coords && (
                   <div className="mt-4 p-3 bg-blue-50 border border-blue-100 rounded-lg text-sm">
                     <span className="font-bold text-blue-800 flex items-center gap-1 mb-1">
                       📍 Ubicación GPS:
                     </span>
                     <a 
-                      href={`http://googleusercontent.com/maps.google.com/?q=${customer.coords.lat},${customer.coords.lng}`} 
+                      href={`http://maps.google.com/?q=${customer.coords.lat},${customer.coords.lng}`} 
                       target="_blank" 
                       rel="noreferrer" 
                       className="text-blue-600 underline font-bold flex items-center gap-1"
@@ -2793,7 +2580,7 @@ function AdminCatalogo({ db, setDb }) {
 }
 
 function AdminCategorias({ db, setDb }) {
-  const [newCatName, useState] = React.useState('')
+  const [newCatName, setNewCatName] = useState('')
 
   const handleAdd = () => {
     if (!newCatName.trim()) return

@@ -203,7 +203,7 @@ export default function App() {
     })
   }
 
-  if (!dbState) return <div className="min-h-screen bg-gray-100 flex flex-col items-center justify-center"><div className="w-12 h-12 border-4 border-[#cc292b] border-t-transparent rounded-full animate-spin mb-4"></div><p className="font-bold text-gray-600 animate-pulse">Cargando sistema...</p></div>
+  if (!dbState) return <div className="min-h-screen bg-gray-100 flex flex-col items-center justify-center"><div className="w-12 h-12 border-4 border-[#cc292b] border-t-transparent rounded-full animate-spin mb-4"></div><p className="font-bold text-gray-600 animate-pulse">Amasando las pastas...</p></div>
 
   return (
     <div className="min-h-[100dvh] bg-gray-100 font-sans text-gray-800">

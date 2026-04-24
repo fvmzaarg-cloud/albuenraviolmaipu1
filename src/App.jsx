@@ -272,7 +272,7 @@ export default function App() {
     return (
       <div className="min-h-screen bg-gray-100 flex flex-col items-center justify-center">
         <div className="w-12 h-12 border-4 border-[#cc292b] border-t-transparent rounded-full animate-spin mb-4"></div>
-        <p className="font-bold text-gray-600 animate-pulse">Cocinando los ravioles...</p>
+        <p className="font-bold text-gray-600 animate-pulse">Amasando las pastas...</p>
       </div>
     )
   }

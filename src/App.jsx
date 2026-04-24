@@ -964,9 +964,98 @@ function AdminEnvios({ db, setDb }) {
 }
 
 function AdminMediosPago({ db, setDb }) {
-  const [methods, setMethods] = useState(db.paymentMethods || INITIAL_PAYMENT_METHODS); const [saved, setSaved] = useState(false); const handleSave = () => { setDb(prev => ({ ...prev, paymentMethods: methods })); setSaved(true); setTimeout(() => setSaved(false), 3000); };
+  const [methods, setMethods] = useState(db.paymentMethods || INITIAL_PAYMENT_METHODS);
+  const [saved, setSaved] = useState(false);
+  const [newMethodName, setNewMethodName] = useState('');
+  const [newMethodType, setNewMethodType] = useState('transfer');
+  const [confirmObj, setConfirmObj] = useState(null);
+
+  const handleSave = () => { setDb(prev => ({ ...prev, paymentMethods: methods })); setSaved(true); setTimeout(() => setSaved(false), 3000); };
   const updateMethod = (id, field, value) => { setMethods(prev => prev.map(m => m.id === id ? { ...m, [field]: value } : m)); };
-  return ( <div className="space-y-4 animate-fadeIn pb-10"><h2 className="text-xl font-bold text-gray-800 flex items-center gap-2"><Wallet size={24} /> Medios de Pago</h2><p className="text-xs text-gray-500">Configurá cómo te pueden pagar tus clientes, tanto en la web como en el local.</p><div className="space-y-3">{methods.map(pm => (<div key={pm.id} className={`bg-white p-4 rounded-xl border transition-all ${pm.active ? 'border-green-300 shadow-sm' : 'border-gray-200 opacity-60'}`}><div className="flex justify-between items-center mb-3"><div className="flex items-center gap-2">{pm.type === 'cash' ? <Banknote className={pm.active ? 'text-green-600' : 'text-gray-400'} /> : pm.type === 'transfer' ? <Wallet className={pm.active ? 'text-blue-600' : 'text-gray-400'} /> : <CreditCard className={pm.active ? 'text-purple-600' : 'text-gray-400'} />}<span className="font-bold text-gray-800 text-sm">{pm.name}</span></div><label className="flex items-center gap-2 text-sm font-bold cursor-pointer"><span className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none shadow-inner ${pm.active ? 'bg-green-500' : 'bg-red-500'}`}><input type="checkbox" className="sr-only" checked={pm.active} onChange={e => updateMethod(pm.id, 'active', e.target.checked)} /><span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${pm.active ? 'translate-x-6' : 'translate-x-1'}`} /></span></label></div>{pm.active && (<div className="space-y-3 animate-fadeIn"><div className="bg-gray-50 p-2 rounded-lg border border-gray-200"><h4 className="text-[10px] font-bold text-gray-500 uppercase mb-1">¿Dónde se muestra?</h4><div className="flex gap-4"><label className="flex items-center gap-1 text-xs font-bold cursor-pointer text-gray-800"><input type="checkbox" className="w-4 h-4 accent-blue-600" checked={pm.showInWeb !== false} onChange={e => updateMethod(pm.id, 'showInWeb', e.target.checked)} /> App Web</label><label className="flex items-center gap-1 text-xs font-bold cursor-pointer text-gray-800"><input type="checkbox" className="w-4 h-4 accent-green-600" checked={pm.showInPOS !== false} onChange={e => updateMethod(pm.id, 'showInPOS', e.target.checked)} /> Caja TPV (Local)</label></div></div>{(pm.type === 'transfer' || pm.type === 'local') && (<div className="pt-2"><label className="block text-[10px] font-bold text-gray-500 uppercase mb-1">Mensaje para el cliente (Alias, CBU, Links):</label><textarea value={pm.details || ''} onChange={e => updateMethod(pm.id, 'details', e.target.value)} placeholder="Ej: Transferir al Alias ABRMAIPU..." className="w-full bg-white border border-gray-200 rounded p-2 text-sm outline-none focus:ring-1 focus:ring-[#c82a2a] resize-none h-16" /></div>)}</div>)}</div>))}</div><button onClick={handleSave} className="w-full bg-green-600 text-white font-bold py-3 rounded-lg shadow-lg active:scale-95 transition-transform">{saved ? 'Guardado Exitosamente' : 'Guardar Medios de Pago'}</button></div> )
+
+  const handleAdd = () => {
+    if (!newMethodName.trim()) return;
+    const newMethod = {
+      id: 'pm_' + Date.now(),
+      name: newMethodName.trim(),
+      active: true,
+      showInWeb: true,
+      showInPOS: true,
+      type: newMethodType,
+      details: ''
+    };
+    setMethods(prev => [...prev, newMethod]);
+    setNewMethodName('');
+  };
+
+  const handleDelete = (id) => {
+    setConfirmObj({
+      msg: '¿Seguro que querés eliminar este medio de pago?',
+      action: () => setMethods(prev => prev.filter(m => m.id !== id))
+    });
+  };
+
+  return ( 
+    <div className="space-y-4 animate-fadeIn pb-10">
+      <CustomConfirm isOpen={!!confirmObj} message={confirmObj?.msg} onConfirm={confirmObj?.action} onCancel={() => setConfirmObj(null)} />
+      
+      <h2 className="text-xl font-bold text-gray-800 flex items-center gap-2"><Wallet size={24} /> Medios de Pago</h2>
+      <p className="text-xs text-gray-500">Configurá cómo te pueden pagar tus clientes, tanto en la web como en el local.</p>
+      
+      <div className="flex flex-col gap-2 bg-white p-3 rounded-xl border border-gray-200">
+        <label className="text-[10px] font-bold text-gray-500 uppercase">Agregar nuevo:</label>
+        <div className="flex gap-2">
+          <input type="text" placeholder="Ej: Modo, Cuenta DNI..." value={newMethodName} onChange={e => setNewMethodName(e.target.value)} className="flex-1 border rounded px-3 py-2 text-sm outline-none bg-gray-50 focus:ring-1 focus:ring-green-500" />
+          <select value={newMethodType} onChange={e => setNewMethodType(e.target.value)} className="border rounded px-2 py-2 text-sm outline-none bg-gray-50">
+             <option value="cash">Billete</option>
+             <option value="transfer">Virtual</option>
+             <option value="local">Posnet</option>
+          </select>
+          <button onClick={handleAdd} className="bg-green-600 text-white px-4 py-2 rounded font-bold"><Plus size={16} /></button>
+        </div>
+      </div>
+
+      <div className="space-y-3">
+        {methods.map(pm => (
+          <div key={pm.id} className={`bg-white p-4 rounded-xl border transition-all ${pm.active ? 'border-green-300 shadow-sm' : 'border-gray-200 opacity-60'}`}>
+            <div className="flex justify-between items-center mb-3">
+              <div className="flex items-center gap-2 flex-1 mr-2">
+                {pm.type === 'cash' ? <Banknote className={pm.active ? 'text-green-600' : 'text-gray-400'} size={20}/> : pm.type === 'transfer' ? <Wallet className={pm.active ? 'text-blue-600' : 'text-gray-400'} size={20}/> : <CreditCard className={pm.active ? 'text-purple-600' : 'text-gray-400'} size={20}/>}
+                <input type="text" value={pm.name} onChange={e => updateMethod(pm.id, 'name', e.target.value)} className="font-bold text-gray-800 text-sm bg-transparent outline-none border-b border-dashed border-transparent hover:border-gray-300 focus:border-green-500 w-full pb-0.5" />
+              </div>
+              <div className="flex items-center gap-3 shrink-0">
+                <button onClick={() => handleDelete(pm.id)} className="text-red-400 hover:bg-red-50 p-1.5 rounded"><Trash2 size={16} /></button>
+                <label className="flex items-center gap-2 text-sm font-bold cursor-pointer">
+                  <span className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none shadow-inner ${pm.active ? 'bg-green-500' : 'bg-red-500'}`}>
+                    <input type="checkbox" className="sr-only" checked={pm.active} onChange={e => updateMethod(pm.id, 'active', e.target.checked)} />
+                    <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${pm.active ? 'translate-x-6' : 'translate-x-1'}`} />
+                  </span>
+                </label>
+              </div>
+            </div>
+            {pm.active && (
+              <div className="space-y-3 animate-fadeIn">
+                <div className="bg-gray-50 p-2 rounded-lg border border-gray-200">
+                  <h4 className="text-[10px] font-bold text-gray-500 uppercase mb-1">¿Dónde se muestra?</h4>
+                  <div className="flex gap-4">
+                    <label className="flex items-center gap-1 text-xs font-bold cursor-pointer text-gray-800"><input type="checkbox" className="w-4 h-4 accent-blue-600" checked={pm.showInWeb !== false} onChange={e => updateMethod(pm.id, 'showInWeb', e.target.checked)} /> App Web</label>
+                    <label className="flex items-center gap-1 text-xs font-bold cursor-pointer text-gray-800"><input type="checkbox" className="w-4 h-4 accent-green-600" checked={pm.showInPOS !== false} onChange={e => updateMethod(pm.id, 'showInPOS', e.target.checked)} /> Caja TPV (Local)</label>
+                  </div>
+                </div>
+                {(pm.type === 'transfer' || pm.type === 'local') && (
+                  <div className="pt-2">
+                    <label className="block text-[10px] font-bold text-gray-500 uppercase mb-1">Mensaje para el cliente (Alias, CBU, Links):</label>
+                    <textarea value={pm.details || ''} onChange={e => updateMethod(pm.id, 'details', e.target.value)} placeholder="Ej: Transferir al Alias ABRMAIPU..." className="w-full bg-white border border-gray-200 rounded p-2 text-sm outline-none focus:ring-1 focus:ring-[#c82a2a] resize-none h-16" />
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+      <button onClick={handleSave} className="w-full bg-green-600 text-white font-bold py-3 rounded-lg shadow-lg active:scale-95 transition-transform">{saved ? 'Guardado Exitosamente' : 'Guardar Medios de Pago'}</button>
+    </div> 
+  )
 }
 
 function AdminLocationPicker({ location, onChange }) {

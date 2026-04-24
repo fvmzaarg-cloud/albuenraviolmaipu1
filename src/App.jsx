@@ -4,7 +4,7 @@ import {
   Trash2, Clock, CheckCircle, XCircle, Package, LayoutDashboard,
   ListOrdered, Settings, Store, MenuSquare, Truck, LogOut, Sparkles,
   Send, X, ArrowUp, ArrowDown, KeyRound, Calculator, Banknote, CreditCard,
-  Boxes, Wallet, Settings2, Percent, Smartphone, Printer, Save, FileText, Barcode, Tag, Image as ImageIcon, TrendingUp, Calendar, AlertTriangle
+  Boxes, Wallet, Settings2, Percent, Smartphone, Printer, Save, FileText, Barcode, Tag, Image as ImageIcon, TrendingUp, Calendar, AlertTriangle, QrCode, HandCoins
 } from 'lucide-react'
 import { initializeApp } from 'firebase/app'
 import { getAuth, signInAnonymously, onAuthStateChanged } from 'firebase/auth'
@@ -36,11 +36,14 @@ const INITIAL_PRODUCTS = [
 
 const INITIAL_SHIPPING_CONFIG = { tier1: 1000, tier2: 1500, tier3: 2000, extra: 500, shopLocation: { lat: -32.9850886, lng: -68.7986076 } }
 const INITIAL_SCHEDULE = { 0: [], 1: [{ open: '09:30', close: '23:30' }], 2: [{ open: '09:30', close: '23:30' }], 3: [{ open: '09:30', close: '23:30' }], 4: [{ open: '09:30', close: '23:30' }], 5: [{ open: '09:30', close: '23:30' }], 6: [{ open: '09:30', close: '23:30' }] }
+
+// --- NUEVA ESTRUCTURA DE MEDIOS DE PAGO ---
 const INITIAL_PAYMENT_METHODS = [
-  { id: 'efvo', name: 'Efectivo', active: true, showInWeb: true, showInPOS: true, type: 'cash', details: '' },
-  { id: 'transf', name: 'Transferencia', active: true, showInWeb: true, showInPOS: true, type: 'transfer', details: 'Alias: ABRMAIPU' },
-  { id: 'tarj', name: 'Tarjeta / MP en Local', active: true, showInWeb: false, showInPOS: true, type: 'local', details: '' }
+  { id: 'efvo', name: 'Efectivo', active: true, showInDelivery: true, showInPickup: false, showInPOS: true, type: 'cash', details: '' },
+  { id: 'transf', name: 'Transferencia', active: true, showInDelivery: true, showInPickup: true, showInPOS: true, type: 'transfer', details: 'Alias: ABRMAIPU' },
+  { id: 'tarj', name: 'Pago en Local (Efectivo/Tarjeta/MP)', active: true, showInDelivery: false, showInPickup: true, showInPOS: true, type: 'local', details: '' }
 ]
+
 const INITIAL_ADMIN_AUTH = { email: 'albuenraviolmaipu@gmail.com', passHash: '', recoveryHash: '', isConfigured: false, geminiKey: '' }
 const INITIAL_MANUAL_STATUS = { isClosed: false, message: '¡Estamos tomando pedidos! 🔥', chefPrompt: 'Reglas del local: 2 planchas rinden para 3 personas.' } 
 
@@ -153,8 +156,27 @@ export default function App() {
       const unsubscribe = onSnapshot(docRef, docSnap => {
           if (docSnap.exists()) {
             const data = docSnap.data();
-            if (!data.paymentMethods) data.paymentMethods = INITIAL_PAYMENT_METHODS;
-            data.paymentMethods = data.paymentMethods.map(pm => ({...pm, showInWeb: pm.showInWeb !== false, showInPOS: pm.showInPOS !== false}));
+            
+            // --- Migración de datos viejos de Medios de Pago a los nuevos ---
+            if (!data.paymentMethods) {
+               data.paymentMethods = INITIAL_PAYMENT_METHODS;
+            } else {
+               data.paymentMethods = data.paymentMethods.map(pm => {
+                  // Si tiene showInWeb, lo migramos a showInDelivery y showInPickup
+                  if (pm.showInWeb !== undefined) {
+                     return {
+                        ...pm,
+                        showInDelivery: pm.showInWeb !== false,
+                        showInPickup: pm.showInWeb !== false,
+                        showInPOS: pm.showInPOS !== false,
+                        // Limpiamos el viejo para no confundir
+                        showInWeb: undefined 
+                     }
+                  }
+                  return pm;
+               });
+            }
+
             if (!data.savedTickets) data.savedTickets = [];
             if (!data.printerConfig) data.printerConfig = { paperSize: '58mm', type: 'system' };
             setDbState({ ...data, _isCloudSecured: true })
@@ -181,9 +203,8 @@ export default function App() {
     })
   }
 
-  if (!dbState) return <div className="min-h-screen bg-gray-100 flex flex-col items-center justify-center"><div className="w-12 h-12 border-4 border-[#cc292b] border-t-transparent rounded-full animate-spin mb-4"></div><p className="font-bold text-gray-600 animate-pulse">Amasando las pastas...</p></div>
+  if (!dbState) return <div className="min-h-screen bg-gray-100 flex flex-col items-center justify-center"><div className="w-12 h-12 border-4 border-[#cc292b] border-t-transparent rounded-full animate-spin mb-4"></div><p className="font-bold text-gray-600 animate-pulse">Cargando sistema...</p></div>
 
-  // AQUI QUITAMOS EL LÍMITE DE ANCHO PARA PANTALLA COMPLETA
   return (
     <div className="min-h-[100dvh] bg-gray-100 font-sans text-gray-800">
       <div className="w-full bg-white relative overflow-hidden flex flex-col h-[100dvh]">
@@ -523,7 +544,7 @@ function AdminCajaVentas({ db, setDb, cart, setCart, ticketName, setTicketName }
              <div className="flex gap-2 overflow-x-auto hide-scrollbar">
                 {paymentOptions.length === 0 ? <p className="text-xs text-red-500">No hay medios de pago activos para la caja.</p> : paymentOptions.map(pm => (
                   <button key={pm.id} onClick={() => handleGenerarVenta('Entregado', pm.name)} className="flex-1 min-w-[100px] bg-green-600 text-white font-bold py-3 px-2 rounded-xl flex flex-col items-center justify-center gap-1 shadow-md active:scale-95">
-                    {pm.type === 'cash' ? <Banknote size={18}/> : pm.type === 'transfer' ? <Wallet size={18}/> : <CreditCard size={18}/>}
+                    {pm.type === 'cash' ? <HandCoins size={18}/> : pm.type === 'transfer' ? <QrCode size={18}/> : <CreditCard size={18}/>}
                     <span className="text-[10px] text-center leading-tight">{pm.name}</span>
                   </button>
                 ))}
@@ -584,7 +605,6 @@ function AdminCajaRecibos({ db, setDb, setActiveTab, setCart, setTicketName }) {
   };
 
   const executeEditPendiente = (order) => {
-    // Devolver el stock anulándolo primero
     setDb(prev => {
        const orderIndex = prev.orders.findIndex(o => o.id === order.id);
        if (orderIndex === -1) return prev;
@@ -695,9 +715,6 @@ function AdminCajaRecibos({ db, setDb, setActiveTab, setCart, setTicketName }) {
   )
 }
 
-// ==========================================
-// MÓDULO CATÁLOGO (Integrable en Admin y Caja)
-// ==========================================
 function AdminCatalogo({ db, setDb, isTPV = false }) {
   const [editingId, setEditingId] = useState(null)
   const [formData, setFormData] = useState(null)
@@ -979,7 +996,8 @@ function AdminMediosPago({ db, setDb }) {
       id: 'pm_' + Date.now(),
       name: newMethodName.trim(),
       active: true,
-      showInWeb: true,
+      showInDelivery: true,
+      showInPickup: true,
       showInPOS: true,
       type: newMethodType,
       details: ''
@@ -1000,31 +1018,31 @@ function AdminMediosPago({ db, setDb }) {
       <CustomConfirm isOpen={!!confirmObj} message={confirmObj?.msg} onConfirm={confirmObj?.action} onCancel={() => setConfirmObj(null)} />
       
       <h2 className="text-xl font-bold text-gray-800 flex items-center gap-2"><Wallet size={24} /> Medios de Pago</h2>
-      <p className="text-xs text-gray-500">Configurá cómo te pueden pagar tus clientes, tanto en la web como en el local.</p>
+      <p className="text-xs text-gray-500">Configurá cómo te pueden pagar tus clientes en la web (retiro/delivery) y en la caja del local.</p>
       
-      <div className="flex flex-col gap-2 bg-white p-3 rounded-xl border border-gray-200">
+      <div className="flex flex-col gap-2 bg-white p-3 rounded-xl border border-gray-200 shadow-sm">
         <label className="text-[10px] font-bold text-gray-500 uppercase">Agregar nuevo:</label>
         <div className="flex gap-2">
-          <input type="text" placeholder="Ej: Modo, Cuenta DNI..." value={newMethodName} onChange={e => setNewMethodName(e.target.value)} className="flex-1 border rounded px-3 py-2 text-sm outline-none bg-gray-50 focus:ring-1 focus:ring-green-500" />
-          <select value={newMethodType} onChange={e => setNewMethodType(e.target.value)} className="border rounded px-2 py-2 text-sm outline-none bg-gray-50">
+          <input type="text" placeholder="Ej: Cuenta DNI..." value={newMethodName} onChange={e => setNewMethodName(e.target.value)} className="flex-1 border border-gray-300 rounded px-3 py-2 text-sm outline-none focus:ring-1 focus:ring-green-500 font-medium" />
+          <select value={newMethodType} onChange={e => setNewMethodType(e.target.value)} className="border border-gray-300 rounded px-2 py-2 text-sm outline-none font-medium text-gray-700 bg-gray-50">
              <option value="cash">Billete</option>
              <option value="transfer">Virtual</option>
              <option value="local">Posnet</option>
           </select>
-          <button onClick={handleAdd} className="bg-green-600 text-white px-4 py-2 rounded font-bold"><Plus size={16} /></button>
+          <button onClick={handleAdd} className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg font-bold transition-colors shadow-sm"><Plus size={16} /></button>
         </div>
       </div>
 
-      <div className="space-y-3">
+      <div className="space-y-4">
         {methods.map(pm => (
           <div key={pm.id} className={`bg-white p-4 rounded-xl border transition-all ${pm.active ? 'border-green-300 shadow-sm' : 'border-gray-200 opacity-60'}`}>
             <div className="flex justify-between items-center mb-3">
               <div className="flex items-center gap-2 flex-1 mr-2">
-                {pm.type === 'cash' ? <Banknote className={pm.active ? 'text-green-600' : 'text-gray-400'} size={20}/> : pm.type === 'transfer' ? <Wallet className={pm.active ? 'text-blue-600' : 'text-gray-400'} size={20}/> : <CreditCard className={pm.active ? 'text-purple-600' : 'text-gray-400'} size={20}/>}
+                {pm.type === 'cash' ? <HandCoins className={pm.active ? 'text-green-600' : 'text-gray-400'} size={20}/> : pm.type === 'transfer' ? <QrCode className={pm.active ? 'text-blue-600' : 'text-gray-400'} size={20}/> : <CreditCard className={pm.active ? 'text-purple-600' : 'text-gray-400'} size={20}/>}
                 <input type="text" value={pm.name} onChange={e => updateMethod(pm.id, 'name', e.target.value)} className="font-bold text-gray-800 text-sm bg-transparent outline-none border-b border-dashed border-transparent hover:border-gray-300 focus:border-green-500 w-full pb-0.5" />
               </div>
               <div className="flex items-center gap-3 shrink-0">
-                <button onClick={() => handleDelete(pm.id)} className="text-red-400 hover:bg-red-50 p-1.5 rounded"><Trash2 size={16} /></button>
+                <button onClick={() => handleDelete(pm.id)} className="text-red-400 hover:bg-red-50 p-1.5 rounded transition-colors"><Trash2 size={16} /></button>
                 <label className="flex items-center gap-2 text-sm font-bold cursor-pointer">
                   <span className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none shadow-inner ${pm.active ? 'bg-green-500' : 'bg-red-500'}`}>
                     <input type="checkbox" className="sr-only" checked={pm.active} onChange={e => updateMethod(pm.id, 'active', e.target.checked)} />
@@ -1033,19 +1051,28 @@ function AdminMediosPago({ db, setDb }) {
                 </label>
               </div>
             </div>
+            
             {pm.active && (
               <div className="space-y-3 animate-fadeIn">
-                <div className="bg-gray-50 p-2 rounded-lg border border-gray-200">
-                  <h4 className="text-[10px] font-bold text-gray-500 uppercase mb-1">¿Dónde se muestra?</h4>
-                  <div className="flex gap-4">
-                    <label className="flex items-center gap-1 text-xs font-bold cursor-pointer text-gray-800"><input type="checkbox" className="w-4 h-4 accent-blue-600" checked={pm.showInWeb !== false} onChange={e => updateMethod(pm.id, 'showInWeb', e.target.checked)} /> App Web</label>
-                    <label className="flex items-center gap-1 text-xs font-bold cursor-pointer text-gray-800"><input type="checkbox" className="w-4 h-4 accent-green-600" checked={pm.showInPOS !== false} onChange={e => updateMethod(pm.id, 'showInPOS', e.target.checked)} /> Caja TPV (Local)</label>
+                <div className="bg-gray-50 p-3 rounded-lg border border-gray-200">
+                  <h4 className="text-[10px] font-bold text-gray-500 uppercase mb-2 border-b border-gray-200 pb-1">Habilitar en Canales:</h4>
+                  <div className="grid grid-cols-2 gap-2 text-xs font-bold text-gray-800">
+                    <label className="flex items-center gap-1.5 cursor-pointer">
+                      <input type="checkbox" className="w-4 h-4 accent-blue-600" checked={pm.showInDelivery !== false} onChange={e => updateMethod(pm.id, 'showInDelivery', e.target.checked)} /> 🛵 Delivery
+                    </label>
+                    <label className="flex items-center gap-1.5 cursor-pointer">
+                      <input type="checkbox" className="w-4 h-4 accent-orange-600" checked={pm.showInPickup !== false} onChange={e => updateMethod(pm.id, 'showInPickup', e.target.checked)} /> 🏪 Retiro Local
+                    </label>
+                    <label className="flex items-center gap-1.5 cursor-pointer col-span-2 mt-1">
+                      <input type="checkbox" className="w-4 h-4 accent-green-600" checked={pm.showInPOS !== false} onChange={e => updateMethod(pm.id, 'showInPOS', e.target.checked)} /> 🖥️ Caja (Venta Presencial)
+                    </label>
                   </div>
                 </div>
+                
                 {(pm.type === 'transfer' || pm.type === 'local') && (
-                  <div className="pt-2">
-                    <label className="block text-[10px] font-bold text-gray-500 uppercase mb-1">Mensaje para el cliente (Alias, CBU, Links):</label>
-                    <textarea value={pm.details || ''} onChange={e => updateMethod(pm.id, 'details', e.target.value)} placeholder="Ej: Transferir al Alias ABRMAIPU..." className="w-full bg-white border border-gray-200 rounded p-2 text-sm outline-none focus:ring-1 focus:ring-[#c82a2a] resize-none h-16" />
+                  <div className="pt-1">
+                    <label className="block text-[10px] font-bold text-gray-500 uppercase mb-1">Mensaje Extra (Alias, CBU, Links):</label>
+                    <textarea value={pm.details || ''} onChange={e => updateMethod(pm.id, 'details', e.target.value)} placeholder="Ej: Alias: ABRMAIPU..." className="w-full bg-white border border-gray-200 rounded p-2 text-sm outline-none focus:ring-1 focus:ring-green-500 resize-none h-16 font-medium text-gray-700" />
                   </div>
                 )}
               </div>
@@ -1053,7 +1080,9 @@ function AdminMediosPago({ db, setDb }) {
           </div>
         ))}
       </div>
-      <button onClick={handleSave} className="w-full bg-green-600 text-white font-bold py-3 rounded-lg shadow-lg active:scale-95 transition-transform">{saved ? 'Guardado Exitosamente' : 'Guardar Medios de Pago'}</button>
+      <button onClick={handleSave} className="w-full bg-green-600 text-white font-bold py-4 rounded-xl shadow-lg active:scale-95 transition-transform flex items-center justify-center gap-2">
+        {saved ? <><CheckCircle size={20}/> Guardado Exitosamente</> : 'Guardar Configuraciones'}
+      </button>
     </div> 
   )
 }
@@ -1591,8 +1620,24 @@ function ClientCart({ cart, updateQuantity, setRoute, cartTotal }) {
 
 function ClientCheckout({ cart, cartTotal, db, setDb, setRoute, clearCart }) {
   const [formData, setFormData] = useState({ name: '', phone: '', address: '', notes: '' }); const [orderType, setOrderType] = useState('retiro'); 
-  const paymentOptions = db.paymentMethods?.filter(p => p.active !== false && p.showInWeb !== false) || []; 
-  const [selectedPaymentId, setSelectedPaymentId] = useState(paymentOptions.length > 0 ? paymentOptions[0].id : ''); const selectedPayment = paymentOptions.find(p => p.id === selectedPaymentId); const [cashAmount, setCashAmount] = useState(''); const [deliveryCoords, setDeliveryCoords] = useState(null); const [shippingDistance, setShippingDistance] = useState(0); const [whatsappLink, setWhatsappLink] = useState(null); const [formError, setFormError] = useState(''); const [invalidFields, setInvalidFields] = useState([]);
+  
+  // --- AHORA FILTRAMOS LOS MEDIOS DE PAGO SEGÚN EL TIPO DE PEDIDO ELEGIDO ---
+  const paymentOptions = db.paymentMethods?.filter(p => {
+    if (p.active === false) return false;
+    if (orderType === 'delivery') return p.showInDelivery !== false;
+    if (orderType === 'retiro') return p.showInPickup !== false;
+    return false;
+  }) || []; 
+  
+  const [selectedPaymentId, setSelectedPaymentId] = useState('');
+  useEffect(() => {
+     if (paymentOptions.length > 0 && !paymentOptions.find(p => p.id === selectedPaymentId)) {
+        setSelectedPaymentId(paymentOptions[0].id);
+     }
+  }, [orderType, paymentOptions]);
+
+  const selectedPayment = paymentOptions.find(p => p.id === selectedPaymentId); 
+  const [cashAmount, setCashAmount] = useState(''); const [deliveryCoords, setDeliveryCoords] = useState(null); const [shippingDistance, setShippingDistance] = useState(0); const [whatsappLink, setWhatsappLink] = useState(null); const [formError, setFormError] = useState(''); const [invalidFields, setInvalidFields] = useState([]);
   const calculateShippingCost = distance => { if (distance <= 0) return 0; const { tier1, tier2, tier3, extra } = db.shippingConfig; if (distance <= 3) return tier1; if (distance <= 4) return tier2; if (distance <= 5) return tier3; return tier3 + Math.ceil(distance - 5) * extra; };
   const shippingCost = orderType === 'delivery' ? calculateShippingCost(shippingDistance) : 0; const finalTotal = cartTotal + shippingCost;
   const handleConfirm = () => { setFormError(''); setInvalidFields([]); const errors = []; if (!formData.name.trim()) errors.push('name'); if (!formData.phone.trim()) errors.push('phone'); if (!selectedPayment) errors.push('payment'); if (orderType === 'delivery' && (!formData.address.trim() || !deliveryCoords)) errors.push('address'); if (selectedPayment?.type === 'cash') { const amount = parseFloat(cashAmount); if (isNaN(amount) || amount < finalTotal) errors.push('cashAmount'); } if (errors.length > 0) { setInvalidFields(errors); if (errors.includes('address') && orderType === 'delivery' && !deliveryCoords) setFormError('Por favor seleccioná tu dirección en el mapa.'); else setFormError('Por favor completa los campos marcados en rojo.'); return; } let paymentString = selectedPayment.name; if (selectedPayment.type === 'cash') { paymentString += ` (Abona con ${formatCurrency(Number(cashAmount))})`; } const nextId = db.orders.length > 0 && !isNaN(parseInt(db.orders[0].id)) ? parseInt(db.orders[0].id) + 1 : 1000 + db.orders.length + 1; const newOrder = { id: nextId.toString(), date: new Date().toISOString(), customer: { ...formData, coords: deliveryCoords }, type: orderType, items: cart, subtotal: cartTotal, shippingCost, distance: shippingDistance, total: finalTotal, status: 'Recibido', paymentDetails: paymentString }; setDb(prev => { let updatedProducts = [...prev.products]; cart.forEach(cartItem => { const pIndex = updatedProducts.findIndex(p => p.id === cartItem.product.id); if (pIndex > -1 && updatedProducts[pIndex].trackStock) updatedProducts[pIndex].stock = Math.max(0, updatedProducts[pIndex].stock - cartItem.quantity); }); return { ...prev, orders: [newOrder, ...prev.orders], products: updatedProducts }; }); let text = `       *🥟 PEDIDO #${nextId} 🥟*\n\n*Hola Al Buen Raviol Maipú!*\n\n*Cliente:* ${formData.name}\n*Tel:* ${formData.phone}\n*Tipo:* ${orderType === 'retiro' ? '🏪 Retiro por local' : '🛵 Delivery'}\n`; if (orderType === 'delivery') { text += `*Dirección:* ${formData.address}\n`; if (deliveryCoords) text += `*Mapa:* http://maps.google.com/?q=${deliveryCoords.lat},${deliveryCoords.lng}\n`; } if (formData.notes.trim()) text += `*Aclaraciones:* ${formData.notes.trim()}\n`; text += `\n*Detalle:*\n`; cart.forEach(item => { text += `- ${item.quantity} ${item.product.unitType === 'peso' ? 'kg' : 'un'} x ${item.product.name} (${formatCurrency(item.product.price * item.quantity)})\n`; }); text += `\n*Subtotal:* ${formatCurrency(cartTotal)}\n`; if (orderType === 'delivery') text += `*Envío:* ${formatCurrency(shippingCost)}\n`; text += `*TOTAL A PAGAR: ${formatCurrency(finalTotal)}*\n\n*Medio de Pago:* ${selectedPayment.name}\n`; if (selectedPayment.type === 'cash') { text += `*Abona con:* ${formatCurrency(Number(cashAmount))}\n`; const vuelto = Number(cashAmount) - finalTotal; if (vuelto > 0) text += `*Vuelto:* ${formatCurrency(vuelto)}\n`; } if (selectedPayment.type === 'transfer') text += `\n*(Envío comprobante a continuación)*\n`; setWhatsappLink(`https://wa.me/${SHOP_PHONE}?text=${encodeURIComponent(text)}`); clearCart(); };
@@ -1604,8 +1649,8 @@ function ClientCheckout({ cart, cartTotal, db, setDb, setRoute, clearCart }) {
         <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100"><h3 className="font-bold text-gray-800 mb-3 flex items-center gap-2"><User size={18} className="text-red-500" /> Mis Datos</h3><div className="space-y-3"><input type="text" placeholder="Tu Nombre *" value={formData.name} onChange={e => { setFormData({ ...formData, name: e.target.value }); setInvalidFields(p => p.filter(f => f !== 'name')) }} className={`w-full rounded-lg px-4 py-3 text-sm outline-none transition-all ${invalidFields.includes('name') ? 'bg-red-50 border border-red-500 ring-1 ring-red-500' : 'bg-gray-50 border border-gray-200 focus:ring-2 focus:ring-red-500'}`} /><input type="tel" placeholder="Tu Teléfono (ej: 261...) *" value={formData.phone} onChange={e => { setFormData({ ...formData, phone: e.target.value }); setInvalidFields(p => p.filter(f => f !== 'phone')) }} className={`w-full rounded-lg px-4 py-3 text-sm outline-none transition-all ${invalidFields.includes('phone') ? 'bg-red-50 border border-red-500 ring-1 ring-red-500' : 'bg-gray-50 border border-gray-200 focus:ring-2 focus:ring-red-500'}`} /><textarea placeholder="ACLARACIONES (Opcional)" value={formData.notes} onChange={e => setFormData({ ...formData, notes: e.target.value })} className="w-full bg-gray-50 border border-gray-200 rounded-lg px-4 py-3 text-sm outline-none transition-all focus:ring-2 focus:ring-red-500 resize-none h-20" /></div></div>
         <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100"><h3 className="font-bold text-gray-800 mb-3 flex items-center gap-2"><Package size={18} className="text-red-500" /> Retiro o Delivery</h3><div className="flex bg-gray-100 p-1 rounded-lg"><button onClick={() => setOrderType('retiro')} className={`flex-1 py-2 text-sm font-bold rounded-md ${orderType === 'retiro' ? 'bg-white shadow-sm text-gray-800' : 'text-gray-500'}`}>Retiro en Local</button><button onClick={() => setOrderType('delivery')} className={`flex-1 py-2 text-sm font-bold rounded-md ${orderType === 'delivery' ? 'bg-white shadow-sm text-gray-800' : 'text-gray-500'}`}>Delivery</button></div>{orderType === 'retiro' && <div className="mt-4 p-3 bg-blue-50 border border-blue-100 rounded-lg text-sm text-blue-800 animate-fadeIn"><p className="font-bold flex items-center gap-1"><MapPin size={16} /> Dirección de retiro:</p><p className="mt-1">{SHOP_ADDRESS}</p></div>}{orderType === 'delivery' && <div className="mt-4 animate-fadeIn"><MapPicker address={formData.address} shopLocation={db.shippingConfig.shopLocation} onAddressChange={val => { setFormData({ ...formData, address: val }); setInvalidFields(p => p.filter(f => f !== 'address')) }} onLocationSelect={(coords, dist) => { setDeliveryCoords(coords); setShippingDistance(dist) }} isInvalid={invalidFields.includes('address')} />{shippingDistance > 0 && <div className="mt-2 text-xs text-gray-500 bg-blue-50 p-2 rounded text-center">Distancia: <span className="font-bold">{shippingDistance.toFixed(1)} km</span></div>}</div>}</div>
         <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100"><h3 className="font-bold text-gray-800 mb-3">💳 Medio de Pago</h3>
-        {paymentOptions.length === 0 ? <p className="text-sm text-red-500 font-bold bg-red-50 p-3 rounded-lg border border-red-200">No hay medios de pago disponibles para la web en este momento.</p> : (
-            <div className="grid grid-cols-1 gap-2 mb-4">{paymentOptions.map(pm => (<button key={pm.id} onClick={() => { setSelectedPaymentId(pm.id); setInvalidFields(p => p.filter(f => f !== 'payment')) }} className={`text-left px-4 py-3 rounded-xl border text-sm font-bold transition-all ${selectedPaymentId === pm.id ? 'border-red-500 bg-red-50 text-red-700 shadow-sm' : 'border-gray-200 bg-white text-gray-600 hover:bg-gray-50'}`}><div className="flex items-center gap-2">{pm.type === 'cash' ? <Banknote size={18}/> : pm.type === 'transfer' ? <Wallet size={18}/> : <CreditCard size={18}/>}{pm.name}</div></button>))}</div>
+        {paymentOptions.length === 0 ? <p className="text-sm text-red-500 font-bold bg-red-50 p-3 rounded-lg border border-red-200">No hay medios de pago disponibles para esta modalidad en este momento.</p> : (
+            <div className="grid grid-cols-1 gap-2 mb-4">{paymentOptions.map(pm => (<button key={pm.id} onClick={() => { setSelectedPaymentId(pm.id); setInvalidFields(p => p.filter(f => f !== 'payment')) }} className={`text-left px-4 py-3 rounded-xl border text-sm font-bold transition-all ${selectedPaymentId === pm.id ? 'border-red-500 bg-red-50 text-red-700 shadow-sm' : 'border-gray-200 bg-white text-gray-600 hover:bg-gray-50'}`}><div className="flex items-center gap-2">{pm.type === 'cash' ? <HandCoins size={18}/> : pm.type === 'transfer' ? <QrCode size={18}/> : <CreditCard size={18}/>}{pm.name}</div></button>))}</div>
         )}
         {selectedPayment && <div className="animate-fadeIn">{selectedPayment.details && <div className="bg-blue-50 p-3 rounded-lg text-sm text-blue-800 border border-blue-100 mb-3 whitespace-pre-line">{selectedPayment.details}</div>}{selectedPayment.type === 'cash' && <div><label className="text-sm font-bold text-gray-700 block mb-2">¿Con cuánto vas a abonar?</label><div className="flex items-center gap-2"><span className="text-gray-500 font-bold">$</span><input type="number" placeholder={`Ej: ${finalTotal + 1000}`} value={cashAmount} onChange={e => { setCashAmount(e.target.value); setInvalidFields(p => p.filter(f => f !== 'cashAmount')) }} className={`flex-1 rounded-lg px-4 py-2 text-sm outline-none transition-all ${invalidFields.includes('cashAmount') ? 'bg-red-50 border border-red-500 ring-1 ring-red-500' : 'bg-gray-50 border border-gray-200 focus:ring-2 focus:ring-red-500'}`} /></div>{Number(cashAmount) >= finalTotal && <div className="mt-3 bg-green-50 text-green-700 p-2 rounded text-sm text-center border border-green-100"><span className="font-bold">Tu vuelto será de:</span> {formatCurrency(Number(cashAmount) - finalTotal)}</div>}</div>}</div>}</div>
         <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100"><h3 className="font-bold text-gray-800 mb-3 flex items-center gap-2"><ListOrdered size={18} className="text-red-500" /> Resumen del Pedido</h3><div className="space-y-2 mb-4 border-b border-gray-100 pb-4">{cart.map(item => (<div key={item.product.id} className="flex justify-between text-sm"><span className="text-gray-600">{item.quantity} {item.product.unitType === 'peso' ? 'kg' : 'u'} x {item.product.name}</span><span className="font-medium text-gray-800">{formatCurrency(item.product.price * item.quantity)}</span></div>))}</div><div className="space-y-2 text-sm"><div className="flex justify-between text-gray-600"><span>Subtotal productos</span><span>{formatCurrency(cartTotal)}</span></div>{orderType === 'delivery' && <div className="flex justify-between text-gray-600"><span>Costo de envío</span><span>{formatCurrency(shippingCost)}</span></div>}<div className="flex justify-between text-lg font-black text-gray-900 pt-2 border-t border-gray-200 mt-2"><span>Total a pagar</span><span className="text-[#c82a2a]">{formatCurrency(finalTotal)}</span></div></div></div>

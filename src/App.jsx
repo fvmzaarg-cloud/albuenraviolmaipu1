@@ -263,7 +263,7 @@ const loadGoogleMaps = (callback) => {
   }
   isGoogleMapsLoading = true;
   const script = document.createElement("script");
-  script.src = `https://maps.googleapis.com/maps/api/js?key=${GOOGLE_MAPS_API_KEY}&libraries=places`;
+  script.src = `http://maps.googleapis.com/maps/api/js?key=${GOOGLE_MAPS_API_KEY}&libraries=places`;
   script.async = true;
   script.defer = true;
   script.onload = () => {
@@ -5254,7 +5254,7 @@ function AdminPedidos({ db, setDb, adminRole }) {
                       GPS:
                     </p>
                     <a
-                      href={`https://maps.google.com/?q=${customer.coords.lat},${customer.coords.lng}`}
+                      href={`http://maps.google.com/?q=${customer.coords.lat},${customer.coords.lng}`}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="text-blue-600 font-bold underline text-sm hover:text-blue-800 ml-5"

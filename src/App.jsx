@@ -3778,7 +3778,7 @@ function AdminLocationPicker({ location, onChange }) {
 
 function AdminApp({ db, setDb, switchMode }) {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [adminRole, setAdminRole] = useState("empleado");
+  const [adminRole, setAdminRole] = useState("empleado"); 
   const [adminRoute, setAdminRoute] = useState("dashboard");
   const [newOrderPopup, setNewOrderPopup] = useState(false);
   const cantidadPedidosRef = useRef(db?.orders?.length || 0);
@@ -3824,16 +3824,9 @@ function AdminApp({ db, setDb, switchMode }) {
                 body: "Revisá la pestaña de pedidos.",
               });
           } catch (err) {}
-          let parlante = document.getElementById("parlante-invencible");
-          if (!parlante) {
-            parlante = document.createElement("audio");
-            parlante.id = "parlante-invencible";
-            parlante.src =
-              "https://cdnjs.cloudflare.com/ajax/libs/ion-sound/3.0.7/sounds/bell_ring.mp3";
-            document.body.appendChild(parlante);
-          }
-          parlante.currentTime = 0;
-          parlante.play().catch((e) => console.log("Sonido bloqueado"));
+          
+          // Hacemos sonar la campana automáticamente
+          reproducirSonido();
           setNewOrderPopup(true);
         }
       }
@@ -3848,7 +3841,7 @@ function AdminApp({ db, setDb, switchMode }) {
         setDb={setDb}
         onLogin={(role) => {
           setIsAuthenticated(true);
-          setAdminRole(role);
+          setAdminRole(role); 
         }}
         switchMode={switchMode}
       />
@@ -3857,16 +3850,11 @@ function AdminApp({ db, setDb, switchMode }) {
   const renderView = () => {
     switch (adminRoute) {
       case "dashboard":
-        return (
-          <AdminDashboard db={db} setDb={setDb} setRoute={setAdminRoute} />
-        );
+        return <AdminDashboard db={db} setDb={setDb} setRoute={setAdminRoute} />;
       case "caja":
-        // ¡ESTE ES EL FIX! ACÁ FALTABA PASAR EL ROL:
         return <AdminCajaTabs db={db} setDb={setDb} adminRole={adminRole} />;
       case "pedidos":
         return <AdminPedidos db={db} setDb={setDb} adminRole={adminRole} />;
-
-      // RUTAS PROTEGIDAS:
       case "catalogo":
         return adminRole === "propietario" ? (
           <AdminCatalogo db={db} setDb={setDb} />
@@ -3972,14 +3960,18 @@ function AdminApp({ db, setDb, switchMode }) {
           </div>
         </div>
         <div className="flex items-center gap-3">
+          
+          {/* BOTÓN REPARADO ACÁ */}
           <button
             onClick={() => {
-              setAlertMsg("¡Sonido de prueba!");
+              setAlertMsg("¡Campana activada!");
+              reproducirSonido();
             }}
             className="bg-[#c82a2a] px-2 py-1 rounded-lg text-xs font-bold shadow-sm hover:bg-red-700 transition-colors"
           >
             🔔 Sonido
           </button>
+
           <button
             onClick={() => {
               setIsAuthenticated(false);

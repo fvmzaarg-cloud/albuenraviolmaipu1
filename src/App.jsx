@@ -3785,6 +3785,24 @@ function AdminApp({ db, setDb, switchMode }) {
   const cargaInicialRef = useRef(true);
   const [alertMsg, setAlertMsg] = useState("");
 
+  // FUNCIÓN PARA EL SONIDO
+  const reproducirSonido = () => {
+    try {
+      let parlante = document.getElementById("parlante-invencible");
+      if (!parlante) {
+        parlante = document.createElement("audio");
+        parlante.id = "parlante-invencible";
+        parlante.src =
+          "https://cdnjs.cloudflare.com/ajax/libs/ion-sound/3.0.7/sounds/bell_ring.mp3";
+        document.body.appendChild(parlante);
+      }
+      parlante.currentTime = 0;
+      parlante.play().catch((e) => console.log("Sonido bloqueado por el navegador:", e));
+    } catch (err) {
+      console.error("Error al reproducir sonido", err);
+    }
+  };
+
   useEffect(() => {
     if (isAuthenticated && db && db.orders) {
       const actuales = db.orders.length;

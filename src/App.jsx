@@ -5118,49 +5118,53 @@ function AdminPedidos({ db, setDb, adminRole }) {
                   </div>
 
                   <div className="flex flex-col gap-2 items-end">
-                    <div className="flex gap-2 items-center">
-                      {isAnulado ? (
-                        <span className="text-xs font-bold px-4 py-1.5 rounded-full outline-none text-center bg-red-100 text-red-800 border border-red-300 cursor-not-allowed">
-                          Anulado
-                        </span>
-                      ) : (
-                        <select
-                          value={order.status || "Recibido"}
-                          onChange={(e) =>
-                            updateStatus(order.id, e.target.value)
-                          }
-                          className={`text-xs font-bold px-3 py-1.5 rounded-full outline-none appearance-none cursor-pointer text-center ${
-                            statusColors[order.status] || "bg-gray-100"
-                          }`}
-                        >
-                          <option value="Recibido">Recibido</option>
-                          <option value="Pendiente">Pendiente</option>
-                          <option value="Entregado">Entregado</option>
-                          <option value="Rendido">Rendido</option>
-                        </select>
-                      )}
+                      <div className="flex gap-2 items-center">
+                        
+                        {/* 👇 ACÁ ESTÁ LA MAGIA: Chequeamos el rol para mostrar el candado o el selector 👇 */}
+                        {isAnulado && adminRole !== "propietario" ? (
+                          <span className="text-xs font-bold px-4 py-1.5 rounded-full outline-none text-center bg-red-100 text-red-800 border border-red-300 cursor-not-allowed">
+                            Anulado
+                          </span>
+                        ) : (
+                          <select
+                            value={order.status || "Recibido"}
+                            onChange={(e) =>
+                              updateStatus(order.id, e.target.value)
+                            }
+                            className={`text-xs font-bold px-3 py-1.5 rounded-full outline-none appearance-none cursor-pointer text-center ${
+                              isAnulado ? "bg-red-100 text-red-800 border border-red-300" : (statusColors[order.status] || "bg-gray-100")
+                            }`}
+                          >
+                            <option value="Recibido">Recibido</option>
+                            <option value="Pendiente">Pendiente</option>
+                            <option value="Entregado">Entregado</option>
+                            <option value="Rendido">Rendido</option>
+                            {/* Le agregamos la opción "Anulado" para que el dueño vea el estado actual */}
+                            {isAnulado && <option value="Cancelado">Anulado</option>}
+                          </select>
+                        )}
 
-                      {!isAnulado && (
-                        <button
-                          onClick={() => updateStatus(order.id, "Cancelado")}
-                          className="text-red-500 bg-red-50 p-1.5 rounded-lg border border-red-100 hover:bg-red-100 transition-colors"
-                          title="Anular pedido"
-                        >
-                          <X size={16} />
-                        </button>
-                      )}
+                        {!isAnulado && (
+                          <button
+                            onClick={() => updateStatus(order.id, "Cancelado")}
+                            className="text-red-500 bg-red-50 p-1.5 rounded-lg border border-red-100 hover:bg-red-100 transition-colors"
+                            title="Anular pedido"
+                          >
+                            <X size={16} />
+                          </button>
+                        )}
 
-                      {adminRole === "propietario" && (
-                        <button
-                          onClick={() => deleteOrder(order.id)}
-                          className="text-gray-500 bg-gray-100 p-1.5 rounded-lg border border-gray-200 hover:bg-red-100 hover:text-red-600 hover:border-red-200 transition-colors"
-                          title="Eliminar pedido permanentemente"
-                        >
-                          <Trash2 size={16} />
-                        </button>
-                      )}
-                    </div>
-
+                        {adminRole === "propietario" && (
+                          <button
+                            onClick={() => deleteOrder(order.id)}
+                            className="text-gray-500 bg-gray-100 p-1.5 rounded-lg border border-gray-200 hover:bg-red-100 hover:text-red-600 hover:border-red-200 transition-colors"
+                            title="Eliminar pedido permanentemente"
+                          >
+                            <Trash2 size={16} />
+                          </button>
+                        )}
+                      </div>
+                      
                     <button
                       onClick={() => setTicketToPrint(order)}
                       className="text-xs font-bold bg-gray-100 text-gray-700 px-3 py-1.5 rounded-lg border border-gray-200 flex items-center gap-1.5 hover:bg-gray-200 transition-colors w-full justify-center shadow-sm"

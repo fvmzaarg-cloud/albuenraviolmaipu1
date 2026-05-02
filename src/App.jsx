@@ -4666,7 +4666,8 @@ function AdminDashboard({ db, setDb, setRoute }) {
           </div>
         </div>
       </div>
-
+{/* 👇 ACÁ ESTÁ EL BLOQUEO: Solo el propietario ve el Chef IA 👇 */}
+{adminRole === "propietario" && (
       <div className="mt-6">
         <h3 className="font-bold text-gray-700 mb-3 flex items-center gap-2">
           <img
@@ -4688,6 +4689,7 @@ function AdminDashboard({ db, setDb, setRoute }) {
           />
         </div>
       </div>
+      )}
     </div>
   );
 }

@@ -5090,7 +5090,7 @@ function AdminPedidos({ db, setDb, adminRole }) {
               >
                 {isAnulado && (
                   <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-50 overflow-hidden">
-                    <div className="text-red-500/15 font-black text-6xl md:text-7xl uppercase tracking-widest transform -rotate-12 border-8 border-red-500/15 rounded-3xl px-8 py-4 select-none">
+                    <div className="text-red-500/15 font-red text-6xl md:text-7xl uppercase tracking-widest transform -rotate-12 border-8 border-red-500/15 rounded-3xl px-8 py-4 select-none">
                       ANULADO
                     </div>
                   </div>

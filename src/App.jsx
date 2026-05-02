@@ -5264,7 +5264,7 @@ function AdminPedidos({ db, setDb, adminRole }) {
                       GPS:
                     </p>
                     <a
-                      href={`http://maps.google.com/?q=${customer.coords.lat},${customer.coords.lng}`}
+                      href={`https://maps.google.com/?q=${customer.coords.lat},${customer.coords.lng}`}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="text-blue-600 font-bold underline text-sm hover:text-blue-800 ml-5"
@@ -6123,7 +6123,7 @@ function ClientCheckout({ cart, cartTotal, db, setDb, setRoute, clearCart }) {
     if (orderType === "delivery") {
       text += `*Dirección:* ${formData.address}\n`;
       if (deliveryCoords)
-        text += `*Mapa:* http://maps.google.com/?q=${deliveryCoords.lat},${deliveryCoords.lng}\n`;
+        text += `*Mapa:* https://maps.google.com/?q=${deliveryCoords.lat},${deliveryCoords.lng}\n`;
     }
     if (formData.notes.trim())
       text += `*Aclaraciones:* ${formData.notes.trim()}\n`;

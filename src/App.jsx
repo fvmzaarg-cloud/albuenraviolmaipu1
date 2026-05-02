@@ -4598,7 +4598,7 @@ function AdminBackup({ db, setDb }) {
 // ==========================================
 // MÓDULOS DE PANEL LIMPIO Y MÉTRICAS NUEVAS
 // ==========================================
-function AdminDashboard({ db, setDb, setRoute }) {
+function AdminDashboard({ db, setDb, setRoute, adminRole }) {
   const manualStatus = db.manualStatus || INITIAL_MANUAL_STATUS;
   const handleToggleClose = () =>
     setDb((prev) => ({
@@ -4666,29 +4666,30 @@ function AdminDashboard({ db, setDb, setRoute }) {
           </div>
         </div>
       </div>
-{/* 👇 ACÁ ESTÁ EL BLOQUEO: Solo el propietario ve el Chef IA 👇 */}
-{adminRole === "propietario" && (
-      <div className="mt-6">
-        <h3 className="font-bold text-gray-700 mb-3 flex items-center gap-2">
-          <img
-            src={CHEF_AVATAR}
-            alt="Perfil Chef"
-            className="w-9 h-9 rounded-full object-cover border-2 border-white shadow-sm"
-          />
-          Entrenar al Chef IA
-        </h3>
-        <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 border-l-4 border-l-[#fbb03b]">
-          <label className="block text-xs font-bold text-gray-600 mb-2">
-            Instrucciones y Reglas de la casa para el robot:
-          </label>
-          <textarea
-            value={manualStatus.chefPrompt || ""}
-            onChange={handlePromptChange}
-            placeholder="Ej: 2 planchas rinden para 3 personas..."
-            className="block w-full border border-gray-200 rounded-lg p-3 text-sm bg-gray-50 focus:ring-2 focus:ring-[#fbb03b] outline-none resize-none h-32"
-          />
+
+      {/* 👇 ACÁ ESTÁ EL BLOQUEO: Solo el propietario ve el Chef IA 👇 */}
+      {adminRole === "propietario" && (
+        <div className="mt-6">
+          <h3 className="font-bold text-gray-700 mb-3 flex items-center gap-2">
+            <img
+              src={CHEF_AVATAR}
+              alt="Perfil Chef"
+              className="w-9 h-9 rounded-full object-cover border-2 border-white shadow-sm"
+            />
+            Entrenar al Chef IA
+          </h3>
+          <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 border-l-4 border-l-[#fbb03b]">
+            <label className="block text-xs font-bold text-gray-600 mb-2">
+              Instrucciones y Reglas de la casa para el robot:
+            </label>
+            <textarea
+              value={manualStatus.chefPrompt || ""}
+              onChange={handlePromptChange}
+              placeholder="Ej: 2 planchas rinden para 3 personas..."
+              className="block w-full border border-gray-200 rounded-lg p-3 text-sm bg-gray-50 focus:ring-2 focus:ring-[#fbb03b] outline-none resize-none h-32"
+            />
+          </div>
         </div>
-      </div>
       )}
     </div>
   );

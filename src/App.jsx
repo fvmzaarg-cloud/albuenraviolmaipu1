@@ -4705,8 +4705,6 @@ function AdminMetricas({ db }) {
 
   const [startDate, setStartDate] = useState(getStartOfMonth());
   const [endDate, setEndDate] = useState(getToday());
-  
-  // NUEVO: Estados para el filtro horario
   const [startTime, setStartTime] = useState("00:00");
   const [endTime, setEndTime] = useState("23:59");
 
@@ -4717,7 +4715,7 @@ function AdminMetricas({ db }) {
     const orderDate = o.date.split("T")[0];
     const pasaFecha = orderDate >= startDate && orderDate <= endDate;
     
-    // 2. Filtro de Horarios (Convertimos la hora UTC a la hora local de Argentina)
+    // 2. Filtro de Horarios
     const dateObj = new Date(o.date);
     const orderTime = dateObj.toLocaleTimeString("es-AR", { 
       hour: '2-digit', 
@@ -4729,19 +4727,24 @@ function AdminMetricas({ db }) {
     return pasaFecha && pasaHora;
   });
 
-  let ventasTotales = 0;
+  // Variables Financieras
+  let facturacionTotal = 0; // Total real cobrado (incluye envío)
+  let ventasBrutas = 0;     // Subtotal de productos
+  let totalDescuentos = 0;  // Suma de descuentos
+  let costoBienes = 0;      // Suma de costos de fábrica
   let cantidadPedidosExitosos = 0;
+  
   const ventasPorProducto = {};
   const ventasPorCategoria = {};
-  const ventasPorMedioPago = {}; // NUEVO: Acumulador de pagos
+  const ventasPorMedioPago = {};
 
   pedidosFiltrados.forEach((o) => {
     if (o.status !== "Cancelado") {
-      ventasTotales += o.total || 0;
+      facturacionTotal += o.total || 0;
+      ventasBrutas += o.subtotal || 0;
+      totalDescuentos += o.discount || 0;
       cantidadPedidosExitosos++;
 
-      // Agrupar Ventas por Medio de Pago
-      // Usamos split(" (") para limpiar textos como "Efectivo (Abona con $5000)" y que solo quede "Efectivo"
       const nombreMedioPago = (o.paymentDetails || "Otro").split(" (")[0];
       if (!ventasPorMedioPago[nombreMedioPago]) {
         ventasPorMedioPago[nombreMedioPago] = 0;
@@ -4753,7 +4756,11 @@ function AdminMetricas({ db }) {
         const prod = item.product || {};
         const catId = prod.categoryId || 0;
         const qty = item.quantity || 0;
+        
         const subtotalItem = (prod.price || 0) * qty;
+        const costoItem = (prod.cost || 0) * qty; // Calculamos el costo del item
+        
+        costoBienes += costoItem;
         
         if (!ventasPorProducto[prod.id])
           ventasPorProducto[prod.id] = {
@@ -4777,18 +4784,20 @@ function AdminMetricas({ db }) {
     }
   });
 
+  // Cálculos Finales de Rentabilidad
+  const ventasNetas = ventasBrutas - totalDescuentos;
+  const beneficioBruto = ventasNetas - costoBienes;
+  const margenPorcentaje = ventasNetas > 0 ? ((beneficioBruto / ventasNetas) * 100).toFixed(1) : 0;
+
   const productosOrdenados = Object.values(ventasPorProducto).sort((a, b) => b.total - a.total);
   const categoriasOrdenadas = Object.values(ventasPorCategoria).sort((a, b) => b.total - a.total);
-  
-  // Convertimos el objeto de pagos en un array ordenado
   const mediosPagoOrdenados = Object.entries(ventasPorMedioPago)
     .map(([nombre, total]) => ({ nombre, total }))
     .sort((a, b) => b.total - a.total);
 
   const exportarCSV = () => {
     let csvContent = "data:text/csv;charset=utf-8,";
-    csvContent +=
-      "ID Pedido,Fecha,Cliente,Tipo,Estado,Subtotal,Descuento,Envio,Total Cobrado,Medio de Pago\n";
+    csvContent += "ID Pedido,Fecha,Cliente,Tipo,Estado,Subtotal,Descuento,Envio,Total Cobrado,Medio de Pago\n";
     pedidosFiltrados.forEach((o) => {
       const row = [
         o.id,
@@ -4807,10 +4816,7 @@ function AdminMetricas({ db }) {
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement("a");
     link.setAttribute("href", encodedUri);
-    link.setAttribute(
-      "download",
-      `reporte_ventas_${startDate}_al_${endDate}.csv`
-    );
+    link.setAttribute("download", `reporte_ventas_${startDate}_al_${endDate}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -4832,7 +4838,6 @@ function AdminMetricas({ db }) {
         </button>
       </div>
 
-      {/* TARJETA DE FILTROS (FECHAS Y HORARIOS) */}
       <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-200 flex flex-col gap-4">
         <div>
           <span className="text-[10px] font-bold text-gray-500 uppercase flex items-center gap-1 mb-1">
@@ -4882,8 +4887,8 @@ function AdminMetricas({ db }) {
           <p className="text-[10px] text-gray-500 font-bold uppercase mb-1">
             Facturación Total
           </p>
-          <p className="text-2xl font-black text-green-600">
-            {formatCurrency(ventasTotales)}
+          <p className="text-2xl font-black text-gray-900">
+            {formatCurrency(facturacionTotal)}
           </p>
         </div>
         <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex flex-col items-center justify-center text-center">
@@ -4898,7 +4903,40 @@ function AdminMetricas({ db }) {
 
       {cantidadPedidosExitosos > 0 ? (
         <>
-          {/* NUEVA SECCIÓN: VENTAS POR MEDIO DE PAGO */}
+          {/* NUEVO: PANEL DE RENTABILIDAD */}
+          <div className="bg-green-50 p-4 rounded-xl shadow-sm border border-green-200 mt-2 space-y-2">
+            <h3 className="text-xs text-green-900 font-bold uppercase mb-3 border-b border-green-200 pb-2 flex items-center gap-1">
+              <Banknote size={14} /> Resumen Financiero
+            </h3>
+            <div className="flex justify-between text-sm text-green-900">
+              <span>Ventas Brutas (Sin desc.):</span>
+              <span className="font-bold">{formatCurrency(ventasBrutas)}</span>
+            </div>
+            {totalDescuentos > 0 && (
+              <div className="flex justify-between text-sm text-green-900">
+                <span>Descuentos Aplicados:</span>
+                <span className="font-bold text-red-600">-{formatCurrency(totalDescuentos)}</span>
+              </div>
+            )}
+            <div className="flex justify-between text-sm text-green-900 font-bold pt-1 border-t border-green-200/50">
+              <span>Ventas Netas:</span>
+              <span>{formatCurrency(ventasNetas)}</span>
+            </div>
+            <div className="flex justify-between text-sm text-green-900 mt-2">
+              <span>Costo de Bienes (Insumos):</span>
+              <span className="font-bold text-orange-600">-{formatCurrency(costoBienes)}</span>
+            </div>
+            <div className="flex justify-between text-base text-green-900 font-black pt-2 border-t border-green-300 mt-2">
+              <span>Beneficio Bruto:</span>
+              <div className="flex items-center gap-2">
+                <span>{formatCurrency(beneficioBruto)}</span>
+                <span className="text-[10px] bg-green-200 text-green-800 px-1.5 py-0.5 rounded font-black">
+                  {margenPorcentaje}%
+                </span>
+              </div>
+            </div>
+          </div>
+
           <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 mt-2 space-y-3">
             <h3 className="text-xs text-gray-500 font-bold uppercase mb-2 border-b pb-2 flex items-center gap-1">
               <Wallet size={14} /> Ventas por Medio de Pago

@@ -3820,7 +3820,7 @@ function AdminApp({ db, setDb, switchMode }) {
               window.Notification &&
               Notification.permission === "granted"
             )
-              new Notification("🥟 ¡Nuevo pedido!", {
+              new Notification("🍝 ¡Nuevo pedido!", {
                 body: "Revisá la pestaña de pedidos.",
               });
           } catch (err) {}

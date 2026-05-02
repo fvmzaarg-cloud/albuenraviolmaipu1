@@ -5010,6 +5010,94 @@ function AdminMetricas({ db }) {
 function AdminPedidos({ db, setDb, adminRole }) {
   const [ticketToPrint, setTicketToPrint] = useState(null);
   const [confirmObj, setConfirmObj] = useState(null);
+  
+  // ACÁ VOLVIERON LOS CASILLEROS: Memoria de los pedidos tildados
+  const [selectedOrders, setSelectedOrders] = useState([]);
+
+  const toggleSelection = (orderId) => {
+    setSelectedOrders((prev) =>
+      prev.includes(orderId)
+        ? prev.filter((id) => id !== orderId)
+        : [...prev, orderId]
+    );
+  };
+
+  // NUEVA FUNCIÓN PARA UNIFICAR TICKETS
+  const unificarPedidosSeleccionados = () => {
+    if (selectedOrders.length < 2) return;
+
+    setConfirmObj({
+      msg: `¿Seguro que querés unificar estos ${selectedOrders.length} pedidos? Se sumarán todos los productos en un solo ticket y se borrarán los sueltos.`,
+      action: () => {
+        setDb((prev) => {
+          const ordersToMerge = prev.orders.filter((o) =>
+            selectedOrders.includes(o.id)
+          );
+
+          // Ordenamos por fecha para dejar los datos del cliente del primer pedido
+          ordersToMerge.sort((a, b) => new Date(a.date) - new Date(b.date));
+          const baseOrder = ordersToMerge[0];
+
+          let mergedItems = [];
+          let totalSubtotal = 0;
+          let totalDiscount = 0;
+          let totalShipping = 0; 
+
+          ordersToMerge.forEach((o) => {
+            totalSubtotal += o.subtotal || 0;
+            totalDiscount += o.discount || 0;
+            // Si hay envío, nos quedamos con el más caro para no sumar envíos dobles a la misma casa
+            if ((o.shippingCost || 0) > totalShipping) {
+              totalShipping = o.shippingCost || 0;
+            }
+
+            // Combinamos los items sumando cantidades si son el mismo producto
+            (o.items || []).forEach((item) => {
+              const existing = mergedItems.find(
+                (mi) => mi.product.id === item.product.id
+              );
+              if (existing) {
+                existing.quantity += item.quantity;
+              } else {
+                // Clonamos el item para no romper la memoria
+                mergedItems.push(JSON.parse(JSON.stringify(item)));
+              }
+            });
+          });
+
+          const newTotal = totalSubtotal - totalDiscount + totalShipping;
+
+          // ID nuevo sumando 1 al último
+          const nextId =
+            prev.orders.length > 0 && !isNaN(parseInt(prev.orders[0].id))
+              ? parseInt(prev.orders[0].id) + 1
+              : 1000 + prev.orders.length + 1;
+
+          const newOrder = {
+            ...baseOrder,
+            id: nextId.toString(),
+            items: mergedItems,
+            subtotal: totalSubtotal,
+            discount: totalDiscount,
+            shippingCost: totalShipping,
+            total: newTotal,
+            paymentDetails: "Unificado",
+          };
+
+          const remainingOrders = prev.orders.filter(
+            (o) => !selectedOrders.includes(o.id)
+          );
+
+          return {
+            ...prev,
+            orders: [newOrder, ...remainingOrders],
+          };
+        });
+        setSelectedOrders([]);
+        setConfirmObj(null);
+      },
+    });
+  };
 
   const updateStatus = (orderId, newStatus) => {
     setDb((prev) => {
@@ -5027,6 +5115,8 @@ function AdminPedidos({ db, setDb, adminRole }) {
           if (prodIdx > -1 && updatedProducts[prodIdx].trackStock)
             updatedProducts[prodIdx].stock += item.quantity;
         });
+        // Si se anula, lo sacamos de la lista de seleccionados por las dudas
+        setSelectedOrders(prevSel => prevSel.filter(id => id !== orderId));
       } else if (oldStatus === "Cancelado" && newStatus !== "Cancelado") {
         order.items.forEach((item) => {
           const prodIdx = updatedProducts.findIndex(
@@ -5069,6 +5159,7 @@ function AdminPedidos({ db, setDb, adminRole }) {
             products: updatedProducts,
           };
         });
+        setSelectedOrders(prevSel => prevSel.filter(id => id !== orderId));
       },
     });
   };
@@ -5092,11 +5183,11 @@ function AdminPedidos({ db, setDb, adminRole }) {
           });
           return { ...prev, orders: [], products: updatedProducts };
         });
+        setSelectedOrders([]);
       },
     });
   };
 
-  // --- ACÁ ESTÁ LA FUNCIÓN ACTUALIZADA ---
   const reenviarACadete = (order) => {
     const customer = order.customer || order.customerInfo || {};
     const items = order.items || [];
@@ -5160,17 +5251,29 @@ function AdminPedidos({ db, setDb, adminRole }) {
         onCancel={() => setConfirmObj(null)}
       />
 
-      <div className="flex justify-between items-center">
+      <div className="flex justify-between items-center flex-wrap gap-2">
         <h2 className="text-xl font-bold text-gray-800">Gestión de Pedidos</h2>
 
-        {adminRole === "propietario" && db.orders && db.orders.length > 0 && (
-          <button
-            onClick={borrarTodosLosPedidos}
-            className="bg-red-50 text-red-600 hover:bg-red-100 px-3 py-1.5 rounded-lg text-sm font-bold flex gap-2 items-center border border-red-200 transition-colors"
-          >
-            <Trash2 size={16} /> Borrar Historial
-          </button>
-        )}
+        <div className="flex items-center gap-2">
+          {/* EL BOTÓN MÁGICO DE UNIFICAR APARECE ACÁ SI HAY MÁS DE 1 SELECCIONADO */}
+          {selectedOrders.length > 1 && (
+            <button
+              onClick={unificarPedidosSeleccionados}
+              className="bg-blue-600 text-white hover:bg-blue-700 px-3 py-1.5 rounded-lg text-sm font-bold flex gap-2 items-center border border-blue-800 shadow-sm transition-all animate-fadeIn"
+            >
+              <Plus size={16} /> Unificar ({selectedOrders.length})
+            </button>
+          )}
+
+          {adminRole === "propietario" && db.orders && db.orders.length > 0 && (
+            <button
+              onClick={borrarTodosLosPedidos}
+              className="bg-red-50 text-red-600 hover:bg-red-100 px-3 py-1.5 rounded-lg text-sm font-bold flex gap-2 items-center border border-red-200 transition-colors"
+            >
+              <Trash2 size={16} /> Borrar Historial
+            </button>
+          )}
+        </div>
       </div>
 
       {!db.orders || db.orders.length === 0 ? (
@@ -5188,6 +5291,7 @@ function AdminPedidos({ db, setDb, adminRole }) {
             );
 
             const isAnulado = order.status === "Cancelado";
+            const isSelected = selectedOrders.includes(order.id);
 
             return (
               <div
@@ -5195,6 +5299,8 @@ function AdminPedidos({ db, setDb, adminRole }) {
                 className={`relative bg-white p-4 rounded-xl shadow-sm border overflow-hidden transition-all duration-300 ${
                   isAnulado
                     ? "border-gray-300 bg-gray-50 opacity-80"
+                    : isSelected 
+                    ? "border-blue-500 ring-2 ring-blue-200 bg-blue-50/20" 
                     : "border-gray-200"
                 }`}
               >
@@ -5207,74 +5313,88 @@ function AdminPedidos({ db, setDb, adminRole }) {
                 )}
 
                 <div className="relative z-20 flex justify-between items-start mb-3">
-                  <div>
-                    <span className="text-xs font-mono bg-gray-200 text-gray-700 px-2 py-1 rounded">
-                      #{order.id}
-                    </span>
-                    <p
-                      className={`font-black text-lg mt-1 ${
-                        isAnulado
-                          ? "line-through text-gray-400"
-                          : "text-gray-900"
-                      }`}
-                    >
-                      {customer.name || "Cliente"}
-                    </p>
-                    <p className="text-[10px] text-gray-500 font-medium">
-                      {order.date
-                        ? new Date(order.date).toLocaleString("es-AR")
-                        : ""}
-                    </p>
+                  <div className="flex items-start gap-3">
+                    
+                    {/* ACÁ ESTÁ EL CHECKBOX QUE FALABA */}
+                    {!isAnulado && (
+                      <input
+                        type="checkbox"
+                        checked={isSelected}
+                        onChange={() => toggleSelection(order.id)}
+                        className="mt-1.5 w-5 h-5 accent-blue-600 cursor-pointer rounded shadow-sm border-gray-300"
+                      />
+                    )}
+
+                    <div>
+                      <span className="text-xs font-mono bg-gray-200 text-gray-700 px-2 py-1 rounded">
+                        #{order.id}
+                      </span>
+                      <p
+                        className={`font-black text-lg mt-1 ${
+                          isAnulado
+                            ? "line-through text-gray-400"
+                            : "text-gray-900"
+                        }`}
+                      >
+                        {customer.name || "Cliente"}
+                      </p>
+                      <p className="text-[10px] text-gray-500 font-medium">
+                        {order.date
+                          ? new Date(order.date).toLocaleString("es-AR")
+                          : ""}
+                      </p>
+                    </div>
                   </div>
 
                   <div className="flex flex-col gap-2 items-end">
-                      <div className="flex gap-2 items-center">
-                        
-                        {/* 👇 ACÁ ESTÁ LA MAGIA: Chequeamos el rol para mostrar el candado o el selector 👇 */}
-                        {isAnulado && adminRole !== "propietario" ? (
-                          <span className="text-xs font-bold px-4 py-1.5 rounded-full outline-none text-center bg-red-100 text-red-800 border border-red-300 cursor-not-allowed">
-                            Anulado
-                          </span>
-                        ) : (
-                          <select
-                            value={order.status || "Recibido"}
-                            onChange={(e) =>
-                              updateStatus(order.id, e.target.value)
-                            }
-                            className={`text-xs font-bold px-3 py-1.5 rounded-full outline-none appearance-none cursor-pointer text-center ${
-                              isAnulado ? "bg-red-100 text-red-800 border border-red-300" : (statusColors[order.status] || "bg-gray-100")
-                            }`}
-                          >
-                            <option value="Recibido">Recibido</option>
-                            <option value="Pendiente">Pendiente</option>
-                            <option value="Entregado">Entregado</option>
-                            <option value="Rendido">Rendido</option>
-                            {/* Le agregamos la opción "Anulado" para que el dueño vea el estado actual */}
-                            {isAnulado && <option value="Cancelado">Anulado</option>}
-                          </select>
-                        )}
+                    <div className="flex gap-2 items-center">
+                      {isAnulado && adminRole !== "propietario" ? (
+                        <span className="text-xs font-bold px-4 py-1.5 rounded-full outline-none text-center bg-red-100 text-red-800 border border-red-300 cursor-not-allowed">
+                          Anulado
+                        </span>
+                      ) : (
+                        <select
+                          value={order.status || "Recibido"}
+                          onChange={(e) =>
+                            updateStatus(order.id, e.target.value)
+                          }
+                          className={`text-xs font-bold px-3 py-1.5 rounded-full outline-none appearance-none cursor-pointer text-center ${
+                            isAnulado
+                              ? "bg-red-100 text-red-800 border border-red-300"
+                              : statusColors[order.status] || "bg-gray-100"
+                          }`}
+                        >
+                          <option value="Recibido">Recibido</option>
+                          <option value="Pendiente">Pendiente</option>
+                          <option value="Entregado">Entregado</option>
+                          <option value="Rendido">Rendido</option>
+                          {isAnulado && (
+                            <option value="Cancelado">Anulado</option>
+                          )}
+                        </select>
+                      )}
 
-                        {!isAnulado && (
-                          <button
-                            onClick={() => updateStatus(order.id, "Cancelado")}
-                            className="text-red-500 bg-red-50 p-1.5 rounded-lg border border-red-100 hover:bg-red-100 transition-colors"
-                            title="Anular pedido"
-                          >
-                            <X size={16} />
-                          </button>
-                        )}
+                      {!isAnulado && (
+                        <button
+                          onClick={() => updateStatus(order.id, "Cancelado")}
+                          className="text-red-500 bg-red-50 p-1.5 rounded-lg border border-red-100 hover:bg-red-100 transition-colors"
+                          title="Anular pedido"
+                        >
+                          <X size={16} />
+                        </button>
+                      )}
 
-                        {adminRole === "propietario" && (
-                          <button
-                            onClick={() => deleteOrder(order.id)}
-                            className="text-gray-500 bg-gray-100 p-1.5 rounded-lg border border-gray-200 hover:bg-red-100 hover:text-red-600 hover:border-red-200 transition-colors"
-                            title="Eliminar pedido permanentemente"
-                          >
-                            <Trash2 size={16} />
-                          </button>
-                        )}
-                      </div>
-                      
+                      {adminRole === "propietario" && (
+                        <button
+                          onClick={() => deleteOrder(order.id)}
+                          className="text-gray-500 bg-gray-100 p-1.5 rounded-lg border border-gray-200 hover:bg-red-100 hover:text-red-600 hover:border-red-200 transition-colors"
+                          title="Eliminar pedido permanentemente"
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      )}
+                    </div>
+
                     <button
                       onClick={() => setTicketToPrint(order)}
                       className="text-xs font-bold bg-gray-100 text-gray-700 px-3 py-1.5 rounded-lg border border-gray-200 flex items-center gap-1.5 hover:bg-gray-200 transition-colors w-full justify-center shadow-sm"

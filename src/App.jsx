@@ -3847,74 +3847,74 @@ function AdminApp({ db, setDb, switchMode }) {
       />
     );
 
-  const renderView = () => {
-    switch (adminRoute) {
-      case "dashboard":
-        return <AdminDashboard db={db} setDb={setDb} setRoute={setAdminRoute} />;
-      case "caja":
-        return <AdminCajaTabs db={db} setDb={setDb} adminRole={adminRole} />;
-      case "pedidos":
-        return <AdminPedidos db={db} setDb={setDb} adminRole={adminRole} />;
-      case "catalogo":
-        return adminRole === "propietario" ? (
-          <AdminCatalogo db={db} setDb={setDb} />
-        ) : (
-          <AdminDashboard db={db} setDb={setDb} setRoute={setAdminRoute} />
-        );
-      case "ajustes":
-        return adminRole === "propietario" ? (
-          <AdminAjustesMenu setRoute={setAdminRoute} />
-        ) : (
-          <AdminDashboard db={db} setDb={setDb} setRoute={setAdminRoute} />
-        );
-      case "metricas":
-        return adminRole === "propietario" ? (
-          <AdminMetricas db={db} />
-        ) : (
-          <AdminDashboard db={db} setDb={setDb} setRoute={setAdminRoute} />
-        );
-      case "categorias":
-        return adminRole === "propietario" ? (
-          <AdminCategorias db={db} setDb={setDb} />
-        ) : (
-          <AdminDashboard db={db} setDb={setDb} setRoute={setAdminRoute} />
-        );
-      case "horarios":
-        return adminRole === "propietario" ? (
-          <AdminHorarios db={db} setDb={setDb} />
-        ) : (
-          <AdminDashboard db={db} setDb={setDb} setRoute={setAdminRoute} />
-        );
-      case "envios":
-        return adminRole === "propietario" ? (
-          <AdminEnvios db={db} setDb={setDb} />
-        ) : (
-          <AdminDashboard db={db} setDb={setDb} setRoute={setAdminRoute} />
-        );
-      case "mediospago":
-        return adminRole === "propietario" ? (
-          <AdminMediosPago db={db} setDb={setDb} />
-        ) : (
-          <AdminDashboard db={db} setDb={setDb} setRoute={setAdminRoute} />
-        );
-      case "seguridad":
-        return adminRole === "propietario" ? (
-          <AdminSeguridad db={db} setDb={setDb} />
-        ) : (
-          <AdminDashboard db={db} setDb={setDb} setRoute={setAdminRoute} />
-        );
-      case "impresora":
-        return adminRole === "propietario" ? (
-          <AdminImpresora db={db} setDb={setDb} />
-        ) : (
-          <AdminDashboard db={db} setDb={setDb} setRoute={setAdminRoute} />
-        );
-      default:
-        return (
-          <AdminDashboard db={db} setDb={setDb} setRoute={setAdminRoute} />
-        );
-    }
-  };
+    const renderView = () => {
+      switch (adminRoute) {
+        case "dashboard":
+          return <AdminDashboard db={db} setDb={setDb} setRoute={setAdminRoute} adminRole={adminRole} />;
+        case "caja":
+          return <AdminCajaTabs db={db} setDb={setDb} adminRole={adminRole} />;
+        case "pedidos":
+          return <AdminPedidos db={db} setDb={setDb} adminRole={adminRole} />;
+        case "catalogo":
+          return adminRole === "propietario" ? (
+            <AdminCatalogo db={db} setDb={setDb} />
+          ) : (
+            <AdminDashboard db={db} setDb={setDb} setRoute={setAdminRoute} adminRole={adminRole} />
+          );
+        case "ajustes":
+          return adminRole === "propietario" ? (
+            <AdminAjustesMenu setRoute={setAdminRoute} />
+          ) : (
+            <AdminDashboard db={db} setDb={setDb} setRoute={setAdminRoute} adminRole={adminRole} />
+          );
+        case "metricas":
+          return adminRole === "propietario" ? (
+            <AdminMetricas db={db} />
+          ) : (
+            <AdminDashboard db={db} setDb={setDb} setRoute={setAdminRoute} adminRole={adminRole} />
+          );
+        case "categorias":
+          return adminRole === "propietario" ? (
+            <AdminCategorias db={db} setDb={setDb} />
+          ) : (
+            <AdminDashboard db={db} setDb={setDb} setRoute={setAdminRoute} adminRole={adminRole} />
+          );
+        case "horarios":
+          return adminRole === "propietario" ? (
+            <AdminHorarios db={db} setDb={setDb} />
+          ) : (
+            <AdminDashboard db={db} setDb={setDb} setRoute={setAdminRoute} adminRole={adminRole} />
+          );
+        case "envios":
+          return adminRole === "propietario" ? (
+            <AdminEnvios db={db} setDb={setDb} />
+          ) : (
+            <AdminDashboard db={db} setDb={setDb} setRoute={setAdminRoute} adminRole={adminRole} />
+          );
+        case "mediospago":
+          return adminRole === "propietario" ? (
+            <AdminMediosPago db={db} setDb={setDb} />
+          ) : (
+            <AdminDashboard db={db} setDb={setDb} setRoute={setAdminRoute} adminRole={adminRole} />
+          );
+        case "seguridad":
+          return adminRole === "propietario" ? (
+            <AdminSeguridad db={db} setDb={setDb} />
+          ) : (
+            <AdminDashboard db={db} setDb={setDb} setRoute={setAdminRoute} adminRole={adminRole} />
+          );
+        case "impresora":
+          return adminRole === "propietario" ? (
+            <AdminImpresora db={db} setDb={setDb} />
+          ) : (
+            <AdminDashboard db={db} setDb={setDb} setRoute={setAdminRoute} adminRole={adminRole} />
+          );
+        default:
+          return (
+            <AdminDashboard db={db} setDb={setDb} setRoute={setAdminRoute} adminRole={adminRole} />
+          );
+      }
+    };
 
   const isSubView = [
     "categorias",

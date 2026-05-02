@@ -251,27 +251,27 @@ const firestoreDb = getFirestore(app);
 const appId = typeof __app_id !== "undefined" ? __app_id : "default-app-id";
 
 // --- UTILIDADES ---
-let isGoogleMapsLoading = false;
-const loadGoogleMaps = (callback) => {
+let isGoogleMapsLoading = false
+const loadGoogleMaps = callback => {
   if (window.google && window.google.maps) {
-    callback();
-    return;
+    callback()
+    return
   }
   if (isGoogleMapsLoading) {
-    setTimeout(() => loadGoogleMaps(callback), 100);
-    return;
+    setTimeout(() => loadGoogleMaps(callback), 100)
+    return
   }
-  isGoogleMapsLoading = true;
-  const script = document.createElement("script");
-  script.src = `http://maps.googleapis.com/maps/api/js?key=${GOOGLE_MAPS_API_KEY}&libraries=places`;
-  script.async = true;
-  script.defer = true;
+  isGoogleMapsLoading = true
+  const script = document.createElement('script')
+  script.src = `https://maps.googleapis.com/maps/api/js?key=${GOOGLE_MAPS_API_KEY}&libraries=places`
+  script.async = true
+  script.defer = true
   script.onload = () => {
-    isGoogleMapsLoading = false;
-    callback();
-  };
-  document.head.appendChild(script);
-};
+    isGoogleMapsLoading = false
+    callback()
+  }
+  document.head.appendChild(script)
+}
 
 const formatCurrency = (amount) =>
   new Intl.NumberFormat("es-AR", {
@@ -6435,160 +6435,122 @@ function ClientCheckout({ cart, cartTotal, db, setDb, setRoute, clearCart }) {
   );
 }
 
-function MapPicker({
-  address,
-  shopLocation,
-  onAddressChange,
-  onLocationSelect,
-  isInvalid,
-}) {
-  const mapRef = useRef(null);
-  const inputRef = useRef(null);
-  const mapInstance = useRef(null);
-  const markerInstance = useRef(null);
-  const [mapLoaded, setMapLoaded] = useState(false);
-  const [isLocating, setIsLocating] = useState(false);
-  const [locError, setLocError] = useState("");
+function MapPicker({ address, shopLocation, onAddressChange, onLocationSelect, isInvalid }) {
+  const mapRef = useRef(null)
+  const inputRef = useRef(null)
+  const mapInstance = useRef(null)
+  const markerInstance = useRef(null)
+  const [mapLoaded, setMapLoaded] = useState(false)
+  const [isLocating, setIsLocating] = useState(false)
+  const [locError, setLocError] = useState('')
+
   useEffect(() => {
-    loadGoogleMaps(() => setMapLoaded(true));
-  }, []);
+    loadGoogleMaps(() => setMapLoaded(true))
+  }, [])
+
   const calculateDrivingDistance = (lat, lng) => {
-    if (!window.google) return;
-    const service = new window.google.maps.DirectionsService();
-    service.route(
-      {
-        origin: shopLocation,
-        destination: { lat, lng },
-        travelMode: "DRIVING",
-      },
-      (response, status) => {
-        if (
-          status === "OK" &&
-          response.routes[0] &&
-          response.routes[0].legs[0]
-        ) {
-          onLocationSelect(
-            { lat, lng },
-            response.routes[0].legs[0].distance.value / 1000
-          );
-          setLocError("");
-        } else {
-          setLocError(`Calculando distancia en línea recta...`);
-          onLocationSelect(
-            { lat, lng },
-            getDistanceFromLatLonInKm(
-              shopLocation.lat,
-              shopLocation.lng,
-              lat,
-              lng
-            )
-          );
-        }
+    if (!window.google) return
+    const service = new window.google.maps.DirectionsService()
+    service.route({ origin: shopLocation, destination: { lat, lng }, travelMode: 'DRIVING' }, (response, status) => {
+      if (status === 'OK' && response.routes[0] && response.routes[0].legs[0]) {
+        onLocationSelect({ lat, lng }, response.routes[0].legs[0].distance.value / 1000)
+        setLocError('')
+      } else {
+        setLocError(`Google Maps: No se pudo calcular la ruta exacta. Calculando distancia en línea recta...`)
+        onLocationSelect({ lat, lng }, getDistanceFromLatLonInKm(shopLocation.lat, shopLocation.lng, lat, lng))
       }
-    );
-  };
+    })
+  }
+
   useEffect(() => {
-    if (!mapLoaded || !mapRef.current || !inputRef.current) return;
-    if (mapInstance.current) return;
+    if (!mapLoaded || !mapRef.current || !inputRef.current) return
+    if (mapInstance.current) return
+
     const map = new google.maps.Map(mapRef.current, {
       center: shopLocation,
       zoom: 13,
       disableDefaultUI: true,
       zoomControl: true,
-      gestureHandling: "cooperative",
-    });
-    const marker = new google.maps.Marker({
-      position: shopLocation,
-      map: map,
-      draggable: true,
-    });
-    marker.addListener("dragend", () => {
-      const pos = marker.getPosition();
-      calculateDrivingDistance(pos.lat(), pos.lng());
-      new google.maps.Geocoder().geocode(
-        { location: { lat: pos.lat(), lng: pos.lng() } },
-        (results, status) => {
-          if (status === "OK" && results[0])
-            onAddressChange(results[0].formatted_address);
-        }
-      );
-    });
+      gestureHandling: 'cooperative', 
+    })
+    const marker = new google.maps.Marker({ position: shopLocation, map: map, draggable: true })
+
+    marker.addListener('dragend', () => {
+      const pos = marker.getPosition()
+      calculateDrivingDistance(pos.lat(), pos.lng())
+      new google.maps.Geocoder().geocode({ location: { lat: pos.lat(), lng: pos.lng() } }, (results, status) => {
+        if (status === 'OK' && results[0]) onAddressChange(results[0].formatted_address)
+      })
+    })
+
     const autocomplete = new google.maps.places.Autocomplete(inputRef.current, {
-      componentRestrictions: { country: "ar" },
-    });
-    autocomplete.addListener("place_changed", () => {
-      const place = autocomplete.getPlace();
-      if (!place.geometry || !place.geometry.location) return;
-      map.setCenter(place.geometry.location);
-      map.setZoom(15);
-      marker.setPosition(place.geometry.location);
-      calculateDrivingDistance(
-        place.geometry.location.lat(),
-        place.geometry.location.lng()
-      );
-      onAddressChange(place.formatted_address || place.name);
-    });
-    mapInstance.current = map;
-    markerInstance.current = marker;
-  }, [mapLoaded, shopLocation]);
+      componentRestrictions: { country: 'ar' },
+    })
+    autocomplete.addListener('place_changed', () => {
+      const place = autocomplete.getPlace()
+      if (!place.geometry || !place.geometry.location) return
+      map.setCenter(place.geometry.location)
+      map.setZoom(15)
+      marker.setPosition(place.geometry.location)
+      calculateDrivingDistance(place.geometry.location.lat(), place.geometry.location.lng())
+      onAddressChange(place.formatted_address || place.name)
+    })
+
+    mapInstance.current = map
+    markerInstance.current = marker
+  }, [mapLoaded, shopLocation])
+
   const handleUseMyLocation = () => {
-    setLocError("");
-    if (!navigator.geolocation)
-      return setLocError("Tu navegador no soporta geolocalización.");
-    setIsLocating(true);
+    setLocError('')
+    if (!navigator.geolocation) return setLocError('Tu navegador no soporta geolocalización.')
+    setIsLocating(true)
+    
     navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        const { latitude: lat, longitude: lng } = pos.coords;
+      pos => {
+        const { latitude: lat, longitude: lng } = pos.coords
         if (mapInstance.current && markerInstance.current) {
-          const newLatLng = new window.google.maps.LatLng(lat, lng);
-          markerInstance.current.setPosition(newLatLng);
-          mapInstance.current.setCenter(newLatLng);
-          mapInstance.current.setZoom(15);
-          calculateDrivingDistance(lat, lng);
-          new window.google.maps.Geocoder().geocode(
-            { location: { lat, lng } },
-            (results, status) => {
-              if (status === "OK" && results[0])
-                onAddressChange(results[0].formatted_address);
-              else onAddressChange("Ubicación actual en el mapa");
-            }
-          );
+          const newLatLng = new window.google.maps.LatLng(lat, lng)
+          markerInstance.current.setPosition(newLatLng)
+          mapInstance.current.setCenter(newLatLng)
+          mapInstance.current.setZoom(15)
+          calculateDrivingDistance(lat, lng)
+          new window.google.maps.Geocoder().geocode({ location: { lat, lng } }, (results, status) => {
+            if (status === 'OK' && results[0]) onAddressChange(results[0].formatted_address)
+            else onAddressChange('Ubicación actual en el mapa')
+          })
         }
-        setIsLocating(false);
+        setIsLocating(false)
       },
       () => {
-        setLocError("Permiso denegado. Buscá tu calle manualmente.");
-        setIsLocating(false);
+        setLocError('Permiso de ubicación denegado o bloqueado. Habilitalo en el navegador.')
+        setIsLocating(false)
       },
       { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
-    );
-  };
+    )
+  }
+
   return (
     <div className="mt-4 flex flex-col gap-2 relative">
       {locError && (
-        <div className="text-xs text-red-600 bg-red-50 border border-red-200 p-2 rounded-lg">
-          {locError}
-        </div>
+        <div className="text-xs text-red-600 bg-red-50 border border-red-200 p-2 rounded-lg">{locError}</div>
       )}
       <div className="flex gap-2">
         <div className="relative flex-1">
           <input
             ref={inputRef}
             type="text"
-            placeholder="Tu calle y número"
-            value={address || ""}
-            onChange={(e) => onAddressChange(e.target.value)}
+            placeholder="Tu calle y número (Ej: Palma 123)"
+            value={address || ''}
+            onChange={e => onAddressChange(e.target.value)}
             className={`w-full bg-white rounded-lg pl-10 pr-4 py-3 text-sm z-20 relative transition-all ${
               isInvalid
-                ? "border border-red-500 bg-red-50 ring-1 ring-red-500 placeholder-red-400"
-                : "border border-gray-300 focus:ring-2 focus:ring-red-500"
+                ? 'border border-red-500 bg-red-50 ring-1 ring-red-500 placeholder-red-400'
+                : 'border border-gray-300 focus:ring-2 focus:ring-red-500'
             }`}
           />
           <Search
             size={18}
-            className={`absolute left-3 top-3.5 z-30 transition-colors ${
-              isInvalid ? "text-red-400" : "text-gray-400"
-            }`}
+            className={`absolute left-3 top-3.5 z-30 transition-colors ${isInvalid ? 'text-red-400' : 'text-gray-400'}`}
           />
         </div>
         <button
@@ -6597,23 +6559,20 @@ function MapPicker({
           className="bg-blue-50 text-blue-600 p-3 rounded-lg border border-blue-100 hover:bg-blue-100 flex-shrink-0"
           title="Usar mi ubicación actual"
         >
-          <MapPin size={22} className={isLocating ? "animate-pulse" : ""} />
+          <MapPin size={22} className={isLocating ? 'animate-pulse' : ''} />
         </button>
       </div>
       <p className="text-[11px] text-[#c82a2a] font-bold mt-1 leading-tight">
-        ⚠️ IMPORTANTE: No borres el nombre de la calle. Si vivís en un barrio,
-        poné la Manzana y Casa en las "ACLARACIONES".
+        ⚠️ IMPORTANTE: No borres el nombre de la calle. Si vivís en un barrio, poné la Manzana y Casa en las "ACLARACIONES" arriba.
       </p>
-      <div
-        ref={mapRef}
-        className="w-full h-48 rounded-lg border border-gray-200 bg-gray-100 relative z-0 mt-1"
-      >
+      <p className="text-xs text-gray-500 mb-1 mt-1">Puedes arrastrar el pin rojo para más exactitud.</p>
+      <div ref={mapRef} className="w-full h-48 rounded-lg border border-gray-200 bg-gray-100 relative z-0">
         {!mapLoaded && (
           <div className="absolute inset-0 flex items-center justify-center text-gray-400 text-sm">
-            Cargando Mapa...
+            Cargando Google Maps...
           </div>
         )}
       </div>
     </div>
-  );
+  )
 }

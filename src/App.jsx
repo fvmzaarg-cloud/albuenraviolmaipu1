@@ -4992,7 +4992,7 @@ function AdminPedidos({ db, setDb, adminRole }) {
       0
     );
 
-    let text = `🛵 *NUEVO ENVÍO*\n📦 *PEDIDO #${order.id}* 📦\n\n`;
+    let text = `🛵 *NUEVO PEDIDO*\n📦 *PEDIDO #${order.id}* 📦\n\n`;
     text += `*Cliente:* ${customer.name}\n`;
     text += `*Tel:* ${customer.phone}\n`;
     text += `*Dirección:* ${customer.address}\n`;

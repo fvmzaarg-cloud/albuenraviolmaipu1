@@ -4705,28 +4705,56 @@ function AdminMetricas({ db }) {
 
   const [startDate, setStartDate] = useState(getStartOfMonth());
   const [endDate, setEndDate] = useState(getToday());
+  
+  // NUEVO: Estados para el filtro horario
+  const [startTime, setStartTime] = useState("00:00");
+  const [endTime, setEndTime] = useState("23:59");
 
   const pedidosFiltrados = db.orders.filter((o) => {
     if (!o.date) return false;
+    
+    // 1. Filtro de Fechas
     const orderDate = o.date.split("T")[0];
-    return orderDate >= startDate && orderDate <= endDate;
+    const pasaFecha = orderDate >= startDate && orderDate <= endDate;
+    
+    // 2. Filtro de Horarios (Convertimos la hora UTC a la hora local de Argentina)
+    const dateObj = new Date(o.date);
+    const orderTime = dateObj.toLocaleTimeString("es-AR", { 
+      hour: '2-digit', 
+      minute: '2-digit', 
+      hour12: false 
+    });
+    const pasaHora = orderTime >= startTime && orderTime <= endTime;
+
+    return pasaFecha && pasaHora;
   });
 
   let ventasTotales = 0;
   let cantidadPedidosExitosos = 0;
   const ventasPorProducto = {};
   const ventasPorCategoria = {};
+  const ventasPorMedioPago = {}; // NUEVO: Acumulador de pagos
 
   pedidosFiltrados.forEach((o) => {
     if (o.status !== "Cancelado") {
       ventasTotales += o.total || 0;
       cantidadPedidosExitosos++;
+
+      // Agrupar Ventas por Medio de Pago
+      // Usamos split(" (") para limpiar textos como "Efectivo (Abona con $5000)" y que solo quede "Efectivo"
+      const nombreMedioPago = (o.paymentDetails || "Otro").split(" (")[0];
+      if (!ventasPorMedioPago[nombreMedioPago]) {
+        ventasPorMedioPago[nombreMedioPago] = 0;
+      }
+      ventasPorMedioPago[nombreMedioPago] += o.total || 0;
+
       const items = o.items || [];
       items.forEach((item) => {
         const prod = item.product || {};
         const catId = prod.categoryId || 0;
         const qty = item.quantity || 0;
         const subtotalItem = (prod.price || 0) * qty;
+        
         if (!ventasPorProducto[prod.id])
           ventasPorProducto[prod.id] = {
             nombre: prod.name || item.name || "Desconocido",
@@ -4736,6 +4764,7 @@ function AdminMetricas({ db }) {
           };
         ventasPorProducto[prod.id].cantidad += qty;
         ventasPorProducto[prod.id].total += subtotalItem;
+        
         if (!ventasPorCategoria[catId]) {
           const catInfo = db.categories.find((c) => c.id === catId);
           ventasPorCategoria[catId] = {
@@ -4748,12 +4777,13 @@ function AdminMetricas({ db }) {
     }
   });
 
-  const productosOrdenados = Object.values(ventasPorProducto).sort(
-    (a, b) => b.total - a.total
-  );
-  const categoriasOrdenadas = Object.values(ventasPorCategoria).sort(
-    (a, b) => b.total - a.total
-  );
+  const productosOrdenados = Object.values(ventasPorProducto).sort((a, b) => b.total - a.total);
+  const categoriasOrdenadas = Object.values(ventasPorCategoria).sort((a, b) => b.total - a.total);
+  
+  // Convertimos el objeto de pagos en un array ordenado
+  const mediosPagoOrdenados = Object.entries(ventasPorMedioPago)
+    .map(([nombre, total]) => ({ nombre, total }))
+    .sort((a, b) => b.total - a.total);
 
   const exportarCSV = () => {
     let csvContent = "data:text/csv;charset=utf-8,";
@@ -4802,24 +4832,48 @@ function AdminMetricas({ db }) {
         </button>
       </div>
 
-      <div className="bg-white p-3 rounded-xl shadow-sm border border-gray-200 flex flex-col gap-2">
-        <span className="text-[10px] font-bold text-gray-500 uppercase flex items-center gap-1">
-          <Calendar size={12} /> Rango de fechas a analizar
-        </span>
-        <div className="flex items-center gap-2">
-          <input
-            type="date"
-            value={startDate}
-            onChange={(e) => setStartDate(e.target.value)}
-            className="w-full text-sm border border-gray-300 rounded-lg px-2 py-2 bg-gray-50 outline-none focus:ring-2 focus:ring-blue-500 text-gray-800 font-bold"
-          />
-          <span className="text-gray-400 font-bold">a</span>
-          <input
-            type="date"
-            value={endDate}
-            onChange={(e) => setEndDate(e.target.value)}
-            className="w-full text-sm border border-gray-300 rounded-lg px-2 py-2 bg-gray-50 outline-none focus:ring-2 focus:ring-blue-500 text-gray-800 font-bold"
-          />
+      {/* TARJETA DE FILTROS (FECHAS Y HORARIOS) */}
+      <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-200 flex flex-col gap-4">
+        <div>
+          <span className="text-[10px] font-bold text-gray-500 uppercase flex items-center gap-1 mb-1">
+            <Calendar size={12} /> Rango de Fechas
+          </span>
+          <div className="flex items-center gap-2">
+            <input
+              type="date"
+              value={startDate}
+              onChange={(e) => setStartDate(e.target.value)}
+              className="w-full text-sm border border-gray-300 rounded-lg px-2 py-2 bg-gray-50 outline-none focus:ring-2 focus:ring-blue-500 text-gray-800 font-bold"
+            />
+            <span className="text-gray-400 font-bold">a</span>
+            <input
+              type="date"
+              value={endDate}
+              onChange={(e) => setEndDate(e.target.value)}
+              className="w-full text-sm border border-gray-300 rounded-lg px-2 py-2 bg-gray-50 outline-none focus:ring-2 focus:ring-blue-500 text-gray-800 font-bold"
+            />
+          </div>
+        </div>
+        
+        <div className="pt-3 border-t border-gray-100">
+          <span className="text-[10px] font-bold text-gray-500 uppercase flex items-center gap-1 mb-1">
+            <Clock size={12} /> Rango Horario (Ej: 10:00 a 14:00)
+          </span>
+          <div className="flex items-center gap-2">
+            <input
+              type="time"
+              value={startTime}
+              onChange={(e) => setStartTime(e.target.value)}
+              className="w-full text-sm border border-gray-300 rounded-lg px-2 py-2 bg-gray-50 outline-none focus:ring-2 focus:ring-blue-500 text-gray-800 font-bold"
+            />
+            <span className="text-gray-400 font-bold">a</span>
+            <input
+              type="time"
+              value={endTime}
+              onChange={(e) => setEndTime(e.target.value)}
+              className="w-full text-sm border border-gray-300 rounded-lg px-2 py-2 bg-gray-50 outline-none focus:ring-2 focus:ring-blue-500 text-gray-800 font-bold"
+            />
+          </div>
         </div>
       </div>
 
@@ -4844,6 +4898,24 @@ function AdminMetricas({ db }) {
 
       {cantidadPedidosExitosos > 0 ? (
         <>
+          {/* NUEVA SECCIÓN: VENTAS POR MEDIO DE PAGO */}
+          <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 mt-2 space-y-3">
+            <h3 className="text-xs text-gray-500 font-bold uppercase mb-2 border-b pb-2 flex items-center gap-1">
+              <Wallet size={14} /> Ventas por Medio de Pago
+            </h3>
+            {mediosPagoOrdenados.map((mp, idx) => (
+              <div
+                key={idx}
+                className="flex justify-between items-center text-sm border-b border-gray-50 pb-2 last:border-0 last:pb-0"
+              >
+                <span className="text-gray-700 font-bold">{mp.nombre}</span>
+                <span className="font-black text-blue-700 bg-blue-50 px-2 py-0.5 rounded">
+                  {formatCurrency(mp.total)}
+                </span>
+              </div>
+            ))}
+          </div>
+
           <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 mt-2 space-y-3">
             <h3 className="text-xs text-gray-500 font-bold uppercase mb-2 border-b pb-2 flex items-center gap-1">
               <MenuSquare size={14} /> Ventas por Categoría
@@ -4860,6 +4932,7 @@ function AdminMetricas({ db }) {
               </div>
             ))}
           </div>
+
           <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 mt-2 space-y-3">
             <h3 className="text-xs text-gray-500 font-bold uppercase mb-2 border-b pb-2 flex items-center gap-1">
               🏆 Top Productos (Más Recaudación)
@@ -4890,13 +4963,12 @@ function AdminMetricas({ db }) {
         </>
       ) : (
         <div className="bg-white p-6 rounded-xl border border-gray-100 text-center text-gray-400 mt-4">
-          No hay ventas registradas en las fechas seleccionadas.
+          No hay ventas registradas en el rango de fecha y hora seleccionados.
         </div>
       )}
     </div>
   );
 }
-
 function AdminPedidos({ db, setDb, adminRole }) {
   const [ticketToPrint, setTicketToPrint] = useState(null);
   const [confirmObj, setConfirmObj] = useState(null);
